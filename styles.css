@@ -201,6 +201,16 @@ tbody td:nth-child(5) {
   white-space: nowrap;
 }
 
+tbody td a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+tbody td a:hover {
+  text-decoration: underline;
+}
+
 tr.seminar td:nth-child(3) {
   color: var(--accent);
 }
