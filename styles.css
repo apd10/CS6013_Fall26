@@ -148,6 +148,32 @@ table {
   font-size: 0.95rem;
 }
 
+.refs-table {
+  table-layout: fixed;
+}
+
+.refs-table th:first-child,
+.refs-table td:first-child {
+  width: 25%;
+  white-space: normal;
+}
+
+.refs-table th:last-child,
+.refs-table td:last-child {
+  width: 75%;
+}
+
+.refs-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.refs-list li {
+  margin: 0.35rem 0;
+}
+
 thead th {
   position: sticky;
   top: 0;

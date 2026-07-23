@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Efficient AI — Lecture 1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
@@ -13,6 +19,15 @@
       href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
     />
     <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
       /* Shared slide background template (course_lectures/assets/) */
       .reveal,
       .reveal .slide-background,
@@ -24,27 +39,142 @@
         background-repeat: no-repeat;
       }
 
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
       .reveal .slides section {
         background: transparent;
         /* Keep text clear of corner graphics */
         padding: 0 8%;
       }
 
+      /* Subtle tech grid overlay */
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(ellipse 70% 65% at 50% 45%, #000 35%, transparent 75%);
+      }
+
       .reveal h1,
       .reveal h2,
       .reveal h3 {
-        color: #0b2c5c;
+        color: var(--ink);
         text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h2 {
+        border-bottom: 2px solid var(--accent);
+        display: inline-block;
+        padding-bottom: 0.12em;
+        margin-bottom: 0.55em;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
       }
 
       .reveal p,
       .reveal li {
-        color: #1a2a3a;
+        color: var(--ink-soft);
+      }
+
+      .reveal small {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        letter-spacing: 0.03em;
+        color: var(--muted);
+      }
+
+      .reveal ul,
+      .reveal ol {
+        list-style: none;
+      }
+
+      .reveal ul > li,
+      .reveal ol > li {
+        position: relative;
+        padding-left: 0.15em;
+      }
+
+      .reveal ul > li::marker,
+      .reveal ol > li::marker {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal ul {
+        list-style: none;
+      }
+
+      .reveal ul > li {
+        padding-left: 1.1em;
+      }
+
+      .reveal ul > li::before {
+        content: "›";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--accent);
+        font-weight: 700;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal ol {
+        list-style: none;
+        counter-reset: tech;
+      }
+
+      .reveal ol > li {
+        counter-increment: tech;
+        padding-left: 1.75em;
+      }
+
+      .reveal ol > li::before {
+        content: counter(tech, decimal-leading-zero);
+        position: absolute;
+        left: 0;
+        top: 0.08em;
+        color: var(--accent-deep);
+        font-size: 0.72em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-weight: 600;
       }
 
       .reveal .controls,
       .reveal .progress {
-        color: #1e5a9a;
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.55);
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
       }
 
       .reveal .lecture-topics {
@@ -71,7 +201,13 @@
       }
 
       .reveal a {
-        color: #1e5a9a;
+        color: var(--accent-deep);
+        text-decoration-color: var(--accent);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+        font-weight: 700;
       }
 
       .reveal .compact {
@@ -99,36 +235,45 @@
         border-collapse: collapse;
         margin: 0.4em auto;
         width: 90%;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
       }
 
       .reveal .grade-table th,
       .reveal .grade-table td {
-        border: 1px solid #1e5a9a;
+        border: 1px solid var(--accent-deep);
         padding: 0.35em 0.5em;
         text-align: center;
-        color: #1a2a3a;
+        color: var(--ink-soft);
       }
 
       .reveal .grade-table th {
-        background: rgba(30, 90, 154, 0.12);
-        color: #0b2c5c;
+        background: rgba(14, 165, 233, 0.14);
+        color: var(--ink);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-size: 0.9em;
       }
 
       .reveal .honor-quote {
         font-size: 0.7em;
         line-height: 1.35;
         text-align: left;
-        color: #1a2a3a;
-        border-left: 4px solid #1e5a9a;
-        padding-left: 0.8em;
+        color: var(--ink-soft);
+        border-left: 4px solid var(--accent);
+        background: rgba(14, 165, 233, 0.06);
+        padding: 0.65em 0.8em;
         margin: 0.8em auto;
         width: 90%;
         font-style: italic;
       }
 
       .reveal code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
         font-size: 0.85em;
-        color: #0b2c5c;
+        color: var(--accent-deep);
+        background: rgba(7, 26, 51, 0.06);
+        padding: 0.08em 0.35em;
+        border: 1px solid var(--line);
       }
     </style>
   </head>
@@ -144,7 +289,83 @@
           </p>
         </section>
 
+        <section>
+          <h2>Size of AI is huge and it is only growing!</h2>
+        <div style="text-align: center; margin: 0 0;">
+          <img src="../assets/machine-learning-model-sizes-and-the-parameter-gap.png" alt="Model Sizes Over Time", style="max-width: 70%; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+        </div>
+      </section>
+          
+        <section>
+          <h2>Training models requires more and more compute</h2>
+        <div style="text-align: center; margin: 0 0;">
+          <img src="../assets/compute-trends.png" alt="Training Compute Needs", style="max-width: 70%; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+        </div>
+        </section>
+
+        <section>
+          <h2>Cost of training is already exorbitant</h2>
+          <ul>  
+            <li>Cost of inference is generally much higher!
+            </li>
+          </ul>
+        <div style="text-align: center; margin: 0 0;">
+          <img src="../assets/cost-trend-large-scale.png" alt="Cost of training is already exorbitant", style="max-width: 60%; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+        </div>
+
+        </section>
         <!-- Slide 2: Pre-requisites -->
+        
+        <section>
+          <h2>What kind of questions are we going to ask?</h2>
+          <ul>
+            <li>Can I run this model in less memory?</li>
+            <li>Can I run this model faster?</li>
+            <li>Can I deploy this model with higher throughput?</li>
+            <li>Can I train a model in lower memory?</li>
+            <li>Can I train a model in less time?</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>In general:</h2>
+          <ul>
+            <li>Can I do "X" using less resource "Y"</li>
+            <li>X = "infer / train / etc"</li>
+            <li>Y = memory / compute / communication</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Systems Solutions</h2>
+          <ul>
+            <li>Assumes that computational workload is fixed</li>
+            <li>Under this constraint, try to improve resource utilization</li>
+            <li>e.g. memory reduction -- offloading etc</li>
+            <li>e.g. lower latency -- parallelization, scheduling etc</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>We ...</h2>
+          <ul>
+            <li>Computational workload is NOT sacrosanct</li>
+            <li>We can change the workload while maintaining the "quality"</li>
+            <li>e.g. memory reduction -- we are allowed to change model parameters</li>
+            <li>e.g. lower latency -- we are allowed to change architecture or execution of model</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>We ...</h2>
+          <ul>
+            <li>Try to solve the fundamental bottlenecks that systems does not address</li>
+            <li>e.g O(N^2) attention computation -- system will not try to reduce the complexity</li>
+            <li>but we can!</li>
+            <li>Important: The bottlenecks that we should solve are to be informed by the systems research</li>
+          </ul>
+        </section>
+
         <section>
           <h2>Pre-requisites</h2>
           <p class="compact">
