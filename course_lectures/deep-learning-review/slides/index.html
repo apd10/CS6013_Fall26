@@ -232,7 +232,8 @@
             <small style="font-size: 0.45em; line-height: 1.35; display: inline-block; max-width: 85%;">
               Many thanks to all the resources listed in References on the main
               website. Almost all figures are taken from these resources; some
-              were generated with Gemini.
+              were generated with Gemini. Some images are taken from Google
+              Images and still need proper citation (in progress).
             </small>
           </p>
         </section>
@@ -412,7 +413,7 @@
           </section>
 
           <section>
-            <h3> Optimization : Stochastic Gradient Descent </h3>
+            <h3> Optimization : Gradient Descent (and its variants) </h3>
             <div
               style="
                 display: flex;
@@ -424,18 +425,52 @@
             >
               <img
                 src="../assets/sgd.png"
-                alt="Stochastic Gradient Descent"
+                alt="Gradient Descent"
                 class="plain"
                 style="flex: 1 1 48%; max-width: 48%; max-height: 65vh; width: auto; height: auto; object-fit: contain;"
               />
               <img
                 src="../assets/sgd2.png"
-                alt="Stochastic Gradient Descent"
+                alt=" Gradient Descent"
                 class="plain"
                 style="flex: 1 1 48%; max-width: 48%; max-height: 65vh; width: auto; height: auto; object-fit: contain;"
               />
             </div>
           </section>
+
+          <section>
+            <h3> Optimization : Stochastic Gradient Descent  </h3>
+            <ul class="compact-list">
+              <li>Stochastic Gradient Descent is a variant of Gradient Descent where we use a
+                subset of the data to compute the gradient.</li>
+              <li>It is used to speed up the training process.</li>
+              <li>Gradient is replaced by its estimate</li>
+              <li>Important property is that the estimate is unbiased. Something to keep in mind when compressing gradients.</li>
+            </ul>
+            <div
+              style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 1em;
+                margin: 0.5em 0;
+              "
+            >
+              <img
+                src="../assets/sgd3.png"
+                alt="Stochastic Gradient Descent"
+                class="plain"
+                style="flex: 1 1 48%; max-width: 48%; max-height: 45vh; width: auto; height: auto; object-fit: contain;"
+              />
+              <img
+                src="../assets/sgd4.jpg"
+                alt="Stochastic Gradient Descent estimate"
+                class="plain"
+                style="flex: 1 1 48%; max-width: 48%; max-height: 45vh; width: auto; height: auto; object-fit: contain;"
+              />
+            </div>
+          </section>
+
 
           <section>
             <h3> GPU memory usage in inference vs. training </h3>
@@ -468,11 +503,13 @@
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
     <script>
       Reveal.initialize({
         hash: true,
         slideNumber: true,
         backgroundTransition: "none",
+        plugins: [RevealNotes],
       });
     </script>
   </body>
