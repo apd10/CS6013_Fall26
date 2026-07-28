@@ -413,7 +413,8 @@
 
         <!-- Slide 4: Lecture topics -->
         <section>
-          <h2>Lectures will cover topics like:</h2>
+          <h2>Lectures will try to cover topics:</h2>
+          <small>(we will see how much we can cover)</small>
           <ul class="lecture-topics">
             <li>
               <strong>Pruning</strong>
@@ -483,8 +484,7 @@
               lecture.
             </li>
             <li>
-              Seminars run in the
-              <strong>last part of the semester (tentatively Oct 7th)</strong> — you have ample time
+              Seminars  start after a few lectures — you have ample time
               to read on the topic.
             </li>
             <li>
@@ -504,7 +504,7 @@
 
         <!-- Project slide 1: Description & resources -->
         <section>
-          <h2>Project: Description &amp; Resources</h2>
+          <h3>Project: Description &amp; Resources </h3>
           <ul class="compact-list">
             <li>
               Semester-long: develop a
@@ -516,13 +516,30 @@
               techniques in class.
             </li>
             <li>
-              <strong>Domain:</strong> math. Exact eval dataset is
-              <em>hidden</em> (leaderboard only).
-            </li>
-            <li>
-              <strong>Resources:</strong> Kaggle, Google Colab, etc. for
+              <strong>Resources:</strong> Kaggle, Google Colab, Molab, etc. for
               development.
             </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>This Year's Project </h3>
+          <ul class="compact-list">
+            <li>
+              <span style="color:red">Model: Qwen-3.5-4B</span>
+        
+            </li>
+            <li>
+              <span style="color:blue">Domain: Math</span>
+        
+            </li>
+            <li>
+              Starter Code: https://github.com/skylight-org/efficient_ai_CS6013_2026Fall
+            </li>
+            <ul>
+              <li> sets up some basic starter code for eval. </li>
+              <li> Also, has a basic gptq quantization code to begin with. </li>
+            </ul>
           </ul>
         </section>
 
@@ -536,9 +553,9 @@
               CUDA speedup required.
             </li>
             <li>
-              <strong>Track 2 (required):</strong> memory, but techniques must
+              <strong>Track 2 :</strong> memory, but techniques must
               be CUDA-speedup-capable <em>in principle</em>. Explain how; no
-              kernels required.
+              kernels required. (while submitting, you can mark your submission for track 2)
             </li>
             <li>
               <strong>Track 2+ (bonus, optional):</strong> CUDA kernels +
@@ -559,11 +576,11 @@
             </li>
             <li>
               Each eval: (1) leaderboard position (2) detailed report —
-              include what <em>failed</em> and what worked.
+              include what <em>failed</em> and what worked. 
             </li>
             <li>
               Mid-term top performers → eligible for Track&nbsp;2+. Top-k
-              present ideas; code stays private until then.
+              present ideas; code always stays private.
             </li>
             <li>
               After mid-term talks: code snapshot shared; cite what you
@@ -612,7 +629,15 @@
               Reports: PDF, <strong>≤3 pages</strong> of text (figures/tables
               after). Over-length → not evaluated.
             </li>
+            <li>
+              <span style="color: red;">
+                (Note: Ideas in report can become important differentiators, since it might get difficult to beat the SOTA 
+                and it is quite possible that all scores will concentrate around that)
+              </span>
+            </li>
           </ul>
+          
+          
         </section>
 
         <!-- Project slide 5: Submission details -->
@@ -622,7 +647,7 @@
             <li>
               Max <strong>1 submission / week</strong>; leaderboard updates
               weekly. Push compressed model to Hugging Face; submit the link
-              (TA details later).
+              (TAs will provide details later).
             </li>
             <li>
               Use the starter as a GitHub template →
@@ -641,6 +666,10 @@
               Leaderboard is <strong>anonymized</strong> (scores only;
               you learn your own after eval).
             </li>
+            <li>
+              Use submissions to leaderboard to get actual feedback on if your ideas are working for 
+              what we will be testing against.
+            </li>
           </ul>
         </section>
 
@@ -648,14 +677,15 @@
         <section>
           <h2>Project Details</h2>
           <p class="compact">
-            In some time, TAs will show you:
+            In a couple of weeks, TAs will show you:
           </p>
           <ol class="compact-list">
-            <li>How to get started</li>
             <li>How to make submissions</li>
-            <li>How to use Colab / Kaggle for your work</li>
-            <li> How the leaderboard will look , where to find it etc.</li>
+            <li>How the leaderboard will look , where to find it etc.</li>
           </ol>
+          <p class="compact"> 
+          If you have difficult time setting up / using GPU resources, please use TA hours to get help. 
+        </p>
         </section>
 
         <!-- Project slide 6: AI policy -->
@@ -691,6 +721,12 @@
             understand that any violation of the honor code will result in a
             grade of 0 for the project.”
           </blockquote>
+        <p class="compact">
+          All details in:
+          <a href="../../project/main.pdf" target="_blank" rel="noopener noreferrer">
+            Project PDF
+          </a>
+        </p>
         </section>
 
         <!-- Slide 17: Office hours -->

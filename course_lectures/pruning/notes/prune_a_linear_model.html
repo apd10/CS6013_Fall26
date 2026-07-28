@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pruning a Neuron — Notes (Jul 18, 2026)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .neuron {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        margin: 1.25rem 0;
+        padding: 1rem 1.15rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .neuron svg {
+        flex-shrink: 0;
+      }
+
+      .neuron .caption {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      .cite {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .algo {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1rem 1.15rem;
+        margin: 1rem 0;
+      }
+
+      .algo .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+      }
+
+      .algo ol {
+        margin: 0.4rem 0 0;
+        padding-left: 1.35rem;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+
+      @media (max-width: 560px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+      }
+
+      .card .tag {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      .next a {
+        color: var(--accent);
+        font-style: normal;
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        background: rgba(11, 110, 79, 0.08);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="prune_a_linear_model.pdf">prune_a_linear_model.pdf</a>
+      </p>
+      <header>
+        <p class="meta">Efficient AI · Lecture notes · Jul 18, 2026</p>
+        <h1>Pruning a neuron</h1>
+        <p>
+          Preserve the function a neuron computes under a sparsity budget, then
+          greedily choose which weight to remove.
+        </p>
+      </header>
+
+      <h2>Setup</h2>
+      <p>
+        A linear neuron computes an inner product of weights and inputs:
+      </p>
+      <div class="eq">
+        \[
+          y = \langle w, x \rangle = w \cdot x,
+          \qquad w, x \in \mathbb{R}^d.
+        \]
+      </div>
+
+      <div class="neuron">
+        <svg
+          width="200"
+          height="120"
+          viewBox="0 0 200 120"
+          aria-label="Neuron diagram"
+        >
+          <circle cx="28" cy="24" r="6" fill="#0b6e4f" opacity="0.85" />
+          <circle cx="28" cy="60" r="6" fill="#0b6e4f" opacity="0.85" />
+          <circle cx="28" cy="96" r="6" fill="#0b6e4f" opacity="0.85" />
+          <line
+            x1="34"
+            y1="24"
+            x2="110"
+            y2="60"
+            stroke="#1a2332"
+            stroke-width="1.5"
+          />
+          <line
+            x1="34"
+            y1="60"
+            x2="110"
+            y2="60"
+            stroke="#1a2332"
+            stroke-width="1.5"
+          />
+          <line
+            x1="34"
+            y1="96"
+            x2="110"
+            y2="60"
+            stroke="#1a2332"
+            stroke-width="1.5"
+          />
+          <circle
+            cx="118"
+            cy="60"
+            r="16"
+            fill="#e6f4ef"
+            stroke="#0b6e4f"
+            stroke-width="2"
+          />
+          <line
+            x1="134"
+            y1="60"
+            x2="168"
+            y2="60"
+            stroke="#1a2332"
+            stroke-width="1.5"
+            marker-end="url(#arrow)"
+          />
+          <defs>
+            <marker
+              id="arrow"
+              markerWidth="8"
+              markerHeight="8"
+              refX="6"
+              refY="3"
+              orient="auto"
+            >
+              <path d="M0,0 L6,3 L0,6 Z" fill="#1a2332" />
+            </marker>
+          </defs>
+          <text x="48" y="42" font-size="11" fill="#5a6a7d" font-family="IBM Plex Mono, monospace">
+            w
+          </text>
+          <text x="48" y="78" font-size="11" fill="#5a6a7d" font-family="IBM Plex Mono, monospace">
+            x
+          </text>
+          <text x="145" y="52" font-size="11" fill="#1a2332" font-family="IBM Plex Mono, monospace">
+            y
+          </text>
+        </svg>
+        <div class="caption">
+          Inputs $x$ weighted by $w$ produce<br />
+          $y = \vec{w}\cdot\vec{x}$.
+        </div>
+      </div>
+
+      <div class="q">
+        <strong>Q.</strong> What should we try to preserve when pruning?
+        <ul>
+          <li>Behavior of the neuron</li>
+          <li>What function it was representing</li>
+        </ul>
+      </div>
+
+      <div class="remark">
+        <span class="label">Remark — inference vs training</span>
+        When pruning at <em>inference</em> time, the goal is to preserve the
+        function the model already computes. During training, one might instead
+        care about expressive power (capacity to learn), which leads to
+        different considerations.
+      </div>
+
+      <h2>Preserving behavior under compression</h2>
+      <p>
+        We want a sparse (or budget-constrained) weight vector $\hat{w}$ that
+        matches the original neuron on all inputs:
+      </p>
+      <div class="eq">
+        \[
+          \hat{w} \in \mathbb{R}^d
+          \quad\text{s.t.}\quad
+          \|\hat{w}\|_1 \le k,
+          \qquad
+          \hat{w}\cdot x \;\simeq\; w\cdot x
+          \quad \forall\, x.
+        \]
+      </div>
+
+      <p>
+        Let $X$ be representative data. Then choose $\hat{w}$ by least-squares
+        reconstruction of the neuron’s outputs:
+      </p>
+      <div class="eq">
+        \[
+          \hat{w}
+          =
+          \underset{\|\hat{w}\|_1 \le k}{\arg\min}
+          \;
+          \bigl\|
+            \hat{w}\cdot X - w\cdot X
+          \bigr\|_2^2 .
+        \]
+      </div>
+
+      <p>Equivalently, introduce a binary mask $M$ and write</p>
+      <div class="eq">
+        \[
+          \hat{w},\, M
+          =
+          \underset{
+            \substack{
+              \hat{w}\in\mathbb{R}^d \\[2pt]
+              M\in\{0,1\}^d \\[2pt]
+              \|M\|_1 \le k
+            }
+          }{\arg\min}
+          \;
+          \bigl\|
+            (\hat{w} \odot M)\cdot X - w\cdot X
+          \bigr\|_2^2 ,
+        \]
+      </div>
+      <p>
+        where $\odot$ is the elementwise (Hadamard) product.
+      </p>
+
+      <p class="cite">
+        Jointly optimizing $M$ and $\hat{w}$ is
+        <strong>NP-hard</strong>
+        (Blumensath &amp; Davies, 2008)
+        $\;\rightarrow\;$ use a <strong>greedy algorithm</strong>.
+      </p>
+
+      <h2>Which element to prune first?</h2>
+      <p>Simple heuristics are incomplete:</p>
+      <ul>
+        <li>
+          <strong>Magnitude?</strong>
+          $|w_i|$ large does not help if $|x_i|$ is very small.
+        </li>
+        <li>
+          A joint score $f(|w_i|, |x_i|)$ still
+          <em>does not consider correlations</em> among coordinates.
+        </li>
+      </ul>
+
+      <div class="split">
+        <div class="card">
+          <div class="tag">True model</div>
+          <div class="eq" style="margin: 0.4rem 0 0">
+            \[ y = w \cdot X \]
+          </div>
+        </div>
+        <div class="card">
+          <div class="tag">Approximated model</div>
+          <div class="eq" style="margin: 0.4rem 0 0">
+            \[ \hat{y} = \hat{w} \cdot X \]
+          </div>
+        </div>
+      </div>
+
+      <p>
+        To remove one weight, solve the constrained reconstruction problem
+        (at most $d-1$ nonzeros — some $\hat{w}_i = 0$):
+      </p>
+      <div class="eq">
+        \[
+          \min_{\|\hat{w}\|_0 \le d-1}
+          \;
+          \bigl\| \hat{w}\cdot X - w\cdot X \bigr\|_2^2 .
+        \]
+      </div>
+
+      <p>
+        Greedy step: try zeroing each coordinate in turn and keep the best:
+      </p>
+      <div class="eq">
+        \[
+          \min_{\hat{w}_1=0}
+          \|\hat{w}\cdot X - w\cdot X\|_2^2,
+          \quad
+          \min_{\hat{w}_2=0}
+          \|\hat{w}\cdot X - w\cdot X\|_2^2,
+          \quad
+          \ldots,
+          \quad
+          \min_{\hat{w}_d=0}
+          \|\hat{w}\cdot X - w\cdot X\|_2^2.
+        \]
+      </div>
+      <p>
+        Whichever index $i$ gives the best (smallest) loss is the one we prune.
+      </p>
+
+      <h2>Subproblem for a fixed index $i$</h2>
+      <p>
+        Drop column $i$ of $X$ (write $X_{-i}$) and refit the remaining weights
+        by linear regression against the original outputs $y = X\cdot w$:
+      </p>
+      <div class="eq">
+        \[
+          \hat{\omega}^{(i)}
+          =
+          \arg\min
+          \;
+          \bigl\|
+            X_{-i}\,\hat{\omega}^{(i)} - X\cdot\omega
+          \bigr\|_2^2
+          =
+          \arg\min
+          \;
+          \bigl\|
+            X_{-i}\,\hat{\omega}^{(i)} - y
+          \bigr\|_2^2 .
+        \]
+      </div>
+
+      <p>
+        <strong>Normal equations</strong> for $X_{-i}\,\hat{\omega} = y$:
+      </p>
+      <div class="eq">
+        \[
+          \hat{\omega}
+          =
+          \bigl(X_{-i}^\top X_{-i}\bigr)^{-1} X_{-i}^\top y .
+        \]
+      </div>
+
+      <p>Loss (saliency) of pruning coordinate $i$:</p>
+      <div class="eq">
+        \[
+          \hat{y} = X_{-i}\,\hat{\omega},
+          \qquad
+          \ell_i = \|\hat{y} - y\|_2^2 .
+        \]
+      </div>
+      <p>Choose the index with the <em>least</em> loss.</p>
+
+      <div class="algo">
+        <div class="label">Greedy prune-one step</div>
+        <ol>
+          <li>
+            For each $i$, compute saliency $\ell_i$ by refitting on $X_{-i}$.
+          </li>
+          <li>
+            Prune $i^\star = \arg\min_i \ell_i$.
+          </li>
+          <li>
+            Update remaining weights:
+            $\omega_{-i^\star} \leftarrow \hat{\omega}^{(i^\star)}$.
+          </li>
+        </ol>
+      </div>
+
+      <p class="next">
+        Related:
+        <a href="prune_a_model.html">Pruning a model</a>
+      </p>
+    </div>
+  </body>
+</html>

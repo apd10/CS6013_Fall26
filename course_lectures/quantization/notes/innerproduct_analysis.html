@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Inner Product under Quantization — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .cite {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        background: rgba(11, 110, 79, 0.08);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+
+      .exercise {
+        border: 1px dashed var(--accent);
+        background: var(--accent-soft);
+        padding: 0.95rem 1.05rem;
+        margin: 1.25rem 0;
+        border-radius: 8px;
+      }
+
+      .exercise .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        display: block;
+        margin-bottom: 0.4rem;
+        font-weight: 600;
+      }
+
+      .exercise .hint {
+        margin-top: 0.75rem;
+        padding-top: 0.65rem;
+        border-top: 1px solid rgba(11, 110, 79, 0.2);
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .exercise .hint strong {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="innerproduct_analysis.pdf">innerproduct_analysis.pdf</a>
+      </p>
+      <header>
+        <p class="meta">Efficient AI · Quantization notes</p>
+        <h1>Inner product under quantization</h1>
+        <p>
+          How well does $\langle \hat{w},\, x\rangle$ approximate
+          $\langle w,\, x\rangle$ when weights are quantized — and why
+          stochastic rounding can beat round-to-nearest for the
+          <em>downstream</em> inner product.
+        </p>
+      </header>
+
+      <h2>Setup</h2>
+      <ul>
+        <li>$w$ — weights that are quantized</li>
+        <li>$x$ — input (activation) vector</li>
+        <li>$\Delta$ — quantization error added to the weight vector</li>
+      </ul>
+      <div class="eq">
+        \[
+          \hat{w} = w + \Delta.
+        \]
+      </div>
+      <div class="q">
+        <strong>Question.</strong>
+        What is $\langle \hat{w},\, x\rangle$, and how well does it approximate
+        $\langle w,\, x\rangle$?
+      </div>
+
+      <h2>Deterministic rounding to nearest</h2>
+      <p>
+        Assume a grid of precision $\delta$ (spacing between representable
+        values). Round-to-nearest guarantees
+      </p>
+      <div class="eq">
+        \[
+          |\Delta_i| \le \frac{\delta}{2}
+          \qquad\text{for all } i.
+        \]
+      </div>
+      <p>The quantized inner product expands as</p>
+      <div class="eq">
+        \[
+          \langle x,\, \hat{w}\rangle
+          = \sum_i x_i\,(w_i + \Delta_i)
+          = \langle x,\, w\rangle
+            + \sum_i x_i\,\Delta_i.
+        \]
+      </div>
+
+      <h3>Worst case</h3>
+      <p>
+        Align signs so that every term $x_i\Delta_i$ is maximized — e.g.\
+        $x_i \ge 0$ for all $i$ and $\Delta_i = \delta/2$ for all $i$.
+        Then
+      </p>
+      <div class="eq-box">
+        \[
+          \bigl|\langle x,\, \hat{w}\rangle
+                - \langle x,\, w\rangle\bigr|
+          = \frac{\delta}{2}\sum_i |x_i|
+          = \frac{\delta}{2}\,\|x\|_1.
+        \]
+      </div>
+      <p>
+        Squaring gives a worst-case (squared) error of order
+      </p>
+      <div class="eq">
+        \[
+          \mathrm{MSE}_{\text{nearest}}^{\text{(worst)}}
+          = \frac{\delta^2}{4}\,\|x\|_1^2.
+        \]
+      </div>
+      <p class="cite">
+        Round-to-nearest minimizes per-coordinate error, but the
+        <em>inner-product</em> error can still accumulate coherently across
+        coordinates.
+      </p>
+
+      <h2>Stochastic rounding</h2>
+      <p>
+        Suppose $w_i$ lies between consecutive grid points $a &lt; w_i &lt; b$
+        with $b - a = \delta$. Stochastic rounding sets
+      </p>
+      <div class="eq">
+        \[
+          \hat{w}_i =
+          \begin{cases}
+            a & \text{with probability }
+                \dfrac{b - w_i}{b - a}, \\[0.6em]
+            b & \text{with probability }
+                \dfrac{w_i - a}{b - a}.
+          \end{cases}
+        \]
+      </div>
+      <p>
+        Equivalently $\hat{w} = w + \Delta$ with a random per-coordinate
+        error $\Delta_i$.
+      </p>
+
+      <h3>Unbiasedness</h3>
+      <div class="eq">
+        \[
+          \mathbb{E}[\Delta_i] = 0
+          \quad\Rightarrow\quad
+          \mathbb{E}[\hat{w}] = w.
+        \]
+      </div>
+      <div class="eq">
+        \[
+          \langle x,\, \hat{w}\rangle
+          = \langle x,\, w\rangle
+            + \sum_i x_i\,\Delta_i,
+        \]
+      </div>
+      <div class="eq-box">
+        \[
+          \mathbb{E}\!\bigl[\langle x,\, \hat{w}\rangle\bigr]
+          = \langle x,\, w\rangle.
+        \]
+      </div>
+      <p class="cite">The quantized inner product is unbiased.</p>
+
+      <h3>Variance / MSE</h3>
+      <p>
+        Assuming independent rounding noise across coordinates,
+      </p>
+      <div class="eq">
+        \[
+          \mathrm{Var}\!\bigl(\langle x,\, \hat{w}\rangle\bigr)
+          = \sum_i x_i^2\,\mathrm{Var}(\Delta_i).
+        \]
+      </div>
+      <p>
+        With fractional part $\alpha_i = (w_i - a)/\delta \in [0,1]$,
+      </p>
+      <div class="eq">
+        \[
+          \mathrm{Var}(\Delta_i)
+          = \alpha_i(1-\alpha_i)\,\delta^2
+          \le \frac{\delta^2}{4}.
+        \]
+      </div>
+      <p>Therefore</p>
+      <div class="eq-box">
+        \[
+          \mathrm{MSE}_{\text{stochastic}}
+          = \mathrm{Var}\!\bigl(\langle x,\, \hat{w}\rangle\bigr)
+          \le \frac{\delta^2}{4}\sum_i x_i^2
+          = \frac{\delta^2}{4}\,\|x\|_2^2.
+        \]
+      </div>
+      <p>
+        The bound can be smaller still, depending on the actual fractional
+        parts $\{\alpha_i\}$ and on $x$.
+      </p>
+
+      <h2>Nearest vs. stochastic</h2>
+      <div class="eq">
+        \[
+          \underbrace{\frac{\delta^2}{4}\,\|x\|_1^2}_
+            {\text{worst-case nearest}}
+          \qquad\text{vs.}\qquad
+          \underbrace{\frac{\delta^2}{4}\,\|x\|_2^2}_
+            {\text{MSE stochastic}}.
+        \]
+      </div>
+      <p>
+        Since $\|x\|_2 \le \|x\|_1 \le \sqrt{d}\,\|x\|_2$, the $\ell_1$
+        worst case can be up to a factor $d$ larger (in squared error) than
+        the stochastic $\ell_2$ MSE — especially for dense $x$.
+      </p>
+      <div class="q">
+        <strong>Takeaway.</strong>
+        Round-to-nearest is optimal per coordinate, but for the
+        <em>inner product</em> the errors can add coherently. Stochastic
+        rounding keeps the estimate unbiased and replaces an
+        $\ell_1$-scale worst case with an $\ell_2$-scale MSE.
+      </div>
+
+      <div class="exercise">
+        <span class="label">Exercise</span>
+        <p style="margin-top: 0">
+          Apply Chernoff bounds to the stochastic-rounding estimator
+          $\langle x,\, \hat{w}\rangle$ to show that the error
+          $S = \sum_i x_i\,\Delta_i$ concentrates around zero.
+          Derive a bound of the form
+        </p>
+        <div class="eq">
+          \[
+            \Pr\!\bigl(|S| \ge t\bigr)
+            \le 2\exp\!\bigl(-f(t,\delta,x)\bigr)
+          \]
+        </div>
+        <p>
+          for an explicit rate function $f$.
+        </p>
+        <p class="hint">
+          <strong>Hint.</strong>
+          Each coordinate under stochastic rounding is (a shift of) a
+          Bernoulli random variable, so
+          $S = \sum_i x_i\,\Delta_i$ is a
+          <em>weighted sum of independent Bernoullis</em>.
+          Start from the moment generating function
+          $\mathbb{E}[e^{\lambda S}]
+          = \prod_i \mathbb{E}[e^{\lambda x_i\Delta_i}]$,
+          optimize over $\lambda$, and obtain a Chernoff tail.
+        </p>
+      </div>
+
+      <div class="remark">
+        <span class="label">Randomness matters</span>
+        Independence of the $\Delta_i$ is what lets the variance sum as
+        $\sum x_i^2\mathrm{Var}(\Delta_i)$, and what licenses an MGF /
+        Chernoff argument. In practice one often wants cheap,
+        high-quality randomness (e.g.\ universal hashing) so the
+        analysis applies. See also Mitzenmacher on hashing /
+        randomized algorithms.
+      </div>
+
+      <p class="next">
+        Downstream use of quantized values decides the right objective:
+        minimize per-element error (nearest), or keep aggregates such as
+        inner products unbiased with small variance (stochastic).
+      </p>
+    </div>
+  </body>
+</html>

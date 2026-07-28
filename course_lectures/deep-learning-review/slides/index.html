@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Deep Learning Review</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      /* Shared slide background template (course_lectures/assets/) */
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        background: transparent;
+        /* Keep text clear of corner graphics */
+        padding: 0 8%;
+      }
+
+      /* Subtle tech grid overlay */
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h2 {
+        border-bottom: 2px solid var(--accent);
+        display: inline-block;
+        padding-bottom: 0.12em;
+        margin-bottom: 0.55em;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal small {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        letter-spacing: 0.03em;
+        color: var(--muted);
+      }
+
+      .reveal ul {
+        list-style: none;
+      }
+
+      .reveal ul > li {
+        position: relative;
+        padding-left: 1.1em;
+      }
+
+      .reveal ul > li::before {
+        content: "›";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--accent);
+        font-weight: 700;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal ol {
+        list-style: none;
+        counter-reset: tech;
+      }
+
+      .reveal ol > li {
+        position: relative;
+        counter-increment: tech;
+        padding-left: 1.75em;
+      }
+
+      .reveal ol > li::before {
+        content: counter(tech, decimal-leading-zero);
+        position: absolute;
+        left: 0;
+        top: 0.08em;
+        color: var(--accent-deep);
+        font-size: 0.72em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-weight: 600;
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.55);
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+      }
+
+      .reveal a {
+        color: var(--accent-deep);
+        text-decoration-color: var(--accent);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .reveal .compact {
+        font-size: 0.78em;
+        margin-bottom: 0.6em;
+      }
+
+      .reveal .compact-list {
+        font-size: 0.72em;
+        line-height: 1.3;
+        text-align: left;
+      }
+
+      .reveal .compact-list > li {
+        margin-bottom: 0.35em;
+      }
+
+      .reveal code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85em;
+        color: var(--accent-deep);
+        background: rgba(7, 26, 51, 0.06);
+        padding: 0.08em 0.35em;
+        border: 1px solid var(--line);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Deep Learning Review</p>
+          <p>
+            <small>Aditya Desai</small>
+          </p>
+          <p style="margin-top: 2.5em;">
+            <small style="font-size: 0.45em; line-height: 1.35; display: inline-block; max-width: 85%;">
+              Many thanks to all the resources listed in References on the main
+              website. Almost all figures are taken from these resources; some
+              were generated with Gemini.
+            </small>
+          </p>
+        </section>
+        <section>
+          <h3>Neuron</h3>
+          <p class="compact">
+          <img src="../assets/n1.png" alt="Neuron" class="plain" style="width: 40%;">
+          </p>
+          <ul class="compact-list">
+            <li> Basic learnable unit of neural networks </li>
+            <li> For a long time, all innovative work was on feature enginnering (designing x) </li>
+            <li> Some form of activation function is applied to the output (why?) </li>
+            </ul>
+        </section>
+
+        <section>
+          <h3>Linear Layer</h3>
+
+          <p class="compact">
+          <img src="../assets/linear.png" alt="Linear Layer" class="plain" style="width: 40%;">
+          </p>
+          <ul class="compact-list">
+            <li> Many parallel neurons </li>
+            <li> Most common layer in neural networks </li>
+            </ul>
+        </section>
+
+        <section>
+          <h3>Deep learning</h3>
+          <p class="compact">
+          <img src="../assets/mlp.jpg" alt="MLP" class="plain" style="width: 50%;">
+          </p>
+          <ul class="compact-list">
+            <li> Stacks of computation </li>
+            <li> Magic of Deep learning: Replace feature engineering with representation learning </li>
+            <li> Utility of Activations? </li>
+            </ul>
+        </section>
+
+        <section>
+          <h3>Activation Functions </h3>
+          <p class="compact">
+          <img src="../assets/activations.png" alt="activations" class="plain" style="width: 50%;">
+          </p>
+          <ul class="compact-list">
+            <li> Sigmoid / tanh -> RELU -> Leaky RELU -> GELU -> SiLU </li>
+            </ul>
+        </section>
+
+        
+        <section>
+          <h3>Other building blocks in ML? Convolution</h3>
+          <p class="compact">
+          <img src="../assets/convoltion.jpg" alt="MLP" class="plain" style="width: 50%;">
+          </p>
+          <ul class="compact-list">
+            <li> 1D convolution  , 2D convolution </li>
+            <li> Translation invariant features (why?)</li>
+            <li> Application: Image / Video / Speech . </li>
+            <li> Mostly replaced by Transformers !</li>
+            </ul>
+        </section>
+
+        <section>
+          <h3>Other building blocks in ML? RNN</h3>
+          <p class="compact">
+          <img src="../assets/RNN.svg" alt="RNN" class="plain" style="width: 50%;">
+          </p>
+          <ul class="compact-list">
+            <li> Sequence data </li>
+            <li> Inspired from Hidden Markov Models</li>
+            <li> Application: Text / Speech / Music . </li>
+            <li> Mostly replaced by Transformers ! (Do make appearance is some layer in new LLM architectures)</li>
+            </ul>
+        </section>
+        
+        
+        
+        <section>
+          <h3>Transformer Block</h3>
+          <p class="compact">
+          <img src="../assets/transfomer.png" alt="Transformer Block" class="plain" style="width: 50%;">
+          </p>
+          <ul class="compact">
+            <li> Has MLP Block (which manipulates every token embedding -- shared across tokens) </li>
+            <li> Self Attention which combines embedding of all tokens into a new "contextualized" embedding </li>
+            <li> Self Attention takes $n$ token inputs and outputs $n$ token embeddings </li>
+            <ul> Bidirectional (e.g. BERT) / Causal (e.g. LLM models) </ul>
+          </p>
+        </section>
+
+        <section>
+          <h3>Self Attention</h3>
+          <p class="compact">
+          <img src="../assets/attn.png" alt="Self Attention" class="plain" style="width: 70%;">
+          <ul class="compact-list">
+            <li>Every token is down projected into a key, query, and value embedding.</li>
+          </ul>
+
+          </p>
+        </section>
+
+        <section>
+          <h3>Self Attention</h3>
+          <p class="compact">
+          <img src="../assets/att2.png" alt="Self Attention" class="plain" style="width: 70%;">
+          <ul class="compact-list">
+            <li>Attention scores are computed by the dot product of query and key embeddings.</li>
+            <li>If causal (in case of autoregressive models), a causal mask is applied before softmax.</li>
+            <li>Softmax is applied to get attention weights.</li>
+          </ul>
+          </p>
+        </section>
+        <section>
+          <h3>Self Attention</h3>
+          <p class="compact">
+          <img src="../assets/att3.png" alt="Self Attention" class="plain" style="width: 70%;">
+          <ul class="compact-list">
+            <li>Output tokens are a linear combination of value embeddings weighted by attention weights.</li>
+          </ul>
+          </p>
+        </section>
+        <section>
+          <h3>Auto regressive prediction of tokens </h3>
+          <p class="compact">
+          <img src="../assets/autoregressive.png" alt="Self Attention" class="plain" style="width: 50%;">
+            <ul class="compact-list">
+              <li> Generates one token at a time. Better to store K and V embedding to avoid recomputation</li>
+              <li> KV Cache.</li>
+            </ul>
+          </p>
+        </section>
+        
+        <section>
+          <h3> Other Components of Interest ? Normalizations </h3>
+          <p class="compact">
+          <img src="../assets/normalization.png" alt="normalization" class="plain" style="width: 50%;">
+          </p>
+          <ul class="compact-list">
+            <li> Batch Normalization / Layer Normalization / Group Normalization </li>
+            <li> Stable training / better gradients </li>
+            </ul>
+          </section>
+
+          <section>
+            <h3> Other Components of Interest ? Residual Connections </h3>
+            <div
+              style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 1.2em;
+                margin-top: 0.4em;
+              "
+            >
+              <img
+                src="../assets/residual.png"
+                alt="Residual Connections"
+                class="plain"
+                style="flex: 0 1 28%; max-width: 28%; max-height: 55vh; width: auto; height: auto; object-fit: contain;"
+              />
+              <ul class="compact-list" style="flex: 1 1 55%; margin: 0;">
+                <li>Residual connections help in training deep networks — better gradients</li>
+                <li>Better modelling (residual learning in each layer) and better information flow</li>
+              </ul>
+            </div>
+          </section>
+
+          <section>
+            <h3> Life Cycle of a Model </h3> 
+            <img src="../assets/life.png" alt="Life Cycle of a Model" class="plain" style="width: 80%;">
+            <ul class="compact-list">
+              <li> Forward pass computes the output / loss.</li>
+              <li> Backward pass computes the gradients of the loss with respect to the weights. (generally using chain rule of differentiation)</li>
+              <li> Weights are updated using the gradients.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3> Optimization : Stochastic Gradient Descent </h3>
+            <div
+              style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 1em;
+                margin-top: 0.4em;
+              "
+            >
+              <img
+                src="../assets/sgd.png"
+                alt="Stochastic Gradient Descent"
+                class="plain"
+                style="flex: 1 1 48%; max-width: 48%; max-height: 65vh; width: auto; height: auto; object-fit: contain;"
+              />
+              <img
+                src="../assets/sgd2.png"
+                alt="Stochastic Gradient Descent"
+                class="plain"
+                style="flex: 1 1 48%; max-width: 48%; max-height: 65vh; width: auto; height: auto; object-fit: contain;"
+              />
+            </div>
+          </section>
+
+          <section>
+            <h3> GPU memory usage in inference vs. training </h3>
+            <div
+              style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 1em;
+                margin-top: 0.4em;
+              "
+            >
+              <img
+                src="../assets/memory.png"
+                alt="GPU memory usage in inference vs. training"
+                class="plain"
+                style="flex: 1 1 48%; max-width: 48%; max-height: 65vh; width: auto; height: auto; object-fit: contain;"
+              />
+              <img
+                src="../assets/backward_linear.png"
+                alt="linear gradient"
+                class="plain"
+                style="flex: 1 1 48%; max-width: 48%; max-height: 65vh; width: auto; height: auto; object-fit: contain;"
+              />
+            </div>
+            <p class="compact-list">
+              Backward pass needs us to store all layer activations, optimizer states and gradients. So training needs more memory than inference.
+            </p>
+          </section>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+      });
+    </script>
+  </body>
+</html>

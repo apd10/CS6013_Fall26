@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dealing with Outliers via Rotation — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .cite {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        background: rgba(11, 110, 79, 0.08);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="rotation_outliers.pdf">rotation_outliers.pdf</a>
+      </p>
+      <header>
+        <p class="meta">Efficient AI · Quantization notes</p>
+        <h1>Dealing with outliers via rotation</h1>
+        <p>
+          Rotate (or randomly project) a vector before quantization so that
+          extreme coordinates are mixed across dimensions and clipping becomes
+          unlikely.
+        </p>
+      </header>
+
+      <h2>Usual clipping setup</h2>
+      <p>Consider a matrix $R$ and a given vector $x$.</p>
+      <ul>
+        <li>
+          Let $M$ be a clipped factor (threshold). If every coordinate satisfies
+          $|x_i| \le M$, nothing is clipped.
+        </li>
+        <li>
+          If for some $i$ we have $|x_i| &gt; M$, then
+          $\Pr(\text{clip } x_i) = 1$.
+        </li>
+      </ul>
+      <p class="cite">This is the usual outlier / range-clipping setup.</p>
+
+      <h2>Rotate first</h2>
+      <p>Instead, map</p>
+      <div class="eq">
+        \[
+          y = R x.
+        \]
+      </div>
+      <p>Take $R$ to be a random Gaussian / random projection matrix that is
+        <em>almost orthogonal</em> (eigenvalues $1 \pm \varepsilon$).</p>
+
+      <h2>Coordinates of $y$</h2>
+      <p>Look at a single output coordinate:</p>
+      <div class="eq">
+        \[
+          y_i = \vec{r}_i \cdot \vec{x}
+          = \sum_j r_{ij}\, x_j,
+        \]
+      </div>
+      <p>
+        with entries of the row behaving like
+        $r_{ij} \approx \dfrac{1}{\sqrt{d}}\,\mathcal{N}(0,1)$.
+      </p>
+
+      <h3>Mean</h3>
+      <div class="eq">
+        \[
+          \mathbb{E}[y_i] = 0
+        \]
+      </div>
+      <p class="cite">By linearity of expectation.</p>
+
+      <h3>Variance</h3>
+      <div class="eq">
+        \[
+          \mathrm{Var}(y_i)
+          = \sum_j x_j^2 \, \mathrm{Var}(r_{ij})
+          = \|x\|_2^2 \,
+            \mathrm{Var}\!\left(\tfrac{1}{\sqrt{d}}\,\mathcal{N}(0,1)\right)
+          = \frac{\|x\|^2}{d}.
+        \]
+      </div>
+
+      <div class="eq-box">
+        \[
+          y_i \sim \mathcal{N}\!\left(0,\, \frac{\|x\|^2}{d}\right)
+          \qquad
+          \text{(equiv. std.\ } \sigma = \|x\|/\sqrt{d}\text{)}.
+        \]
+      </div>
+
+      <h2>Probability of clipping after rotation</h2>
+      <div class="eq">
+        \[
+          \Pr\!\left(|y_i| &gt; M\right)
+          = 2\,\Phi\!\left(-\frac{M\sqrt{d}}{\|x\|}\right),
+        \]
+      </div>
+      <p class="cite">$\Phi$ is the CDF of the standard normal.</p>
+
+      <div class="remark">
+        <span class="label">Chernoff bound</span>
+        <div class="eq" style="margin: 0.35rem 0 0">
+          \[
+            \Pr\!\left(|y_i| &gt; M\right)
+            \le \exp\!\left(-\frac{M^2 d}{2\|x\|^2}\right).
+          \]
+        </div>
+      </div>
+
+      <div class="q">
+        <strong>Takeaway.</strong>
+        The probability of clipping goes down
+        <em>exponentially</em> in the dimension $d$.
+      </div>
+
+      <p class="next">
+        Rotation (e.g.&nbsp;a normalized Hadamard transform) spreads outliers
+        across coordinates, so a fixed clip range $M$ is much less likely to
+        hit after the transform.
+      </p>
+    </div>
+  </body>
+</html>

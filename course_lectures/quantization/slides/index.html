@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Quantization</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      /* Shared slide background template (course_lectures/assets/) */
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        background: transparent;
+        /* Keep text clear of corner graphics */
+        padding: 0 8%;
+      }
+
+      /* Subtle tech grid overlay */
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h2 {
+        border-bottom: 2px solid var(--accent);
+        display: inline-block;
+        padding-bottom: 0.12em;
+        margin-bottom: 0.55em;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal small {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        letter-spacing: 0.03em;
+        color: var(--muted);
+      }
+
+      .reveal ul {
+        list-style: none;
+      }
+
+      .reveal ul > li {
+        position: relative;
+        padding-left: 1.1em;
+      }
+
+      .reveal ul > li::before {
+        content: "›";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--accent);
+        font-weight: 700;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal ol {
+        list-style: none;
+        counter-reset: tech;
+      }
+
+      .reveal ol > li {
+        position: relative;
+        counter-increment: tech;
+        padding-left: 1.75em;
+      }
+
+      .reveal ol > li::before {
+        content: counter(tech, decimal-leading-zero);
+        position: absolute;
+        left: 0;
+        top: 0.08em;
+        color: var(--accent-deep);
+        font-size: 0.72em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-weight: 600;
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.55);
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+      }
+
+      .reveal a {
+        color: var(--accent-deep);
+        text-decoration-color: var(--accent);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .reveal .compact {
+        font-size: 0.78em;
+        margin-bottom: 0.6em;
+      }
+
+      .reveal .compact-list {
+        font-size: 0.72em;
+        line-height: 1.3;
+        text-align: left;
+      }
+
+      .reveal .compact-list > li {
+        margin-bottom: 0.35em;
+      }
+
+      .reveal .compact-list.tighter {
+        font-size: 0.65em;
+        margin-top: 0.5em;
+      }
+
+      .reveal code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85em;
+        color: var(--accent-deep);
+        background: rgba(7, 26, 51, 0.06);
+        padding: 0.08em 0.35em;
+        border: 1px solid var(--line);
+      }
+
+      .reveal .q {
+        background: rgba(14, 165, 233, 0.1);
+        border-left: 4px solid var(--accent);
+        padding: 0.45em 0.7em;
+        border-radius: 0 6px 6px 0;
+        text-align: left;
+        color: var(--ink-soft);
+      }
+
+      .reveal .q strong {
+        color: var(--accent-deep);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.9em;
+      }
+
+      .reveal .definition {
+        font-size: 0.62em;
+        line-height: 1.4;
+        text-align: left;
+        color: var(--ink-soft);
+        border-left: 4px solid var(--accent);
+        background: rgba(14, 165, 233, 0.06);
+        padding: 0.7em 0.85em;
+        margin: 0.5em auto;
+        width: 92%;
+      }
+
+      .reveal .definition .source {
+        display: block;
+        margin-top: 0.55em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85em;
+        letter-spacing: 0.03em;
+        color: var(--muted);
+      }
+
+      .reveal .eq-box {
+        display: inline-block;
+        margin: 0.35em auto 0.55em;
+        padding: 0.35em 1.1em;
+        border: 2px solid var(--accent-deep);
+        border-radius: 8px;
+        background: rgba(14, 165, 233, 0.08);
+        color: var(--ink);
+      }
+
+      .reveal .eq-box mjx-container {
+        margin: 0.15em 0 !important;
+      }
+
+      .reveal .device-table {
+        font-size: 0.58em;
+        border-collapse: collapse;
+        margin: 0.5em auto;
+        width: 70%;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal .device-table th,
+      .reveal .device-table td {
+        border: 1px solid var(--accent-deep);
+        padding: 0.4em 0.65em;
+        color: var(--ink-soft);
+        text-align: center;
+      }
+
+      .reveal .device-table th {
+        background: rgba(14, 165, 233, 0.14);
+        color: var(--ink);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-size: 0.9em;
+      }
+
+      .reveal .compare-table {
+        font-size: 0.38em;
+        border-collapse: collapse;
+        margin: 0.35em auto 0;
+        width: 98%;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        line-height: 1.25;
+      }
+
+      .reveal .compare-table th,
+      .reveal .compare-table td {
+        border: 1px solid var(--accent-deep);
+        padding: 0.35em 0.45em;
+        color: var(--ink-soft);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .reveal .compare-table th {
+        background: rgba(14, 165, 233, 0.14);
+        color: var(--ink);
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        font-size: 0.92em;
+        text-align: center;
+      }
+
+      .reveal .compare-table td:first-child {
+        font-weight: 600;
+        color: var(--ink);
+        white-space: nowrap;
+        width: 18%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Quantization</p>
+          <p>
+            <small>Aditya Desai</small>
+          </p>
+          <p style="margin-top: 2.5em;">
+            <small style="font-size: 0.45em; line-height: 1.35; display: inline-block; max-width: 85%;">
+              Many thanks to all the resources listed in References on the main
+              website. Almost all figures are taken from these resources; some
+              were generated with Gemini.
+            </small>
+          </p>
+        </section>
+
+
+        <section>
+          <h2>Quantization Basics</h2>
+        </section>
+
+        <section>
+          <h3>Definition</h3>
+          <p class="definition">
+            Quantization is the process of mapping continuous infinite values to a
+            smaller set of discrete finite values. In the context of simulation and
+            embedded computing, it is about approximating real-world values with a
+            digital representation that introduces limits on the precision and range
+            of a value.
+            <span class="source">[Mathworks]</span>
+          </p>
+        </section>
+
+
+        <section>
+          <h3>Working Definition</h3>
+          <p class="definition">
+            Given a set $X \subseteq R$ of values and probabitlity distrbution P over X, quantization is a function <code>Q</code>
+            that maps X to a smaller set of values Y so as to minimize the expected error between X and the value that 
+            Q(X) represents.
+                \[
+                  Q: X \rightarrow \{0,1,\ldots,|Y|-1\}
+                \]
+              The de-quantization maps the integer representation back to the original value.
+                \[
+                  Q^{-1}: \{0,1,\ldots,|Y|-1\} \rightarrow R
+                \]
+                \[
+                \textrm{Quantization Error} = E_{x \sim P}[|x - Q^{-1}Q(x)|^p]
+                \]
+                Usually we use p = 2 for the squared error.
+          </p>
+        </section>
+
+        <section>
+          <h3>Signal-to-quantization-noise ratio</h3>
+          <p class="compact">
+            Quantization error $\tilde{x} = x - Q^{-1}(Q(x))$ acts as noise.
+            SQNR measures how large the signal is relative to that noise:
+          </p>
+          $$
+          \mathrm{SQNR}
+          = \frac{\mathbb{E}[x^2]}{\mathbb{E}[\tilde{x}^2]}
+          $$
+          <ul class="compact-list">
+            <li>Often reported in dB: $10\log_{10}(\mathrm{SQNR})$</li>
+            <li>Higher SQNR $\Rightarrow$ better fidelity after quantization</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>How to represent a numerical value in a computer?</h3>
+          <p class="compact">
+            <strong>INT$k$</strong> (INT8, INT16, INT32, INT64):
+          </p>
+          <ol class="compact-list">
+            <li>Has one sign bit and $k-1$ bits for the magnitude.</li>
+            <li>
+              Can represent values from
+              $-2^{k-1}$ to $2^{k-1} - 1$.
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h3>How to represent a numerical value in a computer?</h3>
+          <p class="compact">
+            <strong>Float(EeMm)</strong> (FLOAT16, FLOAT32, FLOAT64):
+
+            Has one sign bit, $e$ exponent bits and $m$ mantissa bits. 
+          </p>
+          <img src="../assets/fp16_2.png" alt="Float Representation" style="width: 50%; height: 50%;">
+        </section>
+
+        <section>
+          <h3>Different formats have different range and precision</h3>
+          <img src="../assets/dtypes.png" alt="Data Types" style="width: 80%; height: 80%;">
+        </section>
+        
+        <section>
+          <h3>Example FP8(E4M3) (old convention)</h3>
+          <img src="../assets/fp8.png" alt="FP8 Example" style="width: 100%; height: 100%;">
+          <p> This is how FP8 and INT8 quantizes the real value line.</p>
+        </section>
+        <section>
+          <h3>Quantization in ML</h3>
+          <ul>
+            <li>FP64, FP32, and FP16 (also BF16) are quite common go-to formats for ML computation.</li>
+            <li>
+              The discussion of quantization in ML is usually to go towards smaller number of bits to represent the values (weights / activations) in ML.
+            </li>
+            <li>Ex. Can we convert given set of weights to 4 or 8 bits per element?</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Example 1</h3>
+          <p class="definition">
+            X = [0,1], P = Uniform(0,1), if we wanted to use 2 bits to represent the quantized value, |Y| = 4, how would we quantize?
+            <img src="../assets/uniform.png" alt="Quantization Example" style="width: 40%; height: 40%;">
+          </p>
+        </section>
+
+        <section>
+          <h3>Designing a quantizer</h3>
+          <p class="compact">There are two components:</p>
+          <ol class="compact-list">
+            <li>
+              <strong>Partition</strong> the input space into regions.
+              $$
+              [0,1] = [0,0.25) \cup [0.25,0.5) \cup [0.5,0.75) \cup [0.75,1].
+              $$
+            </li>
+            <li>
+              <strong>Assign</strong> a representative value to each region.
+              $$
+              y_i = \frac{a_i + b_i}{2},
+              $$
+              where $[a_i, b_i]$ is the interval.
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h3>Quantizer mapping </h3>
+          <table class="device-table">
+            <thead>
+              <tr>
+                <th>Interval</th>
+                <th>$Q(x)$</th>
+                <th>$Q^{-1}(Q(x))$</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>$[0, 0.25)$</td>
+                <td>$00$</td>
+                <td>$0.125$</td>
+              </tr>
+              <tr>
+                <td>$[0.25, 0.5)$</td>
+                <td>$01$</td>
+                <td>$0.375$</td>
+              </tr>
+              <tr>
+                <td>$[0.5, 0.75)$</td>
+                <td>$10$</td>
+                <td>$0.625$</td>
+              </tr>
+              <tr>
+                <td>$[0.75, 1]$</td>
+                <td>$11$</td>
+                <td>$0.875$</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="definition">
+            Can you show that this quantization indeed minimizes the expected MSE ?
+          </p>
+        </section>
+
+        
+        <section>
+          <h3>Error in Example 1</h3>
+          <ul class="compact-list">
+            <li>
+              Bin width $\Delta = 0.25$. Error in each bin lies in
+              $[-\Delta/2,\, \Delta/2]$.
+            </li>
+            <li>
+              <strong>Max error:</strong>
+              $$
+              \max_x \bigl|x - Q^{-1}(Q(x))\bigr| = \frac{\Delta}{2} = 0.125
+              $$
+            </li>
+            <li>
+              <strong>Expected MSE</strong> ($x \sim \mathrm{Uniform}[0,1]$):
+              $$
+              \mathbb{E}\!\left[\bigl(x - Q^{-1}(Q(x))\bigr)^2\right]
+              = \frac{\Delta^2}{12}
+              = \frac{1}{192}
+              \approx 0.00521
+              $$
+            </li>
+          </ul>
+        </section>
+
+        
+        <section>
+          <h3>ML: Set of data in high precision</h3>
+          <p class="compact">
+            In most cases, we will encounter a fixed dataset $X$ that we need to
+            quantize. In such a case, the set itself will define the range of interest and distribution of values.
+          </p>
+          <div style="text-align: center; margin-top: 0.4em;">
+            <div
+              style="
+                display: inline-block;
+                overflow: hidden;
+                max-height: 48vh;
+                height: 48vh;
+                aspect-ratio: calc(712 * 0.42 / 306);
+                border-radius: 8px;
+                box-shadow: 0 2px 12px rgba(14, 165, 233, 0.1);
+              "
+            >
+              <img
+                src="../assets/weight_clustering.png"
+                alt="Weight matrix (32-bit float) defining a fixed dataset"
+                style="height: 100%; width: auto; max-width: none; display: block;"
+              />
+            </div>
+          </div>
+        </section>
+
+        
+        <section>
+          <h3>Linear Quantization</h3>
+          <p class="compact">
+            Most common way to <span style="color: red;">linearly</span> map data from higher precision (e.g.&nbsp;FP16) to
+            lower precision (e.g.&nbsp;INT8).
+          </p>
+        </section>
+
+        <section>
+          <h3>Symmetric linear quantization</h3>
+          <p class="compact">
+            Real value $0$ is mapped to $0$ in the quantized domain.
+          </p>
+          <div class="eq-box">
+            \[
+            r  = \lambda q
+            \]
+            <small>(r:real, q:quantized, $\lambda$: scale)</small>
+          </div>
+        </section>
+
+        <section>
+          <h3>Symmetric linear quantization</h3>
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              gap: 1.2em;
+              margin-top: 0.35em;
+            "
+          >
+            <img
+              src="../assets/linear.png"
+              alt="Linear Quantization"
+              style="flex: 0 1 50%; max-width: 50%; max-height: 55vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+
+            <ul class="compact-list tighter" style="flex: 1 1 50%; margin: 0;">
+              <li>$r_{\max} =$ max absolute value of the data</li>
+              <li>range $= [-r_{\max},\, r_{\max}]$</li>
+              <li>$q_{\max} =$ max value of the integer range $(2^{b}-1)$</li>
+              <li>$Q(r_{\max}) = q_{\max}$ and $Q(-r_{\max}) = -q_{\max}$</li>
+              <li>$\lambda = r_{\max} / q_{\max}$</li>
+              <li>$Q(r) = q = \mathrm{round}(r / \lambda)$</li>
+              <li>$Q^{-1}(q) = q \cdot \lambda$</li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3>Asymmetric (e.q. Affine) linear quantization</h3>
+          <p class="compact">
+            Real value $0$ is not mapped to $0$ in the quantized domain.
+          </p>
+          <div class="eq-box">
+            \[
+            r = \lambda\,(q - z_q)
+            \]
+            <small>(r:real, q:quantized, $z_q$ : zero point, $\lambda$: scale)</small>
+          </div>
+        </section>
+
+        <section>
+          <h3>Asymmetric (e.q. Affine) linear quantization</h3>
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              gap: 1.2em;
+              margin-top: 0.35em;
+            "
+          >
+            <img
+              src="../assets/affine_linear.png"
+              alt="Affine Linear Quantization"
+              style="flex: 0 1 50%; max-width: 50%; max-height: 55vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+
+            <ul class="compact-list tighter" style="flex: 1 1 50%; margin: 0;">
+              <li>$r_{\max}, r_{\min}$ = max and min in data</li>
+              <li>range $= [r_{\min},\, r_{\max}]$</li>
+              <li>$q_{\max}, q_{\min}$ = max and min value of the integer range. i.e. $-2^{b-1}$ and $2^{b-1}-1$</li>
+              <li>$\lambda = (r_{\max} - r_{\min}) / (q_{\max} - q_{\min})$</li>
+              <li>$z_q = q_{\min} - r_{\min} / \lambda$</li>
+              <li>$Q(r) = q = z_q + \mathrm{round}(r / \lambda)$</li>
+              <li>$Q^{-1}(q) = (q - z_q) \cdot \lambda$</li>
+            </ul>
+          </div>
+        </section>
+        <section>
+          <h3>Linear Quantization</h3>
+          <ul class="compact-list">
+            <li>Linear quantization, despite its simplicity, is quite accurate for practical use cases. Thus, it is found in many 
+              state of the art quantization methods.
+            </li>
+            <li>
+              When can linear quantization <span style="color: red;"> fail </span>? 
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>1. Outliers</h3>
+          <img src="../assets/clip1.png" alt="Range Mapping and Clipping" style="width: 100%; height: 100%;">
+          <img src="../assets/clip2.png" alt="Range Mapping and Clipping" style="width: 100%; height: 100%;">
+        </section>
+
+        <section>
+          <h3>Range Mapping and Clipping</h3>
+          A simple way to handle outliers is to clip the values to the range. Outliers get mapped to boundaries.
+          <img src="../assets/clip3.png" alt="Range Mapping and Clipping" style="width: 100%; height: 100%;">
+        </section>
+
+        <section>
+          <h3>Range Mapping and Clipping</h3>
+          <ul class="compact-list">
+            <li>Reduces error for small values</li>
+            <li>But errors increase for large values</li>
+            <li>Any other options?</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Rotations: Random Rotations for outlier removal</h3>
+          <ul class="compact-list">
+            <li> 
+              <a href="../notes/rotation_outliers.html" target="_blank" style="font-size:0.9em;">
+                rotation_outliers.html
+              </a>
+            </li>
+            <li> Artifact of the geometry of high dimensional spaces. </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Rotations: Random Rotations for outlier removal</h3>
+          <ul class="compact-list">
+            <li> 
+              <li> We analysed clipping, but generally you can see that coordintes concentrate near 0 leading to better quantization. </li>
+              <li> Random Gaussian projections are :</li>
+              <ul>
+              <li> Expensive to generate and store </li>
+              <li> Expensive to apply to large matrices </li>
+              </ul>
+            </li>
+          </ul>
+        </section>
+        <section>
+          <h3>Structured Random Rotations: Randomized Hadamard Transform</h3>
+          \[
+          H_1 = \begin{bmatrix} 1 \end{bmatrix},
+          \qquad
+          H_{2^k}
+          = \begin{bmatrix}
+            H_{2^{k-1}} & H_{2^{k-1}} \\
+            H_{2^{k-1}} & -H_{2^{k-1}}
+          \end{bmatrix}
+          = H_2 \otimes H_{2^{k-1}}.
+          \]
+
+          \[
+          H_2 = \begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix},
+          \qquad
+          H_4 = \begin{bmatrix}
+            1 & 1 & 1 & 1 \\
+            1 & -1 & 1 & -1 \\
+            1 & 1 & -1 & -1 \\
+            1 & -1 & -1 & 1
+          \end{bmatrix},
+          \]
+          <p class="compact">
+            Hadamard transforms are orthogonal matrices, we can use normalized Hadamard transforms to perform rotations.
+            $H_n / \sqrt{n}$ is a normalized Hadamard transform.
+          </p>
+        </section>
+
+        <section>
+          <h3>Randomized Hadamard Transform</h3>
+          <ul class="compact-list">
+            <li> Has a faster algorithm O(n log(n)) instead of O(n^2) for random Gaussian projections.</li>
+            <li> Fast cuda libraries also exist now : <a href="https://pytorch.org/blog/hadacore/" target="_blank">HadaCore</a> </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Issue with linear quantization</h3>
+          <ul class="compact-list">
+            Any other failure modes?
+            <li> What if the data is not uniformly distributed? </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Example: Bimodal distribution</h3>
+          <img src="../assets/non-linear-quantization.png" alt="Bimodal Distribution" style="width: 100%; height: 100%;">
+          <p class="compact">
+            Imagine a arbitrary distribution of values. Linear quantization will not be able to capture the distribution accurately.
+          </p>
+        </section>
+        <section>
+          <h3>Codebook Approach</h3>
+          <ul class="compact-list">
+            <li>Instead of using a linear mapping, we use an explicitly learned mapping.</li>
+            <li>
+              <strong>Algorithm:</strong>
+              <ol>
+                <li>Cluster the data into $m$ clusters.</li>
+                <li>Assign a representative value (centroid) to each cluster.</li>
+                <li>Store the codebook (indices) and centroids in the data structure.</li>
+              </ol>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Example</h3>
+            <img
+              src="../assets/weight_clustering.png"
+              alt="Weight clustering: float weights mapped to 2-bit cluster indices and centroids"
+              style="max-width: 92%; max-height: 48vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+          <ul class="compact-list">
+            <li>cluster index is the codebook index and the centeroid is the representative value.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Memory cost of the codebook approach</h3>
+          <p class="compact">
+            Let $|X| = n$, $|Y| = m$, and the default precision be $32$ bits.
+          </p>
+          <ul class="compact-list">
+            <li>
+              Original memory:
+              $
+              32\,n \text{ bits}
+              $
+            </li>
+            <li>
+              Codebook approach:
+              $
+              \mathrm{Mem}_{\mathrm{codebook}}
+              + \mathrm{Mem}_{\mathrm{centroids}}
+              $
+            </li>
+            <li>
+              Memory of centroids:
+              $
+              = 32\,m \text{ bits}
+              $
+            </li>
+            <li>
+              Memory of codebook (indices):
+              $
+              = n\,\lceil\log_2 m\rceil
+              \text{ bits}
+              $
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Linear vs codebook quantization</h3>
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th>Aspect</th>
+                <th>Linear Quantization</th>
+                <th>Codebook-based (Non-linear)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Mapping function</td>
+                <td>Affine: $q = \mathrm{round}(x/s) + z$</td>
+                <td>Lookup: $q = \arg\min_i |x - c_i|$</td>
+              </tr>
+              <tr>
+                <td>Reconstruction</td>
+                <td>$x \approx s(q - z)$</td>
+                <td>$x \approx c_q$</td>
+              </tr>
+              <tr>
+                <td>Optimal for</td>
+                <td>Uniformly distributed values</td>
+                <td>Arbitrary, skewed, multimodal distributions</td>
+              </tr>
+              <tr>
+                <td>Hardware friendliness</td>
+                <td>Excellent</td>
+                <td>Moderate to poor</td>
+              </tr>
+              <tr>
+                <td>Inference speed</td>
+                <td>Very fast</td>
+                <td>Additional lookup overhead</td>
+              </tr>
+              <tr>
+                <td>Computation</td>
+                <td>Can happen in quantized space</td>
+                <td>Needs to be always dequantized</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h3> When is rounding to nearest bad ? </h3>
+          <ul class="compact-list">
+            <li> Till now we have been using rounding to nearest as the default rounding mode.</li>
+            <li> rounding to nearest generally would minimize the error per element ( and thus l2 norm error) </li>
+            <li> It is important to know what the data we are quantizing is going to be used downstream to decide if 
+              we should care about minimizing the error per element or otherwise.
+            </li>
+            <li> when can rounding to nearest be bad ?</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3> Example: inner products</h3>
+          <p class="definition">
+            In most cases, we really care about the inner product of the quantized vectors with the input. 
+            How does the error for $\langle x, w \rangle $ where w is quantized accumulate?
+          </p>
+         <p class="compact">
+           See <a href="../notes/innerproduct_analysis.html" target="_blank" style="font-size:0.9em;">innerproduct_analysis.html</a>.
+         </p>
+  
+         </section>
+
+        <section>
+          <h2> Applying Quantization to LLMs</h2>
+          <ul class="compact-list">
+            <li> Linear Layers ( Most parameter consuming layers) </li>
+            <li> KV Cache ( Cache for the key and value vectors) </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2> How to quantize a model ? </h2>
+          \[
+          \hat{w} = \arg\min_{w \in QuantizedSpace} \mathcal{L}(w, X)
+          \]
+          This is a NP-hard problem. So again we need to approximate the solutions.
+          <ul class="compact-list">
+            <li> Can we apply similar ideas we used for pruning?</li>
+
+            <li>What is the first weight you should quantize?</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2> OBS for Quantization </h2>
+
+          
+        <p class="compact">
+          Revisit the OBS for pruning.
+          See <a href="../notes/prune_a_model_to_quantization.html" target="_blank" style="font-size:0.9em;">prune_a_model.html</a> for notes on pruning and its connection to quantization.
+          Only thing that changes is the constraint
+        </p>
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              gap: 1em;
+              margin-top: 0.6em;
+              flex-wrap: wrap;
+            "
+          >
+            <div class="eq-box" style="text-align: center;">
+              \[
+              \delta w_i = -w_i
+              \]
+              <small>pruning</small>
+            </div>
+            <span style="font-size: 1.6em; color: var(--accent-deep); font-weight: 700;">
+              $\rightarrow$
+            </span>
+            <div class="eq-box" style="text-align: center;">
+              \[
+              \delta w_i = \Delta_i
+              \]
+              <small>quantization error</small>
+            </div>
+            Nothing else changes.
+          </div>
+        </section>
+
+        <section>
+          <h2>OBS for weight quantization</h2>
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: stretch;
+              gap: 1.2em;
+              margin-top: 0.8em;
+              flex-wrap: wrap;
+            "
+          >
+            <div class="eq-box" style="text-align: center; min-width: 40%;">
+              <small>Saliency</small>
+              \[
+              S_i = \frac{1}{2}\,\frac{\Delta_i^2}{[H^{-1}]_{ii}}
+              \]
+            </div>
+            <div class="eq-box" style="text-align: center; min-width: 40%;">
+              <small>Update</small>
+              \[
+              \delta w = -\frac{\Delta_i}{[H^{-1}]_{ii}}\, H^{-1} e_i
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Sparse GPT (pruning method) $\rightarrow$ GPTQ (Quantization method) </h3>
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              gap: 1.2em;
+              margin-top: 0.4em;
+            "
+          >
+            <img
+              src="../assets/GPTQ.png"
+              alt="GPTQ"
+              style="flex: 0 1 52%; max-width: 52%; max-height: 62vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <ul class="compact-list" style="flex: 1 1 42%; margin: 0;">
+              <li style="color: #0b6e4f; font-weight: 600;"> Quantization, Pruning, or any approximation method provides a "structured space" where the weights can lie in.</li>
+        
+              <li style="color: #0074d9; font-weight: 600;"> This approach is generic enough for any approximation method including combining these methods together.</li>
+        
+            </ul>
+          </div>
+        </section>
+        <section>
+          <h3> GPTQ / Sparse GPT Update </h3> 
+          <ul class="compact-list">
+            <li> This is important especially when used at inference time (no training allowed)</li>
+            <li> If combined with intermittent training - you can ignore the update as in IMP.</li>
+            <li> GPTQ is go-to for quantization of LLMs!</li>
+          </ul>
+          <img src="../assets/GPTQ_QWEN.png" alt="GPTQ SOTA" style="width: 60%; height: 60%;">
+        </section>
+        
+        <!--section>
+          <img src="../assets/codebook.png" alt="Codebook Quantization" style="width: 125%; height: 125%;">
+          <ul class="compact-list">
+            <li> Codebook approach works for vectors as well as scalars.</li>
+        </section>        
+
+
+        <section>
+          <h3>Quantization, Efficient Information Retrieval, and AI Efficiency </h3>
+          <ul class="compact-list">
+            <li> There is a strong link between IR and AI Efficiency
+            </li>
+            <li>
+              A bunch of techniques in IR (especially near neighbor search) are relevant to AI Efficiency. Some of these techniques use
+              quantization based (e.g. Product Quantization). 
+            </li>
+            <li>We will cover this in detail in later lectures.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Hardware Support for Quantization Formats</h3>
+          <ul class="compact-list">
+            <li>Integer formats natively supported by most hardware are already leveraged by linear quantization methods.</li>
+            <li> There has been effort to move towards smaller floating point for inference and especially for cheaper training.</li>
+            <li> Nvidia (and others) support newer low-precision formats especually for training</li>
+            <ul>
+              <li>FP8 with tensor level scaling</li>
+            <li>MXFP8 with block level scaling</li>
+            <li>NVFP4 with block level and tensor level scaling</li>
+            </ul>
+            <li> We will cover these in mixed precision training</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Why do we care about hardware supported quantization formats?</h3>
+          <ul class="compact-list">
+            <li>Reduces the overhead of dequantization</li>
+            
+          </ul>
+        </section>
+        <section>
+          <h3>Quantization Aware Training</h3>
+          <ul class="compact-list">
+            INT8 etc formats are already the primary go to formats for quantization by most LLM quantization frameworks.
+          </ul>
+        </section-->
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pruning a Model — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .diagram {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        margin: 1.25rem 0;
+        padding: 1rem 1.15rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .diagram .caption {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .cite {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .algo {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1rem 1.15rem;
+        margin: 1rem 0;
+      }
+
+      .algo .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+      }
+
+      .algo ol {
+        margin: 0.4rem 0 0;
+        padding-left: 1.35rem;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+
+      @media (max-width: 560px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+      }
+
+      .card .tag {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        background: rgba(11, 110, 79, 0.08);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="pruning_a_model.pdf">pruning_a_model.pdf</a>
+      </p>
+      <header>
+        <p class="meta">Efficient AI · Lecture notes</p>
+        <h1>Pruning a model</h1>
+        <p>
+          Use the local loss landscape at a converged point — via a quadratic
+          (Hessian) approximation — to choose which weight to remove and how to
+          update the rest.
+        </p>
+      </header>
+
+      <h2>Setup</h2>
+      <ul>
+        <li>$F$ — the model</li>
+        <li>$\vec{w}$ — flattened parameter vector</li>
+        <li>$X$ — input data representative of the input distribution</li>
+      </ul>
+
+      <div class="q">
+        <strong>Q.</strong> Again, what should we be looking at while pruning?
+        <p style="margin: 0.5rem 0 0">
+          The only “information” we get about good and bad decisions in ML is
+          through the <em>loss landscape</em>.
+        </p>
+        <p style="margin: 0.4rem 0 0" class="cite">
+          $\rightarrow$ Training depends on the loss landscape.
+        </p>
+      </div>
+
+      <div class="q">
+        <strong>Q.</strong> Which model should we start at?
+        <p style="margin: 0.5rem 0 0">
+          Since the information you can get about the loss landscape is
+          <em>local</em>, you better start from the
+          <strong>converged model</strong>.
+        </p>
+      </div>
+
+      <div class="diagram">
+        <svg
+          width="280"
+          height="140"
+          viewBox="0 0 280 140"
+          aria-label="Loss landscape sketch"
+        >
+          <line
+            x1="24"
+            y1="120"
+            x2="256"
+            y2="120"
+            stroke="#d5dde8"
+            stroke-width="1"
+          />
+          <line
+            x1="40"
+            y1="16"
+            x2="40"
+            y2="120"
+            stroke="#d5dde8"
+            stroke-width="1"
+          />
+          <path
+            d="M48 28 C 90 28, 110 112, 148 112 C 186 112, 210 28, 248 28"
+            fill="none"
+            stroke="#0b6e4f"
+            stroke-width="2.5"
+          />
+          <circle cx="72" cy="42" r="14" fill="none" stroke="#8a4b08" stroke-width="1.5" stroke-dasharray="3 2" />
+          <circle cx="72" cy="42" r="3.5" fill="#8a4b08" />
+          <circle cx="148" cy="112" r="14" fill="none" stroke="#0b6e4f" stroke-width="1.5" />
+          <circle cx="148" cy="112" r="3.5" fill="#0b6e4f" />
+          <text x="88" y="28" font-size="10" fill="#8a4b08" font-family="IBM Plex Mono, monospace">
+            not relevant
+          </text>
+          <text x="162" y="118" font-size="10" fill="#0b6e4f" font-family="IBM Plex Mono, monospace">
+            relevant for pruning
+          </text>
+        </svg>
+        <div class="caption">
+          Far from the minimum, local geometry is<br />
+          not useful for pruning decisions.<br />
+          Near the converged point, it is.
+        </div>
+      </div>
+
+      <h2>Local quadratic approximation</h2>
+      <p>
+        Let $\mathcal{L}(w, X)$ be the loss and $w^\star$ the weights at a
+        minimum (converged model). To get analytic information about the
+        landscape we approximate it locally with a Taylor expansion:
+      </p>
+      <div class="eq">
+        \[
+          \mathcal{L}(w, X)
+          =
+          \mathcal{L}(w^\star, X)
+          + \nabla\mathcal{L}(w^\star, X)^\top \delta w
+          + \tfrac{1}{2}\,
+            \delta w^\top
+            \nabla^2\mathcal{L}(w^\star, X)\,
+            \delta w
+          + O(\|\delta w\|_2^3),
+        \]
+      </div>
+      <p>where $\delta w = w - w^\star$.</p>
+
+      <ul>
+        <li>
+          <strong>Converged:</strong>
+          $\nabla\mathcal{L}(w^\star, X) = 0$, so the linear term vanishes.
+        </li>
+        <li>
+          <strong>Local / quadratic:</strong>
+          for small $\delta w$, the $O(\|\delta w\|_2^3)$ remainder is
+          negligible.
+        </li>
+      </ul>
+
+      <p>Writing $H(w^\star, X) = \nabla^2\mathcal{L}(w^\star, X)$ for the Hessian,</p>
+      <div class="eq-box">
+        \[
+          E(\delta w)
+          \;:=\;
+          \mathcal{L}(w, X) - \mathcal{L}(w^\star, X)
+          \;=\;
+          \tfrac{1}{2}\,
+          \delta w^\top H(w^\star, X)\, \delta w .
+        \]
+      </div>
+      <p class="cite">
+        This is just a quadratic function and is therefore easy to analyse.
+      </p>
+
+      <h2>Which $i$ to prune?</h2>
+      <p>Strategy:</p>
+      <ul>
+        <li>Pick the coordinate with <strong>lowest saliency</strong></li>
+        <li>Update the rest of the weights to compensate</li>
+      </ul>
+
+      <div class="diagram">
+        <div class="caption" style="width: 100%">
+          Pruning coordinate $i$:
+          $w \;\mapsto\;
+          \bigl(\hat{w}_{0:i-1},\; 0,\; \hat{w}_{i+1:}\bigr)$.
+        </div>
+      </div>
+
+      <h3>$N$ subproblems</h3>
+      <p>
+        For each candidate index $i$, find the update that zeros weight $i$
+        while minimizing the quadratic error:
+      </p>
+      <div class="eq">
+        \[
+          \delta w
+          =
+          \underset{\delta w_i = -w_i}{\arg\min}
+          \;
+          E(\delta w)
+          \qquad
+          \text{(so the $i$-th weight goes to $0$)}.
+        \]
+      </div>
+
+      <h3>Lagrange multiplier method</h3>
+      <p>
+        Enforce the constraint with a multiplier $\lambda$ and unit vector
+        $e_i$:
+      </p>
+      <div class="eq">
+        \[
+          \delta w
+          =
+          \underset{\delta w}{\arg\min}
+          \;
+          \underbrace{
+            T(\delta w, \lambda)
+          }_{
+            E(\delta w)
+            + \lambda\, e_i^\top (w + \delta w)
+          }
+          ,
+          \qquad
+          E(\delta w) \approx \tfrac{1}{2}\,\delta w^\top H\,\delta w .
+        \]
+      </div>
+
+      <p>Stationarity conditions:</p>
+      <div class="eq">
+        \[
+          \frac{\partial T}{\partial \lambda} = 0
+          \;\Longrightarrow\;
+          \delta w_i = -w_i
+        \]
+      </div>
+      <div class="eq">
+        \[
+          \frac{\partial T}{\partial (\delta w)} = 0
+          \;\Longrightarrow\;
+          H\,\delta w + \lambda\, e_i = 0 .
+        \]
+      </div>
+      <p class="cite">
+        (For matrix identities, see the Matrix Cookbook.)
+      </p>
+
+      <h2>Solving for $\lambda$ and $\delta w$</h2>
+      <p>
+        The $i$-th entry of $\delta w$ is known ($\delta w_i = -w_i$). From
+        $H\,\delta w + \lambda e_i = 0$,
+      </p>
+      <div class="eq">
+        \[
+          \delta w + \lambda\, H^{-1} e_i = 0 .
+        \]
+      </div>
+      <p>
+        $H^{-1} e_i$ is the $i$-th column of $H^{-1}$. Matching the $i$-th
+        coordinate gives
+      </p>
+      <div class="eq">
+        \[
+          -w_i = \lambda\, [H^{-1}]_{ii}
+          \qquad\Longrightarrow\qquad
+          \lambda = \frac{-w_i}{[H^{-1}]_{ii}} .
+        \]
+      </div>
+
+      <p>Hence the optimal update</p>
+      <div class="eq-box">
+        \[
+          \delta w
+          =
+          -\lambda\, H^{-1} e_i
+          =
+          \frac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i .
+        \]
+      </div>
+      <p>
+        The prefactor $\tfrac{w_i}{[H^{-1}]_{ii}}$ is a
+        <strong>scalar</strong>; $\delta w$ is proportional to the
+        <strong>$i$-th column</strong> of $H^{-1}$.
+      </p>
+
+      <h2>Saliency</h2>
+      <p>
+        The cost of pruning $i$ is the quadratic error under this optimal
+        update:
+      </p>
+      <div class="eq">
+        \[
+          \text{Saliency}
+          =
+          \tfrac{1}{2}\, \delta w^\top H\, \delta w .
+        \]
+      </div>
+      <p>Substitute $\delta w = \tfrac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i$:</p>
+      <div class="eq">
+        \[
+          = \tfrac{1}{2}
+          \frac{w_i^2}{\bigl([H^{-1}]_{ii}\bigr)^2}
+          \bigl(H^{-1} e_i\bigr)^\top H\, H^{-1} e_i
+        \]
+      </div>
+      <div class="eq">
+        \[
+          = \tfrac{1}{2}
+          \frac{w_i^2}{\bigl([H^{-1}]_{ii}\bigr)^2}
+          \, e_i^\top (H^{-1})^\top e_i
+          = \tfrac{1}{2}
+          \frac{w_i^2}{\bigl([H^{-1}]_{ii}\bigr)^2}
+          \, [H^{-1}]_{ii}
+        \]
+      </div>
+      <div class="eq-box">
+        \[
+          \text{Saliency}
+          =
+          \tfrac{1}{2}\,
+          \frac{w_i^2}{[H^{-1}]_{ii}}
+          \,,
+          \qquad
+          \delta w
+          =
+          \frac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i .
+        \]
+      </div>
+
+      <h2>Algorithm</h2>
+      <div class="algo">
+        <div class="label">OBS-style prune</div>
+        <ol>
+          <li>Train the full model to convergence.</li>
+          <li>
+            For each $i$, compute saliency
+            $S_i = \tfrac{1}{2}\, w_i^2 / [H^{-1}]_{ii}$.
+            <ul>
+              <li>Pick $i$ with least saliency.</li>
+              <li>Update $w \leftarrow w + \delta w$.</li>
+              <li>
+                If $\min_i S_i$ is large compared to the loss $\rightarrow$
+                retrain (return to step 1).
+              </li>
+              <li>
+                Otherwise redo the local approximation and prune again
+                (loop within step 2).
+              </li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+      <p class="cite">
+        If $\{S_i\}$ are small, continue pruning under the current local
+        approximation; if the best saliency is large, retrain.
+      </p>
+
+      <h2>Complexity</h2>
+      <div class="card">
+        <div class="tag">One prune</div>
+        <p style="margin: 0.35rem 0 0">
+          Dominated by forming / inverting the Hessian:
+          <strong>$O(N^3)$</strong>,
+          where $N$ is the number of parameters.
+        </p>
+      </div>
+
+      <h2>Exercises</h2>
+      <div class="q">
+        <strong>1.</strong>
+        Analyse the update if we remove
+        <em>multiple</em> weights at a time.
+        Suppose we zero out the block of coordinates
+        $i{:}i{+}j$ (that is, set
+        $w_i,\ldots,w_{i+j}$ to zero in one step).
+        What should the optimal update $\delta w$ be
+        under the same quadratic approximation
+        $E(\delta w)=\tfrac12\delta w^\top H\,\delta w$?
+        How does the Lagrange / constraint formulation change
+        compared to pruning a single index?
+      </div>
+      <div class="q">
+        <strong>2.</strong>
+        Analyse the update if, instead of removing weight $i$
+        (setting it to zero), we set $w_i$ to a
+        <em>specific value</em> $c$
+        (i.e. the constraint is
+        $(w + \delta w)_i = c$, or equivalently
+        $\delta w_i = c - w_i$).
+        What is the optimal $\delta w$ in this case?
+        How does saliency change?
+      </div>
+
+      <p class="next">
+        Related:
+        <a href="prune_a_linear_model.html">Pruning a neuron (linear model)</a>
+      </p>
+    </div>
+  </body>
+</html>

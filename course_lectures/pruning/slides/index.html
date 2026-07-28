@@ -1,0 +1,1824 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Pruning</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      /* Shared slide background template (course_lectures/assets/) */
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        background: transparent;
+        /* Keep text clear of corner graphics */
+        padding: 0 8%;
+      }
+
+      /* Subtle tech grid overlay */
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h2 {
+        border-bottom: 2px solid var(--accent);
+        display: inline-block;
+        padding-bottom: 0.12em;
+        margin-bottom: 0.55em;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal small {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        letter-spacing: 0.03em;
+        color: var(--muted);
+      }
+
+      .reveal ul {
+        list-style: none;
+      }
+
+      .reveal ul > li {
+        position: relative;
+        padding-left: 1.1em;
+      }
+
+      .reveal ul > li::before {
+        content: "›";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--accent);
+        font-weight: 700;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal ol {
+        list-style: none;
+        counter-reset: tech;
+      }
+
+      .reveal ol > li {
+        position: relative;
+        counter-increment: tech;
+        padding-left: 1.75em;
+      }
+
+      .reveal ol > li::before {
+        content: counter(tech, decimal-leading-zero);
+        position: absolute;
+        left: 0;
+        top: 0.08em;
+        color: var(--accent-deep);
+        font-size: 0.72em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-weight: 600;
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.55);
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+      }
+
+      .reveal a {
+        color: var(--accent-deep);
+        text-decoration-color: var(--accent);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .reveal .compact {
+        font-size: 0.78em;
+        margin-bottom: 0.6em;
+      }
+
+      .reveal .compact-list {
+        font-size: 0.72em;
+        line-height: 1.3;
+        text-align: left;
+      }
+
+      .reveal .compact-list > li {
+        margin-bottom: 0.35em;
+      }
+
+      .reveal .compact-list.tighter {
+        font-size: 0.65em;
+        margin-top: 0.5em;
+      }
+
+      .reveal code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85em;
+        color: var(--accent-deep);
+        background: rgba(7, 26, 51, 0.06);
+        padding: 0.08em 0.35em;
+        border: 1px solid var(--line);
+      }
+
+      .reveal .slide-figure {
+        display: block;
+        margin: 0.55em auto 0;
+        max-width: min(70%, 520px);
+        max-height: 28vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .reveal .device-table {
+        font-size: 0.58em;
+        border-collapse: collapse;
+        margin: 0.5em auto;
+        width: 78%;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal .device-table th,
+      .reveal .device-table td {
+        border: 1px solid var(--accent-deep);
+        padding: 0.4em 0.65em;
+        color: var(--ink-soft);
+      }
+
+      .reveal .device-table th {
+        background: rgba(14, 165, 233, 0.14);
+        color: var(--ink);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-size: 0.9em;
+      }
+
+      .reveal .device-table td:last-child,
+      .reveal .device-table th:last-child {
+        text-align: right;
+      }
+
+      .reveal .device-table td:first-child {
+        text-align: left;
+      }
+
+      .reveal .algo-slide {
+        font-size: 0.48em;
+        text-align: left;
+        line-height: 1.25;
+      }
+
+      .reveal .algo-slide.split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.7em;
+        align-items: stretch;
+        max-height: 78vh;
+      }
+
+      .reveal .algo-slide .col {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45em;
+        min-width: 0;
+      }
+
+      .reveal .algo-slide .panel {
+        background: rgba(255, 255, 255, 0.55);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 0.35em 0.5em;
+        flex: 1 1 auto;
+      }
+
+      .reveal .algo-slide .panel h4 {
+        margin: 0 0 0.2em;
+        font-size: 1em;
+        color: var(--ink);
+        border-bottom: 1px solid var(--accent);
+        display: inline-block;
+        padding-bottom: 0.05em;
+      }
+
+      .reveal .algo-slide .panel p {
+        margin: 0.2em 0;
+        color: var(--ink-soft);
+      }
+
+      .reveal .algo-slide ol {
+        margin: 0;
+        padding-left: 1.6em;
+      }
+
+      .reveal .algo-slide ol > li {
+        margin-bottom: 0.25em;
+      }
+
+      .reveal .algo-slide .eq {
+        margin: 0.08em 0;
+        overflow-x: auto;
+      }
+
+      .reveal .algo-slide .eq mjx-container {
+        margin: 0.15em 0 !important;
+      }
+
+      .reveal .algo-slide .cite-link {
+        font-size: 0.9em;
+        margin: 0.15em 0 0;
+      }
+
+      .reveal section.hess-inv-slide > h3 {
+        margin-bottom: 0.35em;
+      }
+
+      .reveal .paper-table {
+        width: 100%;
+        margin: 0.3em auto;
+        border-collapse: collapse;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.37em;
+        line-height: 1.2;
+      }
+
+      .reveal .paper-table caption {
+        margin-bottom: 0.25em;
+        color: var(--ink);
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-size: 1.35em;
+        font-weight: 600;
+      }
+
+      .reveal .paper-table th,
+      .reveal .paper-table td {
+        border: 1px solid rgba(3, 105, 161, 0.45);
+        padding: 0.28em 0.4em;
+        text-align: center;
+        color: var(--ink-soft);
+        white-space: nowrap;
+      }
+
+      .reveal .paper-table th {
+        background: rgba(14, 165, 233, 0.13);
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .reveal .paper-table .section-start > * {
+        border-top: 2px solid var(--accent-deep);
+      }
+
+      .reveal .paper-tables {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.4em;
+      }
+
+      .reveal .paper-two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65em;
+        align-items: start;
+      }
+
+      .reveal .result-comment {
+        margin: 0.35em auto 0;
+        padding: 0.35em 0.55em;
+        width: 92%;
+        border-left: 4px solid var(--accent);
+        background: rgba(14, 165, 233, 0.07);
+        color: var(--ink-soft);
+        font-size: 0.53em;
+        text-align: left;
+      }
+
+      .reveal .dense-table {
+        font-size: 0.29em;
+      }
+
+      .reveal .q {
+        background: rgba(14, 165, 233, 0.1);
+        border-left: 4px solid var(--accent);
+        padding: 0.45em 0.7em;
+        border-radius: 0 6px 6px 0;
+        text-align: left;
+        color: var(--ink-soft);
+      }
+
+      .reveal .q strong {
+        color: var(--accent-deep);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <!-- Slide 1: Title -->
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Pruning</p>
+          <p>
+            <small>Aditya Desai</small>
+          </p>
+          <p style="margin-top: 2.5em;">
+            <small style="font-size: 0.45em; line-height: 1.35; display: inline-block; max-width: 85%;">
+              Many thanks to all the resources listed in References on the main
+              website. Almost all figures are taken from these resources; some
+              were generated with Gemini.
+            </small>
+          </p>
+        </section>
+        <section>
+          <h2>Size of AI is huge and it is only growing!</h2>
+        <div style="text-align: center; margin: 0 0;">
+          <img src="../assets/machine-learning-model-sizes-and-the-parameter-gap.png" alt="Model Sizes Over Time", style="max-width: 70%; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+        </div>
+      </section>
+
+      <section>
+        <h2>Deployment targets have tight memory budgets</h2>
+        <table class="device-table">
+          <thead>
+            <tr>
+              <th>Device Class</th>
+              <th>Approximate RAM Range</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tiny IoT devices</td>
+              <td>KB to MB</td>
+            </tr>
+            <tr>
+              <td>Wearables</td>
+              <td>0.5–8 GB</td>
+            </tr>
+            <tr>
+              <td>Phones &amp; Glasses</td>
+              <td>4–16 GB</td>
+            </tr>
+            <tr>
+              <td>Laptops</td>
+              <td>8–64 GB</td>
+            </tr>
+            <tr>
+              <td>Drones</td>
+              <td>2–32 GB</td>
+            </tr>
+            <tr>
+              <td>Cars</td>
+              <td>16–512 GB</td>
+            </tr>
+            <tr>
+              <td>Edge Servers</td>
+              <td>64 GB–4 TB</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+        <section>
+          <h2>Energy cost of compute vs memory</h2>
+          <div style="text-align: center; margin: 0;">
+            <img
+              src="../assets/energy.png"
+              alt="Energy table for 45nm CMOS: DRAM access is far more expensive than arithmetic"
+              style="max-width: 72%; max-height: 52vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+          </div>
+          <ul class="compact-list">
+            <li>Memory access (DRAM) is ~3 orders of magnitude more energy-expensive than simple arithmetic.</li>
+            <li>Compressing models reduces data movement as well as FLOPs — often the bigger win for energy.</li>
+          </ul>
+        </section>
+
+      
+        <section>
+          <h3>what is model compression?</h3>
+          
+          <ul>
+            <li>Given a trained model, can we reduce its size and computation while maintaining its accuracy?</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>why model compression?</h3>
+          <ul>
+            <li>saves memory, compute, energy, money, etc</li>
+            <li>Unlocks new deployment scenarios. e.g. deploying on edge devices -- PCs/laptops/phones/cars/drones/etc</li>
+          </ul>
+        </section>
+
+      <section>
+          <h2>Techniques are transferrable..</h2>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 1.2em; margin: 0;">
+          <img src="../assets/kvcache.png" alt="KV cache" style="max-width: 46%; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+          <img src="../assets/training_memory.png" alt="Training memory" style="max-width: 46%; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+        </div>
+        <p> We can apply the techniques we will discuss as part of model compression to 
+          activations, gradients, optimizer states, etc.
+        </p>
+      </section>
+
+
+        <!-- Slide 2: Outline -->
+        <section>
+          <h2>Pruning / Sparsity</h2>
+          <ul>
+            <li>what is pruning?</li>
+            <li>Pruning a neuron</li>
+            <li>Optimal Brain Surgeon</li>
+            <li>Optimal Brain Compression</li>
+            <li>Iterative Magnitude Pruning</li>
+            <li>Pruning in Pre-LLM era</li>
+            <li>Structured Pruning & Hardware Supported Sparsity</li>
+            <li>Sensitivity Analysis for Pruning</li>
+            <li>Pruning LLMs</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2> Two useful identities for inverse of a matrix</h2>
+          <bold>Inverse of a rank one update</bold>
+          <div style="font-size: 0.72em; text-align: left;">
+            <p style="margin: 0.2em 0;"><strong>1) Rank-one update</strong> — add outer product $uv^\top$ to $A$:</p>
+            <div class="eq" style="margin: 0.15em 0;">
+              \[
+                A + uv^\top
+                =
+                \begin{pmatrix} a_{11}&a_{12}\\ a_{21}&a_{22} \end{pmatrix}
+                +
+                {\color{red}u}\,{\color{blue}v}^\top
+              \]
+            </div>
+        </section>
+
+        <section>
+          <bold> Sherman Morrison Identity (rank 1 update) </bold>
+          <div class="eq">
+            \[
+              (A + uv^T)^{-1} = A^{-1} - \frac{A^{-1}uv^T A^{-1}}{1 + v^T A^{-1} u}
+            \]
+          </div>
+          <p>
+          <small> If you do a one-rank update to A, then it provides a relation between inverse
+          of A and the inverse of the updated matrix. </small>
+          <small> <code>O(n<sup>2</sup>)</code> update instead of <code>O(n<sup>3</sup>)</code> for inverse of <code>(A+uv^\top)</code> </small>
+    
+        </p>
+        <bold> Woodbury Identity (general rank update)</bold>
+          <div class="eq">
+            \[
+              (A + UCV)^{-1} = A^{-1} - A^{-1}U(C^{-1} + V A^{-1}U)^{-1}V A^{-1}
+            \]
+          </div>
+        
+        </section>
+        
+        <section>
+          <bold> Inverse of a submatrix extraction</bold>
+              \[
+                A
+                =
+                \begin{pmatrix}
+                  a_{11} & a_{12} & a_{13} \\
+                  a_{21} & {\color{#0b6e4f}a_{22}} & {\color{#0b6e4f}a_{23}} \\
+                  a_{31} & {\color{#0b6e4f}a_{32}} & {\color{#0b6e4f}a_{33}}
+                \end{pmatrix}
+                \;\longrightarrow\;
+                B = A[2{:},2{:}]
+                =
+                \begin{pmatrix}
+                  {\color{#0b6e4f}a_{22}} & {\color{#0b6e4f}a_{23}} \\
+                  {\color{#0b6e4f}a_{32}} & {\color{#0b6e4f}a_{33}}
+                \end{pmatrix}
+              \]
+        </section>
+
+        <section>
+          <bold> Inverse of a submatrix extraction</bold>
+          
+          <div class="eq">
+            \[
+            B^{-1} = A^{-1} - (\frac{1}{A^{-1}_{11}} A^{-1}_{2:,:} A^{-1}_{:,2:})
+            \]
+          </div>
+          <p>
+            <small> If you have inverse of a larger matrix, then you can use this to find the inverse of matrix
+              with one row and column removed.
+            </small>
+            <small> <code>O(n<sup>2</sup>)</code> update instead of <code>O(n<sup>3</sup>)</code> for inverse of <code>B</code> </small>
+          </p>
+        </section>
+
+        <section>
+          <h2>Pruning: Sparsty in weights</h2>
+          <ul class="compact-list">
+            <li>Pruning: we remove some of the connections in the model.</li>
+          </ul>
+          <div style="display: flex; justify-content: center; align-items: center; gap: 1em; margin-top: 0.5em;">
+            <img
+              class="slide-figure"
+              src="../assets/pruning.png"
+              alt="Snipping a model connections"
+              style="flex: 1 1 auto; max-width: 72%; margin: 0;"
+            />
+            <div style="flex: 0 0 18%; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+              <img
+                src="../assets/patterns.png"
+                alt="Fine-grained (irregular) pruning pattern"
+                style="width: 500%; max-width: none; height: auto; display: block;"
+              />
+            </div>
+          </div>
+        </section>
+        <section>
+          <ul class="compact-list">
+            <li>Removing enough connections can naturally remove some of the neurons and structural components in the model.</li>
+          </ul>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45em; margin-top: 0.35em;">
+            <img
+              src="../assets/structured_pruning.png"
+              alt="Unstructured vs structured pruning"
+              style="max-width: 78%; max-height: 32vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <img
+              src="../assets/patterns.png"
+              alt="Pruning patterns from irregular to regular"
+              style="max-width: 88%; max-height: 28vh; width: auto; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2>Pruning</h2>
+          <ul class="compact-list">
+            <li>Pruning has a history since 1980s and post deep learning era it is one of the most widely researched techniques</li>
+          </ul>
+          <img
+            class="slide-figure"
+            src="../assets/pruning_papers_chart.png"
+            alt="Number of papers on Neural Network Compression vs Neural Network Pruning, 1989–2023"
+          />
+        </section>
+
+
+
+        <!-- Slide 3: Placeholder -->
+        <section>
+          <h2>Pruning a neuron</h2>
+          <p class="compact">
+            Note Link:
+            <a href="../notes/prune_a_linear_model.html">notes/pruning_a_neuron.html</a>
+          </p>
+        </section>
+        <section>
+          <h2>what is the complexity of this computation</h2>
+          <ul>
+            <li><code>x, w \in R^d, y \in R</code></li>
+            <li> a single neuron pruning right now is O(d<sup>3</sup>)</li>
+            <li>
+              <code>d</code> &times; <code>O(d<sup>4</sup>)</code>
+              <ul>
+                <li><code>d</code> — number of subproblems</li>
+                <li><code>O(d<sup>3</sup>)</code> — inverse of the Hessian</li>
+              </ul>
+            </li>
+            If pruning k neurons, then the complexity is <code>O(k d<sup>4</sup>)</code>
+          </ul>
+        </section>
+        <section>
+          <h2>A single neuron pruning</h2>
+          <ul>
+            <li>Pruning a neuron itself is quite expensive <small>(disclaimer: this is not the best algo)</small></li>
+            <li>Imagine decent sized model pre-LLM (Convolution / MLP etc)</li>
+            <li>Imagine a LLM model!</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Pruning a &ldquo;Model"</h2>
+          <h3>(Optimal Brain Surgeon(OBS), Hassibi and Stork, 1993)</h3>
+          <p class="compact">
+            Note Link:
+            <a href="../notes/pruning_a_model.html">notes/pruning_a_model.html</a>
+          </p>
+          <p>All that one needs to know for pruning.</p>
+        </section>
+        <section>
+          <h3>Algorithm for OBS</h3>
+          <ol class="compact-list">
+            <li>Train a “reasonably large” network to minimum error.</li>
+            <li>Compute <code>H<sup>−1</sup></code>.</li>
+            <li>
+              Find the <code>q</code> that gives the smallest saliency
+              <code>L<sub>q</sub> = w<sub>q</sub><sup>2</sup> / (2 [H<sup>−1</sup>]<sub>qq</sub>)</code>.
+              If this candidate error increase is much smaller than <code>E</code>,
+              delete the <code>q</code>-th weight and go to step 4; otherwise go to step 5.
+            </li>
+            <li>
+              Use the <code>q</code> from step 3 to update <em>all</em> weights
+              (<code>δw</code>). Go to step 2.
+            </li>
+            <li>
+              No more weights can be deleted without a large increase in <code>E</code>.
+              (At this point it may be desirable to retrain the network.)
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h3>Complexity of OBS?</h3>
+          <ul>
+            <li>A single step: Dominated by forming / inverting the Hessian: <code>O(N<sup>3</sup>)</code>, where <code>N</code> is the number of parameters.</li>
+            <li>Hessian computation is <code>O(nN<sup>2</sup>)</code> where <code></code>n</code> is the number of samples and <code>N</code> is the number of parameters.</li>
+
+          </ul>
+        </section>
+
+        <section>
+          <h3>How can we reduce the complexity of OBS?</h3>
+          <p class="compact">
+            Note Link:
+            <a href="../notes/obc_inverse.html">notes/obc_inverse.html</a>
+          </p>
+        </section>
+        
+        <section class="hess-inv-slide">
+          <h3>Recursive computation of $H^{-1}$</h3>
+          <div class="algo-slide split">
+            <div class="col panel">
+              <ol class="list">
+                <li>
+                  Initialize:
+                  $H_0 = \alpha I$,
+                  $H_0^{-1} = \alpha^{-1} I$
+                </li>
+                <li>
+                  <strong>For</strong> $k = 1,\ldots,P$:
+                  <div class="eq">
+                    \[
+                      X^{(k)}
+                      =
+                      \tfrac{\partial F(w,\mathrm{in}^{(k)})}{\partial w},
+                    \]
+                    \[
+                      H_k
+                      =
+                      H_{k-1}
+                      +
+                      \tfrac{1}{P}\, X^{(k)} X^{(k)\top}
+                    \]
+                  </div>
+                  <div class="eq">
+                    \[
+                      a
+                      =
+                      1
+                      +
+                      \tfrac{1}{P}\,
+                      X^{(k)\top} H_{k-1}^{-1} X^{(k)}
+                    \]
+                  </div>
+                  <div class="eq">
+                    \[
+                      H_k^{-1}
+                      =
+                      H_{k-1}^{-1}
+                      -
+                      \frac{
+                        H_{k-1}^{-1}
+                        X^{(k)}
+                        X^{(k)\top}
+                        H_{k-1}^{-1}
+                      }{
+                        P\, a
+                      }
+                    \]
+                  </div>
+                </li>
+                <li>Return $H_P^{-1}$</li>
+              </ol>
+            </div>
+            <div class="col">
+              <div class="panel">
+                <h4>“Good model” approximation</h4>
+                <p>
+                  Squared error
+                  $E = \tfrac{1}{2P}\sum_k\|t^{[k]}-o^{[k]}\|_2^2$
+                  gives
+                </p>
+                <div class="eq">
+                  \[
+                    H
+                    =
+                    \tfrac{1}{P}
+                    \sum_k
+                    \Bigl[
+                      X^{(k)} X^{(k)\top}
+                      -
+                      \tfrac{\partial^2 F}{\partial w^2}
+                      (t^{[k]}-o^{[k]})
+                    \Bigr]
+                  \]
+                </div>
+                <p>
+                  Near a good fit, residuals are small $\Rightarrow$ drop the
+                  2nd-order term:
+                </p>
+                <div class="eq">
+                  \[
+                    H
+                    \approx
+                    \tfrac{1}{P}
+                    \sum_k
+                    X^{(k)} X^{(k)\top}
+                  \]
+                </div>
+              </div>
+              <div class="panel">
+                <h4>Sherman–Morrison formula</h4>
+                <p>
+                  Invertible $A$; vectors $u,v$ with
+                  $1 + v^\top A^{-1}u \neq 0$:
+                </p>
+                <div class="eq">
+                  \[
+                    (A + uv^\top)^{-1}
+                    =
+                    A^{-1}
+                    -
+                    \frac{A^{-1}uv^\top A^{-1}}{1 + v^\top A^{-1}u}
+                  \]
+                </div>
+                <p class="cite-link">
+                  <a
+                    href="https://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula"
+                    target="_blank"
+                    rel="noopener"
+                    >Wikipedia: Sherman–Morrison formula</a
+                  >
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Complexity of inverse computation?</h3>
+          <ul>
+            <li>
+              Over <code>n</code> samples:
+              <code>O(n N<sup>2</sup>)</code>
+              (<code>n</code> = # samples, <code>N</code> = # parameters).
+            </li>
+            <li>
+              Contrast with a dense inverse from scratch:
+              <code>O(nN<sup>2</sup> + N<sup>3</sup>)</code>.
+            </li>
+          </ul>
+        </section>
+        
+        <section>
+          <h3>Other simplifications: Optimal Brain Damage (OBD)?</h3>
+          assumptions
+          <ul>
+            <li>The model is trained to convergence.</li>
+            <li>The model is a quadratic local approximation.</li>
+            <li style="color: red;">Hessian is a diagonal matrix.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Algorithm for OBD</h3>
+          <ol class="compact-list">
+            <li>Train a “reasonably large” network to minimum error.</li>
+            <li>Compute Hessian H </li>
+            <li>
+              Find the <code>q</code> that gives the smallest saliency
+              <code style="color: red;">L<sub>q</sub> = ½ H<sub>qq</sub> w<sub>q</sub><sup>2</sup></code>.
+              <code style="color: red;">Delete few low saliency weights</code>
+            </li>
+            <li>
+              <s>Update <em>all</em> weights (<code>δw</code>).</s>
+            </li>
+            <li>
+            Retrain i.e. go to step 1.
+            </li>
+            
+          </ol>
+        </section>
+        <section>
+          <h3>Complexity of OBD?</h3>
+          <ul>
+            <li>
+              We only need diagonal entries of Hessian.
+            </li>
+          </ul>
+        </section>
+        <section>
+          <h3>Computing diagonal entries of Hessian</h3>
+          <p class="compact">
+            Note Link:
+            <a href="../notes/obd_hessian.html">notes/obd_hessian.html</a>
+          </p>
+          <ul>
+            <li>The  hessian diagonal computation is of the same order as the gradient computation.</li>
+            <li> We can compute it using the same algorithm as the gradient computation -- layerwise</li>
+          </ul>
+        </section>
+        
+        <section>
+          <h3>Further simplifications:  Iterative Magnitude Pruning (IMP)</h3>
+          <ul>
+            <li>Completely let go of the data consideration </li>
+            <li>Just prune the weights based on their <code>magnitude</code> (equivalent to assuming <code>H_{kk}</code> is same for all <code>k</code>)
+            and rely on training to correct the errors</li>
+      
+          </ul>
+        </section>
+
+        <section>
+          <h3>Algorithm for IMP</h3>
+          <ol class="compact-list">
+            <li>Train a dense network to convergence.</li>
+            <li>
+              Compute the magnitude of each weight: <code>|w<sub>i</sub>|</code>.
+            </li>
+            <li>
+              Remove weights with the smallest magnitudes
+              (prune a fixed fraction or all below a threshold).
+            </li>
+            <li>
+              <strong>Retrain</strong> the pruned network.
+              Return to step 2 (iterate until target sparsity).
+            </li>
+          </ol>
+        </section>
+
+        
+        <section>
+          <h3>Iterative Magnitude Pruning (IMP)</h3>
+          <ul>
+            <li>Due to simplicity, it is one of the most widely used pruning algorithms (atleast in the pre-llm era)</li>
+            <li> However, training is strictly required. Otherwise it causes significant performance degradation</li>
+          </ul>>
+        </section>
+
+        
+        <section>
+          <h3>OBS vs OBD vs IMP (w/o re-training)</h3>
+          <div style="display: flex; justify-content: center; align-items: center; gap: 1.2em; margin: 0;">
+            <img
+              src="../assets/obs_obd_imp.png"
+              alt="Comparison of OBS, OBD, and IMP pruning in 2D"
+              style="max-width: 55%; max-height: 55vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <ul class="compact-list" style="flex: 0 1 38%; margin: 0;">
+              <li>OBD and IMP may lead to different pruning</li>
+              <li>Implications of using "less" informed pruning methods can be significant when not re-trained.</li>
+            </ul>
+          </div>
+        </section>
+        
+        <section>
+          <h3>General Framework for Pruning</h3>
+          <ol class="compact-list">
+            <li>Train a dense network to convergence.</li>
+            <li>
+              Compute the saliency score of each weight
+            </li>
+            <li>
+              Remove weights with the smallest saliency scores
+            </li>
+            <li>
+              <strong>Retrain</strong> the pruned network.
+              Return to step 2 (iterate until target sparsity).
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h1>Results from the paper</h1>
+        <p>
+          Learning both Weights and Connections for Efficient  Neural Networks" by Han et al. 2015
+        </p>
+        </section>
+
+        <section>
+          <div style="text-align: center;">
+            <img src="../assets/r1.png" alt="Results 1" style="max-width: 85%; max-height: 72vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </div>
+        </section>
+
+        <section>
+          <div style="text-align: center;">
+            <img src="../assets/r2.png" alt="Results 2" style="max-width: 85%; max-height: 72vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </div>
+        </section>
+
+        <section>
+          <div style="text-align: center;">
+            <img src="../assets/r3.png" alt="Results 3" style="max-width: 85%; max-height: 72vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </div>
+        </section>
+
+        <section>
+          <div style="display: flex; justify-content: center; align-items: center; gap: 0.8em; height: 85vh;">
+            <img src="../assets/mnist.png" alt="MNIST" style="max-width: 48%; max-height: 82vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+            <img src="../assets/r4.png" alt="Results 4" style="max-width: 48%; max-height: 82vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </div>
+        </section>
+
+        <section>
+          <div style="text-align: center;">
+            <img src="../assets/R5.png" alt="Results 5" style="max-width: 85%; max-height: 72vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </div>
+        </section>
+
+        <section>
+          <div style="text-align: center;">
+            <img src="../assets/R6.png" alt="Results 6" style="max-width: 85%; max-height: 72vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </div>
+        </section>
+
+        <section>
+          <div style="text-align: center;">
+            <img src="../assets/R7.png" alt="Results 7" style="max-width: 85%; max-height: 72vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </div>
+        </section>
+
+        <section>
+          <div style="text-align: center;">
+            <img src="../assets/R8.png" alt="Results 8" style="max-width: 85%; max-height: 72vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </div>
+        </section>
+
+        <section>
+          <div style="text-align: center;">
+            <img src="../assets/r9.png" alt="Results 9" style="max-width: 85%; max-height: 72vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </div>
+        </section>
+        <section>
+          <h1>Structured Pruning</h1>
+        </section>
+
+        <section>
+          <h3>Granularity of Pruning</h3>
+        <div style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
+          <img
+            src="../assets/patterns.png"
+            alt="Granularity of Pruning Patterns"
+            style="max-width: 65%; max-height: 60vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); margin-bottom: 1em;"
+          />
+        </div>
+        <ul>
+          <li>Unstructured pruning: Gives most control over the qualty vs. memory trade-off</li>
+          <li>Then why go for structured pruning?</li>
+        </ul>
+        </section>
+        
+        <section>
+          <h3>Hardware is not friendly to unstructured sparsity</h3>
+        <ul class="compact-list">
+          <li>The results that we saw earlier are on simpler hardware such as 
+            CPUs, or low-end GPUs. Arguably, these are the target hardware for 
+            pruning.
+          </li>
+          <li>
+            GPU hardware  (esp Nvidia) today does not support unstructured sparsity efficiently. So gains are
+            present only at extreme sparsity levels.
+          </li>
+          <ol>
+            <li> sparse matrix multiplication cannot use tensor cores 
+              <small>(N:M sparsity is a fix we will discuss)</small> </li>
+            <li> Contiguous memory access is not guaranteed for unstructured sparsity
+            </li>
+          </ol>
+        </ul>
+        </section>
+        <section data-background-image="../assets/structured_pruning_1.png" data-background-size="contain" data-background-position="center">
+        </section>
+
+        <section> 
+          <h2> Pruning a Linear layer -- a hardware friendly way</h2>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <img 
+            src="../assets/gemm.webp" 
+            alt="GEMM Pruning - Linear Layer Hardware Friendly" 
+            style="max-width: 80%; max-height: 65vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); margin-bottom: 1em;"
+          />
+        </div>
+
+        </section>
+        
+
+        <section> 
+          <h2>Pruning a Linear layer -- a hardware friendly way</h2>
+          <div style="display: flex; justify-content: center; align-items: center; gap: 1.2em;">
+            <img 
+              src="../assets/gemm.webp" 
+              alt="GEMM Pruning - Linear Layer Hardware Friendly" 
+              style="max-width: 50%; max-height: 58vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <ul class="compact-list" style="flex: 0 1 42%; margin: 0;">
+              <li>Look at the algorithm where weight is used and make sure that the sparsity does not break contiguous memory access</li>
+            </ul>
+          </div>
+        </section>
+
+        <section> 
+          <h2>Pruning a Linear layer -- a hardware friendly way</h2>
+          <div style="display: flex; justify-content: center; align-items: center; gap: 1.2em;">
+            <img 
+              src="../assets/gemm.webp" 
+              alt="GEMM Pruning - Linear Layer Hardware Friendly" 
+              style="max-width: 50%; max-height: 58vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <ul class="compact-list" style="flex: 0 1 42%; margin: 0;">
+              <li>Neuron / Channel pruning: Remove columns/rows to reduce the shape of the workload</li>
+              <li>Block Sparsity: Ability to skip certain "blocks" in computing the matrix multiplication — block-wise sparsity</li>
+            </ul>
+          </div>
+        </section>
+
+        <section> 
+          <h2>Pruning a convolution -- a hardware friendly way</h2>
+          <div style="display: flex; justify-content: center; align-items: center; gap: 1.2em;">
+            <img 
+              src="../assets/convolution.png" 
+              alt="Convolution Pruning - Hardware Friendly" 
+              style="max-width: 50%; max-height: 58vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <ul class="compact-list" style="flex: 0 1 42%; margin: 0;">
+              <li>Implementation specific </li>
+            </ul>
+          </div>
+        </section>
+
+        <section> 
+          <h2>Pruning a convolution -- a hardware friendly way</h2>
+          <div style="display: flex; justify-content: center; align-items: center; gap: 1.2em;">
+            <img 
+              src="../assets/im2col_patch_2.png" 
+              alt="Im2col and GEMM implementation of convolution" 
+              style="max-width: 50%; max-height: 58vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <ul class="compact-list" style="flex: 0 1 42%; margin: 0;">
+              <li>Im2col and GEMM implementation of convolution (#channels = 1) </li>
+            </ul>
+          </div>
+        </section>
+
+        <section> 
+          <h2>Pruning a convolution -- a hardware friendly way</h2>
+            <img 
+              src="../assets/gemm_cnn.svg" 
+              alt="GEMM implementation of convolution" 
+              style="max-width: 100%; max-height: 85vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <ul class="compact-list" style="flex: 0 1 42%; margin: 0;">
+              <li>Apply same ideas as linear layer</li>
+            </ul>
+        </section>
+
+        <section> 
+          <h2>How to prune? (General Recipe for Groups)</h2>
+          <ol class="compact-list">
+            <li>Train a dense network to convergence.</li>
+            <li>
+              Compute the saliency score of each<span style="color: red;"> group of weights</span>    
+            </li>
+            <li>
+              Remove group with the smallest saliency scores
+            </li>
+            <li>
+              <strong>Retrain</strong> the pruned network.
+              Return to step 2 (iterate until target sparsity).
+            </li>
+          </ol>
+        </section>
+
+        
+        <section> 
+          <h2>How to prune?</h2>
+          <ul class="compact-list">
+            <li> Extend OBS (sim. OBD) to get saliency and update rule for groups of weights? <span style="color: red;"> (Exercise)</span>  </li> 
+            <li> Iterative Magnitude Pruning (IMP) can be extended to groups of weights through l_p norms</li>
+          <li>
+            The <strong>$\ell_p$ norm</strong> of a weight vector $w$ is defined as:<br>
+            <span style="display: block; margin: 0.5em 0 0.5em 0;">
+              $\displaystyle \| w \|_p = \left( \sum_{i=1}^{n} |w_i|^p \right)^{1/p}$
+            </span>
+          </li>
+          <li>
+          While training, you can use group wise $l_p$ regularizer to induce group sparsity.
+          </li>
+          
+          </ul>
+        </section>
+
+        <section>
+          <h1>Results from the paper</h1>
+          <p>“Learning Structured Sparsity in Deep Neural Networks” by Wen et al.</p>
+        </section>
+
+        <section>
+          <h3>Unstructured sparsity does not show speedups on CPUs / GPUs</h3>
+          <img
+            src="../assets/ssl_figure1.png"
+            alt="AlexNet GPU speedups from unstructured sparse matrices"
+            style="max-width: 92%; max-height: 68vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+          />
+          <p class="compact">
+            Even at high sparsity, irregular sparse execution can be slower than
+            dense GEMM because storage and indexing overheads dominate.
+          </p>
+        </section>
+
+        <section>
+          <h3>Structured pruning for CNNs</h3>
+          <img
+            src="../assets/ssl_figure_pruning.png"
+            alt="Filter-wise, channel-wise, shape-wise, and depth-wise structured sparsity"
+            style="max-width: 94%; max-height: 70vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+          />
+        </section>
+
+        <section>
+          <h2>Experimental setup</h2>
+          <ul>
+            <li>Reported speedups are layer-wise and measured on CPU unless specified.</li>
+            <li>
+              Three-step scheme:
+              <ol>
+                <li>Train with group regularization.</li>
+                <li>Prune groups with the lowest magnitude.</li>
+                <li>Fine-tune the remaining network.</li>
+              </ol>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>LeNet: filters, channels, and filter shapes</h2>
+          <div class="paper-tables">
+            <table class="paper-table">
+              <caption>Table 1 — Penalizing unimportant filters and channels</caption>
+              <thead>
+                <tr>
+                  <th>LeNet #</th>
+                  <th>Error</th>
+                  <th>Filter #</th>
+                  <th>Channel #</th>
+                  <th>FLOP</th>
+                  <th>Speedup</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>1 (baseline)</td><td>0.9%</td><td>20–50</td><td>1–20</td><td>100%–100%</td><td>1.00×–1.00×</td></tr>
+                <tr><td>2</td><td>0.8%</td><td>5–19</td><td>1–4</td><td>25%–7.6%</td><td>1.64×–5.23×</td></tr>
+                <tr><td>3</td><td>1.0%</td><td>3–12</td><td>1–3</td><td>15%–3.6%</td><td>1.99×–7.44×</td></tr>
+              </tbody>
+            </table>
+
+            <table class="paper-table">
+              <caption>Table 2 — Learning filter shapes</caption>
+              <thead>
+                <tr>
+                  <th>LeNet #</th>
+                  <th>Error</th>
+                  <th>Filter size</th>
+                  <th>Channel #</th>
+                  <th>FLOP</th>
+                  <th>Speedup</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>1 (baseline)</td><td>0.9%</td><td>25–500</td><td>1–20</td><td>100%–100%</td><td>1.00×–1.00×</td></tr>
+                <tr><td>4</td><td>0.8%</td><td>21–41</td><td>1–2</td><td>8.4%–8.2%</td><td>2.33×–6.93×</td></tr>
+                <tr><td>5</td><td>1.0%</td><td>7–14</td><td>1–1</td><td>1.4%–2.8%</td><td>5.19×–10.82×</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="result-comment">
+            Structured groups preserve LeNet accuracy while reducing layer FLOPs
+            substantially and reaching up to 10.82× measured speedup.
+          </p>
+        </section>
+
+        <section>
+          <h3>MLP and ConvNet structured sparsity</h3>
+          <div class="paper-tables">
+            <table class="paper-table">
+              <caption>Figure 4(a) — Learned neurons in MLP</caption>
+              <thead>
+                <tr>
+                  <th>MLP #</th>
+                  <th>Error</th>
+                  <th>Neurons per layer</th>
+                  <th>FLOP per layer</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>1 (baseline)</td><td>1.43%</td><td>784–500–300–10</td><td>100%–100%–100%</td></tr>
+                <tr><td>2</td><td>1.34%</td><td>469–294–166–10</td><td>35.18%–32.54%–55.33%</td></tr>
+                <tr><td>3</td><td>1.53%</td><td>434–174–78–10</td><td>19.26%–9.05%–26.00%</td></tr>
+              </tbody>
+            </table>
+
+            <table class="paper-table">
+              <caption>Table 3 — ConvNet on CIFAR-10</caption>
+              <thead>
+                <tr>
+                  <th>ConvNet #</th>
+                  <th>Error</th>
+                  <th>Row sparsity</th>
+                  <th>Column sparsity</th>
+                  <th>Speedup</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>1 (baseline)</td><td>17.9%</td><td>12.5%–0%–0%</td><td>0%–0%–0%</td><td>1.00×–1.00×–1.00×</td></tr>
+                <tr><td>2</td><td>17.9%</td><td>50.0%–28.1%–1.6%</td><td>0%–59.3%–35.1%</td><td>1.43×–3.05×–1.57×</td></tr>
+                <tr><td>3</td><td>16.9%</td><td>31.3%–0%–1.6%</td><td>0%–42.8%–9.8%</td><td>1.25×–2.01×–1.18×</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="result-comment">
+            Learned structure cuts MLP FLOPs and accelerates ConvNet layers
+            without degrading—and sometimes improving—test error.
+          </p>
+        </section>
+
+        <section>
+          <h2>AlexNet on ILSVRC 2012</h2>
+          <table class="paper-table dense-table">
+            <caption>Table 4 — Sparsity and speedup</caption>
+            <thead>
+              <tr>
+                <th>#</th><th>Method</th><th>Top-1 err.</th><th>Statistic</th>
+                <th>conv1</th><th>conv2</th><th>conv3</th><th>conv4</th><th>conv5</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="section-start">
+                <td rowspan="3">1</td><td rowspan="3">ℓ₁</td><td rowspan="3">44.67%</td>
+                <td>sparsity</td><td>67.6%</td><td>92.4%</td><td>97.2%</td><td>96.6%</td><td>94.3%</td>
+              </tr>
+              <tr><td>CPU ×</td><td>0.80</td><td>2.91</td><td>4.84</td><td>3.83</td><td>2.76</td></tr>
+              <tr><td>GPU ×</td><td>0.25</td><td>0.52</td><td>1.38</td><td>1.04</td><td>1.36</td></tr>
+
+              <tr class="section-start">
+                <td rowspan="4">2</td><td rowspan="4">SSL</td><td rowspan="4">44.66%</td>
+                <td>column sparsity</td><td>0.0%</td><td>63.2%</td><td>76.9%</td><td>84.7%</td><td>80.7%</td>
+              </tr>
+              <tr><td>row sparsity</td><td>9.4%</td><td>12.9%</td><td>40.6%</td><td>46.9%</td><td>0.0%</td></tr>
+              <tr><td>CPU ×</td><td>1.05</td><td>3.37</td><td>6.27</td><td>9.73</td><td>4.93</td></tr>
+              <tr><td>GPU ×</td><td>1.00</td><td>2.37</td><td>4.94</td><td>4.03</td><td>3.05</td></tr>
+
+              <tr class="section-start">
+                <td>3</td><td>pruning [7]</td><td>42.80%</td>
+                <td>sparsity</td><td>16.0%</td><td>62.0%</td><td>65.0%</td><td>63.0%</td><td>63.0%</td>
+              </tr>
+
+              <tr class="section-start">
+                <td rowspan="3">4</td><td rowspan="3">ℓ₁</td><td rowspan="3">42.51%</td>
+                <td>sparsity</td><td>14.7%</td><td>76.2%</td><td>85.3%</td><td>81.5%</td><td>76.3%</td>
+              </tr>
+              <tr><td>CPU ×</td><td>0.34</td><td>0.99</td><td>1.30</td><td>1.10</td><td>0.93</td></tr>
+              <tr><td>GPU ×</td><td>0.08</td><td>0.17</td><td>0.42</td><td>0.30</td><td>0.32</td></tr>
+
+              <tr class="section-start">
+                <td rowspan="3">5</td><td rowspan="3">SSL</td><td rowspan="3">42.53%</td>
+                <td>column sparsity</td><td>0.00%</td><td>20.9%</td><td>39.7%</td><td>39.7%</td><td>24.6%</td>
+              </tr>
+              <tr><td>CPU ×</td><td>1.00</td><td>1.27</td><td>1.64</td><td>1.68</td><td>1.32</td></tr>
+              <tr><td>GPU ×</td><td>1.00</td><td>1.25</td><td>1.63</td><td>1.72</td><td>1.36</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h3> Structured Sparsity vs Unstructured Sparsity</h3>
+          <ul class="compact-list">
+            <li>Structured sparsity is more hardware friendly. But usually not very accurate</li>
+            <li>Unstructured sparsity is more accurate. But usually not hardware friendly</li>
+            <li>Enter: Semi-Structured Sparsity (Supported by hardware natively)</li>
+            <li> Any sparsity to be supported by GPU needs to have some structure <small> (Cerebras, with a very different hardware architecture, supports unstructured sparsity natively!</small></li>
+
+          </ul>
+        </section>
+
+        
+        <section>
+          <h3> N:M sparsity</h3>
+          <ul class="compact-list">
+            <li>Structured:Every M consecutive weights have exactly N non-zero weights </li>
+            <li>Unstructured: Sparsity pattern in side that block is arbitrary</li>
+            <li>Starting Ampere compute architecture, N:M sparsity is supported natively(N=2,M=4)</li>
+          </ul>
+        </section>
+
+        
+        <section>
+          <h3> N:M sparsity</h3>
+          <img src="../assets/2_4_sparsity.jpg" alt="N:M sparsity" style="width: 78%; max-width: 96%; max-height: 78vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+        </section>
+
+        <section>
+          <h3>2:4 sparse GEMM speedups on NVIDIA A100</h3>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45em;">
+            <img
+              src="../assets/speedup-sparse-gemms-1.png"
+              alt="A100 sparse versus dense GEMM speedup with K fixed"
+              style="width: 88%; max-height: 34vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <img
+              src="../assets/speedup-sparse-gemms-2.png"
+              alt="A100 sparse versus dense GEMM speedup with MN fixed"
+              style="width: 88%; max-height: 34vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+          </div>
+        </section>
+
+        <section>
+          <h3> why you wont see speedups at times (esp. on newer hardware)?</h3>
+          <ul class="compact-list">
+            <li> Hardware overhead</li>
+            <li> Smaller workloads fail to completely populate the tensor cores</li>
+            <li><span style="color: red;">Under optimized kernels </span> (dense kernels are optimized a lot more than sparse kernels just because of popularity)</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3> How much to prune in each layer?</h3>
+          <ul class="compact-list">
+            Natural alternatives,
+            <ol>
+              <li> OBS, OBD : iterative pruning already chooses weights dynamically </li>
+              <li> IMP: We can do global pruning by choosing weights across all layers </li>
+              <li> Are there better ways?</li>
+            </ol>
+          </ul>
+        </section>
+        <section>
+          <h3> AutoML for Pruning</h3>
+          <ul class="compact-list">
+            <img src="../assets/automl.png" alt="AutoML for Pruning" style="width: 78%; max-width: 96%; max-height: 78vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          </ul>
+          <p> use RL to learn sparsity predictors for each layer</p>
+        </section>
+
+        <section>
+          <h3> Pruning LLMs</h3>
+          <p> <i>and now llms...</i></p>
+          
+          <ol>
+            <li> Sparse GPT, Wanda </li>
+            <li> Bonsai </li>
+          </ol>
+        </section>
+        
+
+          <section>
+            <h3> Can we apply OBS to LLMS?</h3>
+          </section>
+          <section>
+            <h3> Can we apply OBS to LLMS?</h3>
+            <ul class="compact-list">
+              <li> O(nkN^2) for OBS  (with hessian inverse simplification)</li>
+              <ul>
+                <li>n = number of calibration data points</li>
+                <li>k = number of pruning steps</li>
+                <li>N = number of weights in the model</li>
+              </ul>
+              <li> Remark: This algorithms can "potentially" be applied to LLMs without retraining</li>
+              <li> what about OBD ?</li>
+            </ul>
+          </section>
+          <section>
+            <h3> Can we apply OBD/IMP to LLMS?</h3>
+            <ul class="compact-list">
+              <li> O(nkN) for OBD  (with forward-backward pass simplification)</li>
+              <ul>
+                <li>n = number of calibration data points</li>
+                <li>k = number of pruning steps</li>
+                <li>N = number of weights in the model</li>
+              </ul>
+              <li> Remark: These algorithms need retraining !! </li>
+              <li> IMP?: <span style="color: red;">Retraining even more important!!</span></li> <small>( some labs like mistral have done it with iterative training)</small>
+              <li> Since training is generally not an option, we need to be as "accurate" as possible while pruning: lets go back to OBS!</li>
+            </ul>
+          </section>
+          <section>
+            <h3> Applying OBS to LLMs</h3>
+            <ul class="compact-list">
+              <li> Idea 1: Break into sub-problems: If we approximate each layer accurately, the overall error will be low.</li>
+              <li> This breaks down approximation further since each row is an independent problem: we approximating each neuron.</li>
+              <li> Complexity of applying OBS to a neuron </li>
+              <ul>
+                <li> O(d^3) for OBS </li>
+                <li> O(nd^2) for OBS with hessian inverse simplification </li>
+                <ul style="color: red;"> This needs sequential computation -- cannot be parallelized</ul>
+              </ul>
+            </ul>
+            <code>O(d<sub>row</sub>d<sup>3</sup>)</code> for OBS one layer LLM
+            <p> Still quite expensive for one layer!!</p>
+          </section>
+
+          <!-- ========== SparseGPT Explanation ========== -->
+          <section>
+            <h2>SparseGPT</h2>
+            <p>Frantar &amp; Alistarh, 2023</p>
+          </section>
+
+          <section>
+            <h3>Revisit: pruning a neuron</h3>
+            <ul>
+              <li>Jointly optimizing the <strong>mask</strong> and the <strong>weights</strong> is NP-hard.</li>
+              <li>So assume we already have a mask $M_i$.</li>
+            </ul>
+            <p class="q" style="margin-top: 1em;">
+              <strong>Q.</strong> Can we then solve the reconstruction problem?
+            </p>
+          </section>
+
+          <section>
+            <h3>Yes — closed-form solution</h3>
+            <div class="eq" style="margin: 0.6em 0;">
+              \[
+                w^{i}_{M_i}
+                =
+                \bigl(X_{M_i} X_{M_i}^\top\bigr)^{-1}
+                X_{M_i}
+                (w^{i} X)^\top
+              \]
+            </div>
+            <ul class="compact-list">
+              <li>$M_i$ — kept indices for row $i$</li>
+              <li>$X_{M_i}$ — data restricted to those features</li>
+              <li>$w^{i}_{M_i}$ — updated sparse weights for that row</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> If we do this, what is the complexity?
+            </p>
+          </section>
+
+          <section>
+            <h3>Complexity: still dominated by $H^{-1}$</h3>
+            <ul>
+              <li>Main cost: Hessian inverse $\sim O(d^3)$</li>
+              <li>Per layer: $O(d_{\mathrm{row}}\, d^3)$</li>
+              <li>Hessian depends on <em>data</em>, not weights.</li>
+              <li>
+                But we <strong>cannot reuse</strong> computation across rows:
+                different masks ⇒ different submatrices ⇒ different inverses.
+              </li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> What do we do? Make the masks the same?
+            </p>
+          </section>
+
+          <section>
+            <h3>Same masks ⇒ structured pruning</h3>
+            <ul>
+              <li>Shared masks would let us reuse one $H^{-1}$.</li>
+              <li>That yields <strong>structured</strong> pruning.</li>
+              <li>Efficient for hardware, but generally worse for accuracy.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> So what is the way around it?
+            </p>
+          </section>
+
+          <section>
+            <h3>Reuse one Hessian for another</h3>
+            <ul>
+              <li>Bottleneck is computing many different $H^{-1}$.</li>
+              <li>We know relations between inverses of nested submatrices.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> Does this remind you of some identity?
+            </p>
+          </section>
+
+          <section>
+            <h3>Gaussian-elimination update of $H^{-1}$</h3>
+            <ul class="compact-list">
+              <li>
+                Start with $U_1 = \{1,\ldots,d\}$; each $U_{j+1}$ drops the next index from $U_j$.
+              </li>
+              <li>
+                Share the nested inverses
+                $(H_{U_j})^{-1} = ((XX^\top)_{U_j})^{-1}$
+                across <em>all</em> rows of $W$.
+              </li>
+              <li>
+                With $B = (H_{U_j})^{-1}$, one Gaussian-elimination step gives the next inverse in $O(d_{\mathrm{col}}^2)$:
+              </li>
+            </ul>
+            <div class="eq" style="margin: 0.45em 0;">
+              \[
+                (H_{U_{j+1}})^{-1}
+                =
+                \left(
+                  B
+                  -
+                  \frac{1}{[B]_{11}}\,
+                  B_{:,1} B_{1,:}
+                \right)_{2:,\,2:}
+              \]
+            </div>
+            <p class="q" style="margin-top: 0.5em;">
+              <strong>Q.</strong> Can we use this somehow?
+            </p>
+          </section>
+
+          <section>
+            <h3>Need rank-1 removals</h3>
+            <ul>
+              <li>To match the identity, each next Hessian must be one column smaller.</li>
+              <li>Start from the <strong>full</strong> inverse (no mask).</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> Which inverse is then cheap to get by reusing that matrix?
+            </p>
+          </section>
+
+          <section>
+            <h3>Answer: remove one column at a time</h3>
+            <ul>
+              <li>Any matrix with one column/channel removed.</li>
+              <li>⇒ Sweep left→right: prune a column, update remaining weights, shrink $H^{-1}$.</li>
+            </ul>
+            <p class="compact" style="margin-top: 0.8em; color: var(--accent-deep);">
+              So let’s do a sweep!
+            </p>
+          </section>
+
+          <section>
+            <h3>SparseGPT reconstruction sweep</h3>
+            <img
+              src="../assets/sparsegpt_sweep.png"
+              alt="SparseGPT column-wise reconstruction with shrinking Hessian"
+              style="max-width: 92%; max-height: 48vh; object-fit: contain; background: #fff; border-radius: 8px;"
+            />
+            <ul class="compact-list">
+              <li>Compute $H^{-1}$; mask the first column; update weights to the right.</li>
+              <li>Shrink the Hessian; repeat for the next column.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.4em;">
+              <strong>Q.</strong> How does this relate to an exact greedy compression framework?
+            </p>
+          </section>
+
+          <section>
+            <h3>Weight-freezing interpretation</h3>
+            <ul>
+              <li>
+                Exact greedy view: compress column by column, optimally updating all not-yet-compressed weights.
+              </li>
+              <li>
+                SparseGPT only zeros <em>some</em> weights in a column and only updates a subset of the rest —
+                but “compress” means fix a value and never decompress it again.
+              </li>
+              <li>
+                Define column-wise compression as
+              </li>
+            </ul>
+            <div class="eq" style="margin: 0.4em 0;">
+              \[
+                \mathrm{compress}(w^j)_i
+                =
+                \begin{cases}
+                  0 & \text{if } j \notin M_i \\
+                  w^j_i & \text{otherwise}
+                \end{cases}
+              \]
+            </div>
+            <ul class="compact-list">
+              <li>⇒ Exact column-wise greedy scheme.</li>
+              <li>Same view cleanly merges sparsification and quantization in one pass.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.4em;">
+              <strong>Q.</strong> Should the pruning mask be fixed in advance?
+            </p>
+          </section>
+
+          <section>
+            <h3>Adaptive mask selection</h3>
+            <ul>
+              <li>Fixed mask (e.g. magnitude / AdaPrune) is a baseline.</li>
+              <li>During reconstruction, weight updates change values a lot (correlations).</li>
+              <li>SparseGPT chooses the mask <strong>adaptively while reconstructing</strong>.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> Why not just prune the easiest $p\%$ weights in every column?
+            </p>
+          </section>
+
+          <section>
+            <h3>Uniform per-column sparsity is too rigid</h3>
+            <ul>
+              <li>Forces the same sparsity in every column.</li>
+              <li>Especially bad for LLMs: a few <strong>outlier features</strong> are highly sensitive.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> How do we allow non-uniform selection?
+            </p>
+          </section>
+
+          <section>
+            <h3>Answer: iterative blocking</h3>
+            <div style="display: flex; gap: 1em; align-items: center;">
+              <img
+                src="../assets/sparsegpt_blocking_fig.png"
+                alt="Adaptive mask selection via iterative blocking"
+                style="max-width: 42%; max-height: 55vh; object-fit: contain; background: #fff; border-radius: 8px;"
+              />
+              <ul class="compact-list" style="flex: 1; margin: 0;">
+                <li>Select the mask for a block of $B_s = 128$ columns at a time.</li>
+                <li>Criterion: OBS reconstruction error $\varepsilon$ from Hessian diagonals.</li>
+                <li>Update those $B_s$ columns; then move to the next block.</li>
+                <li>⇒ Non-uniform sparsity across columns, using Hessian info + prior updates.</li>
+                <li>For a single column, the criterion reduces to magnitude ($[H^{-1}]_{jj}$ constant across rows).</li>
+              </ul>
+            </div>
+          </section>
+
+          <section>
+            <h3>Extension: structured / N:M sparsity</h3>
+            <ul>
+              <li>Same sweep applies to <strong>groups</strong> of weights.</li>
+              <li>Run OBS-style selection on groups of $M$ weights; prune $N$ of them.</li>
+              <li>Natural fit for hardware-friendly N:M patterns.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Wanda</h2>
+            <p>Sun. et. al 2023</p>
+          </section>
+
+          <section>
+            <h3>Wanda: Applying OBD to every neuron</h3>
+            <ul class="compact-list">
+              <li>OBD-style saliency: $S_{ij} = W_{ij}^2\, H_{jj}$</li>
+              <li>$H = X^\top X \;\Longrightarrow\; H_{jj} = \|X_j\|_2^2$ where $X_j$ is all data for jth feature </li>
+
+              <li>$\Rightarrow\; S_{ij} = W_{ij}^2\, \|X_j\|_2^2$</li>
+              <li>Wanda score (same ranking): $S_{ij} = |W_{ij}|\, \|X_j\|_2$</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Wanda: Applying OBD to every neuron</h3>
+            <ul class="compact-list">
+              <li> No Weight update </li>
+              <li> Faster to compute than SparseGPT</li>
+              <li> uniform sparsity in each neuron </li>
+
+            </ul>
+          </section>
+          <section>
+            <h1>Results from the paper</h1>
+          <p>
+            "Let LLM Tell You What to Prune and How Much to Prune" by Yang et al. 2025 (ICML)
+          </p>
+          </section>
+          <section>
+            <img src="../assets/prune_llm_1.png" alt="LLM Pruner" style="width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 8px;">
+          </section>
+          <section>
+            <img src="../assets/prune_llm_2.png" alt="LLM Pruner" style="width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 8px;">
+          </section>
+          <section>
+            <h3> Takeaways for LLM Pruning</h3>
+            <ul class="compact-list">
+            <li> Perplexity and Downstream quality are severely affected by pruning (w.o retraining)</li>
+            <li> Note that this is just evaluation of base models. The effect on instruction tuned / reasoning model etc is not even evaluated.</li>
+            <li> Even after so many papers, <span style="color: red;">(structured)</span> pruning is not a solved problem.</span></li>
+          </ul>
+          </section>
+          <section>
+            <h1> Bonsai : Sensitivity analysis via forward passes only (TBD)</h1>
+          </section>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+      });
+    </script>
+  </body>
+</html>
