@@ -135,6 +135,23 @@ dd {
   color: var(--muted);
 }
 
+.project-links {
+  margin-top: 1rem;
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+}
+
+.project-links a {
+  color: var(--accent);
+  text-decoration-color: rgba(30, 90, 154, 0.35);
+}
+
+.project-links a:hover {
+  color: var(--ink);
+}
+
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);

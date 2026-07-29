@@ -519,6 +519,28 @@
               <strong>model compression recipe</strong> — given a model and
               target domain, compress while keeping performance.
             </li>
+              <li>
+                <span style="color:red">Model: Qwen-3.5-4B</span>
+          
+              </li>
+              <li>
+                <span style="color:blue">Domain: Math</span>
+          
+              </li>
+              <li>
+                Starter Code: https://github.com/skylight-org/efficient_ai_CS6013_2026Fall
+              </li>
+              <ul>
+                <li> sets up some basic starter code for eval. </li>
+                <li> Also, has a basic gptq quantization code to begin with. </li>
+              </ul>
+  
+          </ul>
+        </section>
+
+        <section>
+          <h3>Resources </h3>
+          <ul class="compact-list">
             <li>
               Reuse papers / GitHubs as starting points; iterate as we cover
               techniques in class.
@@ -530,38 +552,16 @@
           </ul>
         </section>
 
-        <section>
-          <h3>This Year's Project </h3>
-          <ul class="compact-list">
-            <li>
-              <span style="color:red">Model: Qwen-3.5-4B</span>
-        
-            </li>
-            <li>
-              <span style="color:blue">Domain: Math</span>
-        
-            </li>
-            <li>
-              Starter Code: https://github.com/skylight-org/efficient_ai_CS6013_2026Fall
-            </li>
-            <ul>
-              <li> sets up some basic starter code for eval. </li>
-              <li> Also, has a basic gptq quantization code to begin with. </li>
-            </ul>
-          </ul>
-        </section>
-
         <!-- Project slide 2: Tracks -->
         <section>
-          <h2>Project: Tracks</h2>
+          <h2>Project: Goals</h2>
           <ul class="compact-list">
             <li>
-              <strong>Track 1 (required):</strong> evaluate by
-              <em>memory</em> alone (checkpoint size). Pure compression — no
-              CUDA speedup required.
+              <strong>Track 1:</strong> evaluate by
+              <em>quality at different memory footprints</em> alone (checkpoint size). (no CUDA compatibility required)
             </li>
             <li>
-              <strong>Track 2 :</strong> memory, but techniques must
+              <strong>Track 2 :</strong> Same as above but techniques must
               be CUDA-speedup-capable <em>in principle</em>. Explain how; no
               kernels required. (while submitting, you can mark your submission for track 2)
             </li>
@@ -570,6 +570,17 @@
               measured submodule speedups at scale. Open to
               <strong>mid-term top performers</strong>; A100/H100 access;
               used to push grades up.
+            </li>
+          </ul>
+        </section>
+        <section>
+          <h3>Leaderboard</h3>
+          <ul class="compact-list">
+            <li>
+              We will maintain a regularly updated leaderboard of the best performing submissions for each track.
+            </li>
+            <li>
+              This will also give you visibility of the best scores achieved.
             </li>
           </ul>
         </section>
@@ -583,21 +594,16 @@
               <strong>Nov&nbsp;15</strong> (end-term), 2026.
             </li>
             <li>
-              Each eval: (1) leaderboard position (2) detailed report —
-              include what <em>failed</em> and what worked. 
+              Each eval: (1) leaderboard position (2) Report
             </li>
             <li>
-              Mid-term top performers → eligible for Track&nbsp;2+. Top-k
-              present ideas; code always stays private.
+              Mid-term top performers → eligible for Track&nbsp;2+.
             </li>
             <li>
-              After mid-term talks: code snapshot shared; cite what you
-              reuse. Keep iterating to end-term; updated code public after
-              final eval.
+              We will select few submissions and have the students present their ideas at mid-term, which can be used by others.
             </li>
             <li>
-              <strong>Slack Days:</strong> Since these are long term projects, <strong>we will not have any slack days</strong>. The snapshots
-              of submissions will be taken at 11:59PM on the day of the checkpoint
+              <strong>Slack Days:</strong> No Slack days.
             </li>
 
           </ul>
@@ -653,30 +659,16 @@
           <h2>Project: Submission Details</h2>
           <ul class="compact-list tighter">
             <li>
-              Max <strong>1 submission / week</strong>; leaderboard updates
-              weekly. Push compressed model to Hugging Face; submit the link
-              (TAs will provide details later).
+              Max <strong>1 submission / week</strong>; 
             </li>
             <li>
-              Use the starter as a GitHub template →
-              <strong>private</strong> repo. Add TAs + instructor; do not
-              share with other students.
+              Code in Github repo (Use starter as template and maintain <span style="color:red">private</span> repo with TAs and instructor)
             </li>
             <li>
-              Eval uses
-              <code>roll_no/&lt;hf_model_name&gt;/code.py</code> to
-              reproduce → bf16. Freeze that file after submitting.
+                Submission = huggingface compressed model  + compress/decompress code in github.
             </li>
             <li>
               Keep <code>pyproject.toml</code> up to date for dependencies.
-            </li>
-            <li>
-              Leaderboard is <strong>anonymized</strong> (scores only;
-              you learn your own after eval).
-            </li>
-            <li>
-              Use submissions to leaderboard to get actual feedback on if your ideas are working for 
-              what we will be testing against.
             </li>
           </ul>
         </section>
