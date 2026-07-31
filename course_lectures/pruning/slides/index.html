@@ -423,7 +423,7 @@
         <!-- Slide 1: Title -->
         <section>
           <h1>Efficient AI</h1>
-          <p>Pruning</p>
+          <p>Pruning / Sparsity</p>
           <p>
             <small>Aditya Desai</small>
           </p>
@@ -527,11 +527,21 @@
         </p>
       </section>
 
+      <section>
+        <h2>Techniques are transferrable..</h2>
+        <img src="assets/download.png" alt="Download" style="max-width: 46%; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+      <ul class="compact-list">
+        <li>Pruning is just one structured lens.</li>
+        <li>We can think of other forms of low-dimensional spaces or quantizations of space.</li>
+        <li>The spaces onto which we project are different, but the principles are the same.</li>
+      </ul>
+      </p>
+    </section>
 
         <!-- Slide 2: Outline -->
         <section>
           <h2>Pruning / Sparsity</h2>
-          <ul>
+          <ul class="compact-list">
             <li>what is pruning?</li>
             <li>Pruning a neuron</li>
             <li>Optimal Brain Surgeon</li>
@@ -540,6 +550,7 @@
             <li>Pruning in Pre-LLM era</li>
             <li>Structured Pruning & Hardware Supported Sparsity</li>
             <li>Sensitivity Analysis for Pruning</li>
+            <li>Lottery Ticket Hypothesis? (If we have time) </li>
             <li>Pruning LLMs</li>
           </ul>
         </section>
@@ -549,13 +560,11 @@
           <bold>Inverse of a rank one update</bold>
           <div style="font-size: 0.72em; text-align: left;">
             <p style="margin: 0.2em 0;"><strong>1) Rank-one update</strong> — add outer product $uv^\top$ to $A$:</p>
+            
             <div class="eq" style="margin: 0.15em 0;">
+              Relation between:
               \[
-                A + uv^\top
-                =
-                \begin{pmatrix} a_{11}&a_{12}\\ a_{21}&a_{22} \end{pmatrix}
-                +
-                {\color{red}u}\,{\color{blue}v}^\top
+                (A + uv^\top)^{-1} \textrm{ and } A^{-1}
               \]
             </div>
         </section>
@@ -583,7 +592,7 @@
         </section>
         
         <section>
-          <bold> Inverse of a submatrix extraction</bold>
+          <h3> Inverse of a submatrix extraction</h3>
               \[
                 A
                 =
@@ -600,6 +609,7 @@
                   {\color{#0b6e4f}a_{32}} & {\color{#0b6e4f}a_{33}}
                 \end{pmatrix}
               \]
+              Relation between $A^{-1}$ and $B^{-1}$
         </section>
 
         <section>
@@ -607,7 +617,7 @@
           
           <div class="eq">
             \[
-            B^{-1} = A^{-1} - (\frac{1}{A^{-1}_{11}} A^{-1}_{2:,:} A^{-1}_{:,2:})
+            B^{-1} = \left[A^{-1} - (\frac{1}{A^{-1}_{11}} A^{-1}_{:,1} A^{-1}_{:,1}) \right]_{2:,2:}
             \]
           </div>
           <p>
@@ -619,25 +629,48 @@
         </section>
 
         <section>
-          <h2>Pruning: Sparsty in weights</h2>
+          <h2>Pruning: Sparsity in weights</h2>
           <ul class="compact-list">
-            <li>Pruning: we remove some of the connections in the model.</li>
           </ul>
           <div style="display: flex; justify-content: center; align-items: center; gap: 1em; margin-top: 0.5em;">
-            <img
-              class="slide-figure"
-              src="../assets/pruning.png"
-              alt="Snipping a model connections"
-              style="flex: 1 1 auto; max-width: 72%; margin: 0;"
-            />
-            <div style="flex: 0 0 18%; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+            <div style="flex: 1 1 auto; max-width: 72%; display: flex; flex-direction: column; align-items: center; gap: 0.35em;">
               <img
-                src="../assets/patterns.png"
-                alt="Fine-grained (irregular) pruning pattern"
-                style="width: 500%; max-width: none; height: auto; display: block;"
+                class="slide-figure"
+                src="../assets/pruning.png"
+                alt="Snipping a model connections"
+                style="max-width: 100%; margin: 0;"
               />
+              <small style="font-size: 0.45em; text-align: center; line-height: 1.3;">
+                Computational graph view: we remove some of the connections in the model.
+              </small>
+            </div>
+
+            <div style="flex: 0 0 18%; display: flex; flex-direction: column; align-items: center; gap: 0.35em;">
+              <div style="overflow: hidden; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); width: 100%;">
+                <img
+                  src="../assets/patterns.png"
+                  alt="Fine-grained (irregular) pruning pattern"
+                  style="width: 500%; max-width: none; height: auto; display: block;"
+                />
+              </div>
+              <small style="font-size: 0.45em; text-align: center; line-height: 1.3;">
+                weight view: weights are sparsified
+              </small>
+            </div>
+            <div style="flex: 0 0 18%; display: flex; flex-direction: column; align-items: center; gap: 0.35em;">
+              <div style="overflow: hidden; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); width: 100%;">
+                <img
+                  src="assets/download.png"
+                  alt="Projection View: Pruning is a projection onto co-ordinate aligned subspaces."
+                  style="width: 100%; max-width: none; height: auto; display: block;"
+                />
+              </div>
+              <small style="font-size: 0.45em; text-align: center; line-height: 1.3;">
+                Projection View: Pruning is a projection onto co-ordinate aligned subspaces.
+              </small>
             </div>
           </div>
+
         </section>
         <section>
           <ul class="compact-list">
@@ -683,11 +716,11 @@
           <h2>what is the complexity of this computation</h2>
           <ul>
             <li><code>x, w \in R^d, y \in R</code></li>
-            <li> a single neuron pruning right now is O(d<sup>3</sup>)</li>
+            <li> Single neuron pruning: </li>
             <li>
-              <code>d</code> &times; <code>O(d<sup>4</sup>)</code>
+              <code>d</code> &times; <code>O(d<sup>3</sup>)</code>
               <ul>
-                <li><code>d</code> — number of subproblems</li>
+                <li><code>d</code> — number of sub problems</li>
                 <li><code>O(d<sup>3</sup>)</code> — inverse of the Hessian</li>
               </ul>
             </li>
@@ -737,20 +770,21 @@
           <h3>Complexity of OBS?</h3>
           <ul>
             <li>A single step: Dominated by forming / inverting the Hessian: <code>O(N<sup>3</sup>)</code>, where <code>N</code> is the number of parameters.</li>
-            <li>Hessian computation is <code>O(nN<sup>2</sup>)</code> where <code></code>n</code> is the number of samples and <code>N</code> is the number of parameters.</li>
-
+            <li>Hessian computation is <code>O(nN<sup>2</sup>)</code> where <code>n</code> is the number of samples and <code>N</code> is the number of parameters.</li>
+            <li>k step OBS : <code>O(k(N<sup>3</sup> + nN<sup>2</sup>))</code>
           </ul>
         </section>
 
         <section>
           <h3>How can we reduce the complexity of OBS?</h3>
           <p class="compact">
-            Note Link:
-            <a href="../notes/obc_inverse.html">notes/obc_inverse.html</a>
+            Hint: Use Linear Algebra identities we introduced.
+
+            (Exercise : We will look at it next class)
           </p>
         </section>
         
-        <section class="hess-inv-slide">
+        <!--section class="hess-inv-slide">
           <h3>Recursive computation of $H^{-1}$</h3>
           <div class="algo-slide split">
             <div class="col panel">
@@ -883,10 +917,19 @@
               <code>O(nN<sup>2</sup> + N<sup>3</sup>)</code>.
             </li>
           </ul>
+        </section-->
+        <section>
+          <h3> How can we simplify </h3>
+          \[
+          Saliency(q) = L_q = \frac{w_q^2}{2 H^{-1}_{qq}}
+          \]
+          \[
+          Update(w) = \frac{w_i}{H^{-1}_{qq}} H^{-1} e_i
+          \]
         </section>
         
         <section>
-          <h3>Other simplifications: Optimal Brain Damage (OBD)?</h3>
+          <h3>Optimal Brain Damage (OBD)?</h3>
           assumptions
           <ul>
             <li>The model is trained to convergence.</li>
@@ -925,12 +968,11 @@
         <section>
           <h3>Computing diagonal entries of Hessian</h3>
           <p class="compact">
-            Note Link:
-            <a href="../notes/obd_hessian.html">notes/obd_hessian.html</a>
+            Hint: Can be done in single forward /  backward pass.
+            (Exercise : We will look at it next class)
           </p>
           <ul>
             <li>The  hessian diagonal computation is of the same order as the gradient computation.</li>
-            <li> We can compute it using the same algorithm as the gradient computation -- layerwise</li>
           </ul>
         </section>
         
@@ -940,7 +982,6 @@
             <li>Completely let go of the data consideration </li>
             <li>Just prune the weights based on their <code>magnitude</code> (equivalent to assuming <code>H_{kk}</code> is same for all <code>k</code>)
             and rely on training to correct the errors</li>
-      
           </ul>
         </section>
 
@@ -966,9 +1007,9 @@
         <section>
           <h3>Iterative Magnitude Pruning (IMP)</h3>
           <ul>
-            <li>Due to simplicity, it is one of the most widely used pruning algorithms (atleast in the pre-llm era)</li>
-            <li> However, training is strictly required. Otherwise it causes significant performance degradation</li>
-          </ul>>
+            <li>Simple and easy to implement</li>
+            <li> Training is strictly required.</li>
+          </ul>
         </section>
 
         
@@ -1031,8 +1072,8 @@
 
         <section>
           <div style="display: flex; justify-content: center; align-items: center; gap: 0.8em; height: 85vh;">
-            <img src="../assets/mnist.png" alt="MNIST" style="max-width: 48%; max-height: 82vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
-            <img src="../assets/r4.png" alt="Results 4" style="max-width: 48%; max-height: 82vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+            <img src="../assets/mnist.png" alt="MNIST" style="max-width: 65%; max-height: 82vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+            <img src="../assets/r4.png" alt="Results 4" style="max-width: 65%; max-height: 82vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
           </div>
         </section>
 

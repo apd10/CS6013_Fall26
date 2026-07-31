@@ -403,7 +403,7 @@
         \[
           \hat{w} \in \mathbb{R}^d
           \quad\text{s.t.}\quad
-          \|\hat{w}\|_1 \le k,
+          \|\hat{w}\|_0 \le k,
           \qquad
           \hat{w}\cdot x \;\simeq\; w\cdot x
           \quad \forall\, x.
@@ -418,7 +418,7 @@
         \[
           \hat{w}
           =
-          \underset{\|\hat{w}\|_1 \le k}{\arg\min}
+          \underset{\|\hat{w}\|_0 \le k}{\arg\min}
           \;
           \bigl\|
             \hat{w}\cdot X - w\cdot X
@@ -435,7 +435,7 @@
             \substack{
               \hat{w}\in\mathbb{R}^d \\[2pt]
               M\in\{0,1\}^d \\[2pt]
-              \|M\|_1 \le k
+              \|M\|_0 \le k
             }
           }{\arg\min}
           \;

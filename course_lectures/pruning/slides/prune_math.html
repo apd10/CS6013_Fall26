@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Pruning a Linear Model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      /* Shared slide background template (course_lectures/assets/) */
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        background: transparent;
+        /* Keep text clear of corner graphics */
+        padding: 0 8%;
+      }
+
+      /* Subtle tech grid overlay */
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h2 {
+        border-bottom: 2px solid var(--accent);
+        display: inline-block;
+        padding-bottom: 0.12em;
+        margin-bottom: 0.55em;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal small {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        letter-spacing: 0.03em;
+        color: var(--muted);
+      }
+
+      .reveal ul {
+        list-style: none;
+      }
+
+      .reveal ul > li {
+        position: relative;
+        padding-left: 1.1em;
+      }
+
+      .reveal ul > li::before {
+        content: "›";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--accent);
+        font-weight: 700;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal ol {
+        list-style: none;
+        counter-reset: tech;
+      }
+
+      .reveal ol > li {
+        position: relative;
+        counter-increment: tech;
+        padding-left: 1.75em;
+      }
+
+      .reveal ol > li::before {
+        content: counter(tech, decimal-leading-zero);
+        position: absolute;
+        left: 0;
+        top: 0.08em;
+        color: var(--accent-deep);
+        font-size: 0.72em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-weight: 600;
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.55);
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+      }
+
+      .reveal a {
+        color: var(--accent-deep);
+        text-decoration-color: var(--accent);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .reveal .compact {
+        font-size: 0.78em;
+        margin-bottom: 0.6em;
+      }
+
+      .reveal .compact-list {
+        font-size: 0.72em;
+        line-height: 1.3;
+        text-align: left;
+      }
+
+      .reveal .compact-list > li {
+        margin-bottom: 0.35em;
+      }
+
+      .reveal code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85em;
+        color: var(--accent-deep);
+        background: rgba(7, 26, 51, 0.06);
+        padding: 0.08em 0.35em;
+        border: 1px solid var(--line);
+      }
+
+      .reveal .eq-box {
+        display: inline-block;
+        margin: 0.35em auto 0.55em;
+        padding: 0.35em 1.1em;
+        border: 2px solid var(--accent-deep);
+        border-radius: 8px;
+        background: rgba(14, 165, 233, 0.08);
+        color: var(--ink);
+      }
+
+      .reveal .q {
+        background: rgba(14, 165, 233, 0.1);
+        border-left: 4px solid var(--accent);
+        padding: 0.45em 0.7em;
+        border-radius: 0 6px 6px 0;
+        text-align: left;
+        color: var(--ink-soft);
+      }
+
+      .reveal .q strong {
+        color: var(--accent-deep);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Pruning a Linear Model</p>
+          <p>
+            <small>Aditya Desai</small>
+          </p>
+        </section>
+
+        <section>
+          <h2>Pruning a neuron / linear model</h2>
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              gap: 1.2em;
+              margin-top: 0.35em;
+            "
+          >
+            <img
+              src="../../deep-learning-review/assets/n1.png"
+              alt="Neuron"
+              style="flex: 0 1 38%; max-width: 38%; max-height: 48vh; object-fit: contain;"
+            />
+            <div style="flex: 1 1 50%; text-align: left;">
+              <div class="eq-box">
+                \[
+                y = w^\top x
+                \]
+                <small>(no activation)</small>
+              </div>
+              <p class="q" style="margin-top: 0.8em;">
+                <strong>Q.</strong> What should we try to preserve?
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>What should we try to preserve?</h2>
+          <ol class="compact-list">
+            <li>
+              <strong>Behaviour:</strong> yes. What about $x$?
+              <ul>
+                <li>For all $x$: prune by magnitude.</li>
+              </ul>
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>What should we try to preserve?</h2>
+          <ol class="compact-list" start="2">
+            <li>
+              Can we do better?
+              <ul>
+                <li>Get some calibration data $X$.</li>
+                <li>Exploit the correlations in data.</li>
+              </ul>
+            </li>
+          </ol>
+          <p class="q" style="margin-top: 1em;">
+            <strong>Q.</strong> How to formulate the problem?
+          </p>
+        </section>
+
+        <section>
+          <h2>Problem formulation</h2>
+          <div class="eq-box">
+            \[
+            \hat{w}
+            = \underset{\|\hat{w}\|_0 \le k}{\arg\min}
+            \;
+            \bigl\| X\hat{w} - X w \bigr\|_2^2
+            \]
+          </div>
+          <ul class="compact-list">
+            <li>How do I solve this problem?</li>
+            <li>Should I find the exact solution?</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Problem formulation</h2>
+          <p class="q">
+            <strong>This is an NP-hard problem!</strong>
+          </p>
+          <p class="compact" style="margin-top: 1em;">Approximations?</p>
+        </section>
+
+        <section>
+          <h2>Greedy solution space</h2>
+          <p class="compact">
+            Let us try to find the first weight to prune which minimizes the goal:
+          </p>
+          <div class="eq-box">
+            \[
+            \hat{w}
+            = \underset{\|\hat{w}\|_0 = n-1}{\arg\min}
+            \;
+            \bigl\| X\hat{w} - X w \bigr\|_2^2
+            \]
+          </div>
+          <p class="q" style="margin-top: 0.8em;">
+            <strong>Q.</strong> How would you do that?
+          </p>
+        </section>
+
+        <section>
+          <h2>Saliency of a weight</h2>
+          <ul class="compact-list">
+            <li>
+              <strong>Saliency</strong> = how much error does it cause if you
+              prune this weight
+            </li>
+            <li>If I remove $w_i$ (the $i$-th weight of $w$), then the error is?</li>
+          </ul>
+          <div class="eq-box">
+            \[
+            \min_{\hat{w}_{-i}}
+            \;
+            \bigl\| X_{-i}\,\hat{w}_{-i} - X w \bigr\|_2^2
+            \]
+          </div>
+        </section>
+
+        <section>
+          <h2>Saliency of a weight</h2>
+          <div class="eq-box">
+            \[
+            \min_{\hat{w}_{-i}}
+            \;
+            \bigl\| X_{-i}\,\hat{w}_{-i} - X w \bigr\|_2^2
+            \]
+          </div>
+          <p class="compact">where</p>
+          <div class="eq-box">
+            \[
+            \hat{w}_{-i}
+            =
+            \bigl(X_{-i}^\top X_{-i}\bigr)^{-1}
+            X_{-i}^\top X w
+            \]
+          </div>
+        </section>
+
+        <section>
+          <h2>Algorithm</h2>
+          <ul class="compact-list">
+            <li>Compute saliency of all the weights</li>
+            <li>Remove the lowest</li>
+            <li>Then repeat</li>
+          </ul>
+          <p class="q" style="margin-top: 1em;">
+            <strong>Q.</strong> Complexity?
+          </p>
+        </section>
+
+        <section>
+          <h2>Algorithm</h2>
+          <ul class="compact-list">
+            <li>Compute saliency: $O(d^3)$</li>
+            <li># saliencies: $d$</li>
+            <li>Total: $O(d^4)$</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Which is the least salient weight?</h2>
+        </section>
+
+        <section>
+          <h2>Which is the least salient weight?</h2>
+          <p class="compact">
+            One for which the column of $X$ deviates from the column space of
+            the rest of them.
+          </p>
+        </section>
+
+        <!-- ========== Prune a model ========== -->
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Prune a Model</p>
+          <p>
+            <small>Aditya Desai</small>
+          </p>
+        </section>
+
+        <section>
+          <h2>Prune a model</h2>
+          <div style="text-align: center; margin: 0.4em 0;">
+            <img
+              src="../../deep-learning-review/assets/mlp.jpg"
+              alt="Deep learning model"
+              style="max-width: 55%; max-height: 48vh; object-fit: contain;"
+            />
+          </div>
+          <ul class="compact-list">
+            <li>Same issues: <strong>NP-hard</strong> problem.</li>
+            <li>So: greedy solution.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>How to compute the saliency of a weight</h2>
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              gap: 1.2em;
+              margin-top: 0.35em;
+            "
+          >
+            <ul class="compact-list" style="flex: 1 1 48%; margin: 0;">
+              <li>Get some calibration data.</li>
+              <li>Look at the <strong>loss landscape</strong>.</li>
+              <li>
+                Loss landscape is the only source of truth in deep learning.
+              </li>
+            </ul>
+            <img
+              src="../../deep-learning-review/assets/sgd2.png"
+              alt="Gradient descent on loss landscape"
+              style="flex: 0 1 45%; max-width: 45%; max-height: 55vh; object-fit: contain;"
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2>How do we analyse the loss function?</h2>
+          <ul class="compact-list">
+            <li>There is no analytical form which is simple enough to analyse.</li>
+          </ul>
+          <p class="q" style="margin-top: 1em;">
+            <strong>Q.</strong> What should we do?
+          </p>
+        </section>
+
+        <section>
+          <h2>How do we analyse the loss function?</h2>
+          <p class="q">
+            <strong>Local approximation!</strong>
+            The whole field of optimization is based on local understanding of
+            the loss landscape.
+          </p>
+          <p class="compact" style="margin-top: 1em;">
+            How do we approximate locally?
+          </p>
+        </section>
+
+        <section>
+          <h2>Taylor series approximation</h2>
+          <div class="eq-box" style="font-size: 0.72em; max-width: 92%; overflow-x: auto;">
+            \[
+            \begin{aligned}
+            \mathcal{L}(w, X)
+            &=
+            \mathcal{L}(w^\star, X)
+            + \nabla\mathcal{L}(w^\star, X)^\top \delta w \\
+            &\quad
+            + \tfrac{1}{2}\,
+              \delta w^\top
+              \nabla^2\mathcal{L}(w^\star, X)\,
+              \delta w
+            + O(\|\delta w\|_2^3)
+            \end{aligned}
+            \]
+          </div>
+          <p class="compact">where $\delta w = w - w^\star$.</p>
+        </section>
+
+        <section>
+          <h2>Assumption 1: Quadratic only</h2>
+          <div class="eq-box" style="font-size: 0.72em; max-width: 92%; overflow-x: auto;">
+            \[
+            \begin{aligned}
+            \mathcal{L}(w, X)
+            &\approx
+            \mathcal{L}(w^\star, X)
+            + \nabla\mathcal{L}(w^\star, X)^\top \delta w \\
+            &\quad
+            + \tfrac{1}{2}\,
+              \delta w^\top
+              \nabla^2\mathcal{L}(w^\star, X)\,
+              \delta w
+            \end{aligned}
+            \]
+          </div>
+          <p class="compact">Drop the cubic (and higher) remainder.</p>
+        </section>
+
+        <section>
+          <h2>Assumption 2: Converged model</h2>
+          <div class="eq-box" style="font-size: 0.78em; max-width: 92%; overflow-x: auto;">
+            \[
+            \mathcal{L}(w, X)
+            \approx
+            \mathcal{L}(w^\star, X)
+            + \tfrac{1}{2}\,
+              \delta w^\top
+              H(w^\star, X)\,
+              \delta w
+            \]
+          </div>
+          <p class="compact">
+            At a minimum, $\nabla\mathcal{L}(w^\star, X) = 0$ — drop the
+            gradient term.
+            ($H = \nabla^2\mathcal{L}$)
+          </p>
+        </section>
+
+        <section>
+          <h2>Why converged model is a good assumption?</h2>
+          <div style="text-align: center; margin-top: 0.5em;">
+            <svg
+              width="420"
+              height="210"
+              viewBox="0 0 280 140"
+              aria-label="Loss landscape: start at converged point"
+              style="max-width: 70%; height: auto; background: rgba(255,255,255,0.72); border-radius: 8px; border: 1px solid var(--line);"
+            >
+              <line x1="24" y1="120" x2="256" y2="120" stroke="#c9d6e5" stroke-width="1" />
+              <line x1="40" y1="16" x2="40" y2="120" stroke="#c9d6e5" stroke-width="1" />
+              <path
+                d="M48 28 C 90 28, 110 112, 148 112 C 186 112, 210 28, 248 28"
+                fill="none"
+                stroke="#0369a1"
+                stroke-width="2.5"
+              />
+              <circle cx="72" cy="42" r="14" fill="none" stroke="#8a4b08" stroke-width="1.5" stroke-dasharray="3 2" />
+              <circle cx="72" cy="42" r="3.5" fill="#8a4b08" />
+              <circle cx="148" cy="112" r="14" fill="none" stroke="#0ea5e9" stroke-width="1.5" />
+              <circle cx="148" cy="112" r="3.5" fill="#0ea5e9" />
+              <text x="88" y="28" font-size="10" fill="#8a4b08" font-family="IBM Plex Mono, monospace">
+                not relevant
+              </text>
+              <text x="155" y="118" font-size="10" fill="#0369a1" font-family="IBM Plex Mono, monospace">
+                relevant for pruning
+              </text>
+            </svg>
+          </div>
+          <p class="compact" style="margin-top: 0.6em;">
+            Local geometry far from the minimum is not useful for pruning —
+            start at the converged model.
+          </p>
+        </section>
+
+        <section>
+          <h2>Error when you move $\delta w$ from a minimum</h2>
+          <div class="eq-box" style="font-size: 0.75em; max-width: 92%; overflow-x: auto;">
+            \[
+            \begin{aligned}
+            E(\delta w)
+            &:=
+            \mathcal{L}(w, X) - \mathcal{L}(w^\star, X) \\
+            &=
+            \tfrac{1}{2}\,
+            \delta w^\top H(w^\star, X)\, \delta w
+            \end{aligned}
+            \]
+          </div>
+          <p class="compact">
+            with $H(w^\star, X) = \nabla^2\mathcal{L}(w^\star, X)$.
+          </p>
+        </section>
+
+        <section>
+          <h2>Saliency$(i)$</h2>
+          <div class="eq-box">
+            \[
+            \mathrm{Saliency}(i)
+            =
+            \min_{\delta w_i = -w_i}
+            \;
+            E(\delta w)
+            \]
+          </div>
+          <p class="compact">
+            i.e.&nbsp;$w_i$ goes to $0$; the rest of the weights can take any
+            values.
+          </p>
+          <p class="q" style="margin-top: 0.8em;">
+            <strong>Q.</strong> How do we do a constrained minimization?
+          </p>
+        </section>
+
+        <section>
+          <h2>Lagrange multiplier method</h2>
+          <div class="eq-box">
+            \[
+            \delta w
+            =
+            \underset{\delta w}{\arg\min}
+            \;
+            T(\delta w, \lambda)
+            =
+            E(\delta w)
+            + \lambda\, e_i^\top (w + \delta w)
+            \]
+          </div>
+          <p class="compact">
+            with $E(\delta w) \approx \tfrac{1}{2}\,\delta w^\top H\,\delta w$.
+          </p>
+        </section>
+
+        <section>
+          <h2>Stationarity conditions</h2>
+          <div class="eq-box">
+            \[
+            \frac{\partial T}{\partial \lambda} = 0
+            \;\Longrightarrow\;
+            \delta w_i = -w_i
+            \]
+          </div>
+          <div class="eq-box">
+            \[
+            \frac{\partial T}{\partial (\delta w)} = 0
+            \;\Longrightarrow\;
+            H\,\delta w + \lambda\, e_i = 0
+            \]
+          </div>
+        </section>
+
+        <section>
+          <h2>Solve for $\lambda$</h2>
+          <p class="compact">
+            From $H\,\delta w + \lambda e_i = 0$:
+            $\delta w + \lambda\, H^{-1} e_i = 0$.
+          </p>
+          <p class="compact">
+            Match the $i$-th coordinate ($\delta w_i = -w_i$):
+          </p>
+          <div class="eq-box">
+            \[
+            -w_i = \lambda\, [H^{-1}]_{ii}
+            \qquad\Longrightarrow\qquad
+            \lambda = \frac{-w_i}{[H^{-1}]_{ii}}
+            \]
+          </div>
+        </section>
+
+        <section>
+          <h2>Solve for $\delta w$</h2>
+          <div class="eq-box">
+            \[
+            \delta w
+            =
+            -\lambda\, H^{-1} e_i
+            =
+            \frac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i
+            \]
+          </div>
+          <p class="compact">
+            Prefactor is a scalar; $\delta w$ is proportional to the $i$-th
+            column of $H^{-1}$.
+          </p>
+        </section>
+
+        <section>
+          <h2>Saliency$(i)$ and update</h2>
+          <div class="eq-box">
+            \[
+            \mathrm{Saliency}
+            =
+            \tfrac{1}{2}\,
+            \frac{w_i^2}{[H^{-1}]_{ii}}
+            \,,
+            \qquad
+            \delta w
+            =
+            \frac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i
+            \]
+          </div>
+        </section>
+
+        <section>
+          <h2>Complexity</h2>
+          <ul class="compact-list">
+            <li>
+              Dominated by forming / inverting the Hessian:
+              <strong>$O(N^3)$</strong>
+            </li>
+            <li>$N$ = number of parameters</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+        plugins: [RevealNotes],
+      });
+    </script>
+  </body>
+</html>
