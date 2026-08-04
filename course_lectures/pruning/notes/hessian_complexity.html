@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hessian Complexity — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .toc {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+      }
+
+      .toc .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.4rem;
+      }
+
+      .toc ol {
+        margin: 0;
+      }
+
+      .toc a {
+        color: var(--ink);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .diagram {
+        margin: 1.25rem 0;
+        padding: 1rem 1.15rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .diagram .caption {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.45;
+        margin-top: 0.65rem;
+      }
+
+      .fig-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 1.1rem;
+        margin: 1.25rem 0;
+      }
+
+      .fig-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 0.85rem 1rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .fig-row .fig-note {
+        flex: 1 1 10rem;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .fig-row svg {
+        flex: 0 0 auto;
+        max-width: 100%;
+      }
+
+      .cite {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .dims {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        background: rgba(11, 110, 79, 0.08);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="hessian_complexity.pdf">hessian_complexity.pdf</a>
+      </p>
+      <header>
+        <p class="meta">Efficient AI · Lecture notes</p>
+        <h1>Hessian complexity</h1>
+        <p>
+          How expensive is the Hessian of a network? When is the diagonal
+          enough? And for MSE loss, how do we approximate $H$ and $H^{-1}$
+          with rank-1 updates?
+        </p>
+      </header>
+
+      <div class="toc">
+        <div class="label">Four parts</div>
+        <ol>
+          <li>
+            <a href="#full-hessian">Full Hessian computation</a>
+          </li>
+          <li>
+            <a href="#hessian-diag"
+              >Hessian diagonal computation</a
+            >
+          </li>
+          <li>
+            <a href="#mse-approx">Approximation of $H$ for MSE loss</a>
+          </li>
+          <li>
+            <a href="#mse-inverse">Hessian inverse for MSE loss</a>
+          </li>
+        </ol>
+      </div>
+
+      <!-- ========== 1 ========== -->
+      <h2 id="full-hessian">1. Computation of the Hessian</h2>
+
+      <div class="q">
+        <strong>Q.</strong> How much time does it take to compute the Hessian of
+        a network?
+      </div>
+
+      <p>
+        Assume a computational graph with $n$ nodes and parameters also scale $O(n)$.
+      </p>
+
+      <ul>
+        <li>Forward pass: $O(n)$</li>
+        <li>Backward pass (first derivatives): $O(n)$</li>
+        <li>
+          Hessian $H = \nabla^2 L$ is an $n \times n$ matrix — $O(n^2)$ entries
+        </li>
+      </ul>
+
+      <div class="fig-stack">
+        <!-- Forward -->
+        <div class="fig-row">
+          <svg
+            width="340"
+            height="150"
+            viewBox="0 0 340 150"
+            aria-label="Forward pass on a diamond computational graph"
+          >
+            <defs>
+              <marker
+                id="arrow-fwd"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#0b6e4f" />
+              </marker>
+            </defs>
+            <line x1="70" y1="75" x2="148" y2="38" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-fwd)" />
+            <line x1="70" y1="75" x2="148" y2="112" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-fwd)" />
+            <line x1="172" y1="38" x2="248" y2="75" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-fwd)" />
+            <line x1="172" y1="112" x2="248" y2="75" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-fwd)" />
+            <circle cx="58" cy="75" r="14" fill="#e6f4ef" stroke="#0b6e4f" stroke-width="1.8" />
+            <text x="58" y="80" text-anchor="middle" font-size="15" fill="#1a2332" font-family="Source Serif 4, Georgia, serif">x</text>
+            <circle cx="160" cy="35" r="13" fill="#fff" stroke="#0b6e4f" stroke-width="1.6" />
+            <text x="160" y="39" text-anchor="middle" font-size="12" fill="#5a6a7d" font-family="IBM Plex Mono, monospace">z₁</text>
+            <circle cx="160" cy="115" r="13" fill="#fff" stroke="#0b6e4f" stroke-width="1.6" />
+            <text x="160" y="119" text-anchor="middle" font-size="12" fill="#5a6a7d" font-family="IBM Plex Mono, monospace">z₂</text>
+            <circle cx="268" cy="75" r="20" fill="#e6f4ef" stroke="#0b6e4f" stroke-width="1.8" />
+            <text x="268" y="80" text-anchor="middle" font-size="13" fill="#1a2332" font-family="Source Serif 4, Georgia, serif">F(x)</text>
+            <line x1="90" y1="140" x2="230" y2="140" stroke="#8a4b08" stroke-width="1.5" marker-end="url(#arrow-fwd)" />
+            <text x="160" y="135" text-anchor="middle" font-size="12" fill="#8a4b08" font-family="IBM Plex Mono, monospace">forward</text>
+          </svg>
+          <div class="fig-note">
+            <strong style="color: var(--ink)">Forward pass</strong><br />
+            Evaluate $F(x)$ once along the graph — $O(n)$.
+          </div>
+        </div>
+
+        <!-- Backward: same graph as forward, reverse direction arrow -->
+        <div class="fig-row">
+          <svg
+            width="340"
+            height="150"
+            viewBox="0 0 340 150"
+            aria-label="Backward pass on the same computational graph"
+          >
+            <defs>
+              <marker
+                id="arrow-bwd-edge"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#0b6e4f" />
+              </marker>
+              <marker
+                id="arrow-bwd-dir"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#0369a1" />
+              </marker>
+            </defs>
+            <line x1="70" y1="75" x2="148" y2="38" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-bwd-edge)" />
+            <line x1="70" y1="75" x2="148" y2="112" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-bwd-edge)" />
+            <line x1="172" y1="38" x2="248" y2="75" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-bwd-edge)" />
+            <line x1="172" y1="112" x2="248" y2="75" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-bwd-edge)" />
+            <circle cx="58" cy="75" r="14" fill="#e6f4ef" stroke="#0b6e4f" stroke-width="1.8" />
+            <text x="58" y="80" text-anchor="middle" font-size="15" fill="#1a2332" font-family="Source Serif 4, Georgia, serif">x</text>
+            <circle cx="160" cy="35" r="13" fill="#fff" stroke="#0b6e4f" stroke-width="1.6" />
+            <text x="160" y="39" text-anchor="middle" font-size="12" fill="#5a6a7d" font-family="IBM Plex Mono, monospace">z₁</text>
+            <circle cx="160" cy="115" r="13" fill="#fff" stroke="#0b6e4f" stroke-width="1.6" />
+            <text x="160" y="119" text-anchor="middle" font-size="12" fill="#5a6a7d" font-family="IBM Plex Mono, monospace">z₂</text>
+            <circle cx="268" cy="75" r="20" fill="#e6f4ef" stroke="#0b6e4f" stroke-width="1.8" />
+            <text x="268" y="80" text-anchor="middle" font-size="13" fill="#1a2332" font-family="Source Serif 4, Georgia, serif">F(x)</text>
+            <line x1="230" y1="140" x2="90" y2="140" stroke="#0369a1" stroke-width="1.5" marker-end="url(#arrow-bwd-dir)" />
+            <text x="160" y="135" text-anchor="middle" font-size="12" fill="#0369a1" font-family="IBM Plex Mono, monospace">backward</text>
+          </svg>
+          <div class="fig-note">
+            <strong style="color: var(--ink)">Backward pass</strong><br />
+            Same graph, reverse sweep — yields all first derivatives
+            $\partial F/\partial z_i$ in $O(n)$.
+          </div>
+        </div>
+
+        <!-- Backward-over-backward: derivative (backward) graph + forward arrow -->
+        <div class="fig-row">
+          <svg
+            width="360"
+            height="168"
+            viewBox="0 0 360 168"
+            aria-label="Backward-over-backward pass for second derivatives"
+          >
+            <defs>
+              <marker
+                id="arrow-hess-edge"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#0369a1" />
+              </marker>
+              <marker
+                id="arrow-hess-fwd"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a4b08" />
+              </marker>
+            </defs>
+            <line x1="255" y1="84" x2="188" y2="42" stroke="#0369a1" stroke-width="1.8" marker-end="url(#arrow-hess-edge)" />
+            <line x1="255" y1="84" x2="188" y2="126" stroke="#0369a1" stroke-width="1.8" marker-end="url(#arrow-hess-edge)" />
+            <line x1="152" y1="42" x2="88" y2="84" stroke="#0369a1" stroke-width="1.8" marker-end="url(#arrow-hess-edge)" />
+            <line x1="152" y1="126" x2="88" y2="84" stroke="#0369a1" stroke-width="1.8" marker-end="url(#arrow-hess-edge)" />
+            <ellipse cx="290" cy="84" rx="42" ry="28" fill="#e8f4fc" stroke="#0369a1" stroke-width="1.8" />
+            <text x="290" y="78" text-anchor="middle" font-size="11" fill="#152a45" font-family="IBM Plex Mono, monospace">∂F / ∂F(x)</text>
+            <text x="290" y="96" text-anchor="middle" font-size="12" fill="#1a2332" font-family="IBM Plex Mono, monospace">= 1</text>
+            <circle cx="170" cy="38" r="22" fill="#fff" stroke="#0369a1" stroke-width="1.6" />
+            <text x="170" y="34" text-anchor="middle" font-size="11" fill="#152a45" font-family="IBM Plex Mono, monospace">∂F</text>
+            <text x="170" y="48" text-anchor="middle" font-size="11" fill="#152a45" font-family="IBM Plex Mono, monospace">∂z₁</text>
+            <circle cx="170" cy="130" r="22" fill="#fff" stroke="#0369a1" stroke-width="1.6" />
+            <text x="170" y="126" text-anchor="middle" font-size="11" fill="#152a45" font-family="IBM Plex Mono, monospace">∂F</text>
+            <text x="170" y="140" text-anchor="middle" font-size="11" fill="#152a45" font-family="IBM Plex Mono, monospace">∂z₂</text>
+            <circle cx="62" cy="84" r="24" fill="#e8f4fc" stroke="#0369a1" stroke-width="1.8" />
+            <text x="62" y="80" text-anchor="middle" font-size="11" fill="#152a45" font-family="IBM Plex Mono, monospace">∂F</text>
+            <text x="62" y="94" text-anchor="middle" font-size="11" fill="#152a45" font-family="IBM Plex Mono, monospace">∂x</text>
+            <line x1="100" y1="158" x2="240" y2="158" stroke="#8a4b08" stroke-width="1.5" marker-end="url(#arrow-hess-fwd)" />
+            <text x="170" y="153" text-anchor="middle" font-size="12" fill="#8a4b08" font-family="IBM Plex Mono, monospace">backward-on-backward</text>
+          </svg>
+          <div class="fig-note">
+            <strong style="color: var(--ink)">“Backward–backward”</strong><br />
+            Run a forward pass on the backward graph — for <em>each</em> node of
+            interest — to get mixed derivatives such as
+            $\partial^2 F/(\partial z_1\,\partial x)$.
+          </div>
+        </div>
+      </div>
+
+      <div class="eq-box">
+        \[
+        O(n)\ \text{nodes}
+        \times
+        O(n)\ \text{per reverse pass}
+        \;=\;
+        O(n\times n)
+        \;=\;
+        O(n^2).
+        \]
+      </div>
+      <p class="cite">
+        Over $N$ data samples the full Hessian costs $O(N n^2)$ — already too
+        large for modern models.
+      </p>
+
+      <div class="remark">
+        <span class="label">Takeaway</span>
+        Storing and forming the dense Hessian is $O(n^2)$ (and $O(N n^2)$ with
+        data). Exact OBS-style methods that need the full $H$ (or $H^{-1}$)
+        cannot scale naively.
+      </div>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="hessian-diag">
+        2. Hessian diagonal.
+      </h2>
+
+
+
+      <div class="q">
+        <strong>Q.</strong> What if we only care about
+        $\partial^2 L / \partial w_i^2$ (the diagonal of $H$)?
+      </div>
+
+      <p>
+        This is exactly what <strong>Optimal Brain Damage (OBD)</strong> needs:
+        a diagonal Hessian approximation.
+      </p>
+
+      <div class="fig-row" style="justify-content: center;">
+        <svg
+          width="420"
+          height="150"
+          viewBox="0 0 420 150"
+          aria-label="Computational graph: x and w into f, then z into L"
+        >
+          <defs>
+            <marker
+              id="arrow-chain"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#0b6e4f" />
+            </marker>
+          </defs>
+          <!-- edges -->
+          <line x1="92" y1="52" x2="146" y2="52" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-chain)" />
+          <line x1="196" y1="52" x2="236" y2="52" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-chain)" />
+          <line x1="318" y1="52" x2="344" y2="52" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-chain)" />
+          <line x1="171" y1="108" x2="171" y2="72" stroke="#0b6e4f" stroke-width="1.8" marker-end="url(#arrow-chain)" />
+          <!-- nodes -->
+          <ellipse cx="52" cy="52" rx="40" ry="20" fill="#e6f4ef" stroke="#0b6e4f" stroke-width="1.8" />
+          <text x="52" y="57" text-anchor="middle" font-size="13" fill="#1a2332" font-family="IBM Plex Mono, monospace">vec(x)</text>
+          <rect x="148" y="32" width="46" height="40" rx="6" fill="#e6f4ef" stroke="#0b6e4f" stroke-width="1.8" />
+          <text x="171" y="57" text-anchor="middle" font-size="16" fill="#1a2332" font-family="Source Serif 4, Georgia, serif">f</text>
+          <ellipse cx="278" cy="52" rx="40" ry="20" fill="#e6f4ef" stroke="#0b6e4f" stroke-width="1.8" />
+          <text x="278" y="57" text-anchor="middle" font-size="13" fill="#1a2332" font-family="IBM Plex Mono, monospace">vec(z)</text>
+          <ellipse cx="378" cy="52" rx="34" ry="20" fill="#e6f4ef" stroke="#0b6e4f" stroke-width="1.8" />
+          <text x="378" y="57" text-anchor="middle" font-size="14" fill="#1a2332" font-family="Source Serif 4, Georgia, serif">L(z)</text>
+          <circle cx="171" cy="122" r="16" fill="#fff" stroke="#0b6e4f" stroke-width="1.8" stroke-dasharray="3 2" />
+          <text x="171" y="127" text-anchor="middle" font-size="14" fill="#1a2332" font-family="Source Serif 4, Georgia, serif">w</text>
+        </svg>
+        <div class="fig-note">
+          $\vec{x}$ and $\vec{w}$ feed $f$; output $\vec{z}=f(\vec{x};\vec{w})$ then
+          enters the loss $L(\vec{z})$.
+        </div>
+      </div>
+      <h3>Diagonal of a weight $w_{ij}$</h3>
+      <p>
+        For a scalar edge $x_i \xrightarrow{w_{ij}} z_j$ with local map $f$,
+      </p>
+      <div class="eq">
+        \[
+        \frac{\partial L}{\partial w_{ij}}
+        =
+        \frac{\partial L}{\partial z_j}\,
+        \frac{\partial z_j}{\partial w_{ij}}
+        =
+        \frac{\partial L}{\partial z_j}\, f'(w_{ij}).
+        \]
+      </div>
+      <div class="eq-box">
+        \[
+        \frac{\partial^2 L}{\partial w_{ij}^2}
+        =
+        \bigl(f'(w_{ij})\bigr)^2\,
+        \frac{\partial^2 L}{\partial z_j^2}
+        + f''(w_{ij})\,
+        \frac{\partial L}{\partial z_j}
+        .
+        \]
+      </div>
+
+
+      <h3>Hessian chain rule</h3>
+      <p>
+        Let $\vec{z} = f(\vec{x})$ and loss $L(\vec{z})$. Then
+      </p>
+      <div class="eq-box">
+        \[
+        \nabla^2_x L
+        =
+        J_f^\top\,(\nabla^2_z L)\, J_f
+        +
+        \sum_{j=1}^{m}
+        \nabla^2_x z_j \frac{\partial L}{\partial z_j}.
+        \]
+      </div>
+      <ul>
+        <li>
+          First term — <em>global curvature</em> pushed through the local
+          Jacobian $J_f$
+        </li>
+        <li>
+          $\partial L/\partial z_i$ — global gradient;
+          $\nabla^2_x z_i$ — <em>local</em> curvature
+        </li>
+        <li>We only need local Hessians to be computed along the graph</li>
+      </ul>
+      <p class="dims">
+        Dimensions: $\nabla^2_x L$ is $d\times d$, $J_f$ is $d'\times d$,
+        $\nabla^2_z L$ is $d'\times d'$.
+      </p>
+
+      <div class="remark">
+        <span class="label">Complexity</span>
+        All diagonal entries of the Hessian over the parameters can be obtained
+        in a single “non-traditional” backward pass — cost
+        <strong>$O(n)$</strong>, same order as a gradient.
+        <br /><br />
+        $\Rightarrow$ OBD is feasible: one forward + one specialized backward.
+      </div>
+
+      <!-- ========== 3 ========== -->
+      <h2 id="mse-approx">3. Approximation of the Hessian for MSE loss</h2>
+
+      <p>
+        Specialize to squared error. Let $o = F(\vec{w},\vec{x})$ and target
+        $t$, with
+      </p>
+      <div class="eq-box">
+        \[
+        E
+        =
+        \frac{1}{2N}
+        \sum_{i=1}^{N}
+        \bigl(t_i - o_i\bigr)^2,
+        \qquad
+        o_i = F(\vec{w},\vec{x}_i).
+        \]
+      </div>
+
+      <p>Gradient ($n\times 1$ if $\vec{w}\in\mathbb{R}^n$):</p>
+      <div class="eq">
+        \[
+        \frac{\partial E}{\partial w}
+        =
+        \frac{1}{N}
+        \sum_{i=1}^{N}
+        (t_i - o_i)\,
+        \Bigl(-\frac{\partial F}{\partial w}\Bigr)
+        =
+        -\frac{1}{N}
+        \sum_{i=1}^{N}
+        (t_i - o_i)\,
+        \nabla_w F_i.
+        \]
+      </div>
+
+      <p>Exact Hessian ($n\times n$), by the product rule:</p>
+      <div class="eq-box">
+        \[
+        \frac{\partial^2 E}{\partial w^2}
+        =
+        \frac{1}{N}
+        \sum_{i=1}^{N}
+        \Biggl[
+          \nabla_w F_i\,(\nabla_w F_i)^\top
+          +
+          (o_i - t_i)\,
+          \nabla_w^2 F_i
+        \Biggr].
+        \]
+      </div>
+
+      <div class="q">
+        <strong>Approximation.</strong> If the model fits well,
+        $t_i \approx o_i$, so the residual term vanishes:
+        <div class="eq" style="margin-bottom: 0">
+          \[
+          H
+          \;\approx\;
+          \frac{1}{N}
+          \sum_{i=1}^{N}
+          \nabla_w F_i\,(\nabla_w F_i)^\top
+          \;=\;
+          \frac{1}{N}
+          \sum_{i=1}^{N}
+          X_i X_i^\top.
+          \]
+        </div>
+      </div>
+
+      <ul>
+        <li>
+          $X_i = \nabla_w F(\vec{w},\vec{x}_i)$ is $n\times 1$; each outer
+          product is $n\times n$
+        </li>
+        <li>
+          $H$ is the (scaled) <em>sample covariance of the output gradients</em>
+        </li>
+        <li>
+          Cost to form this approximate Hessian:
+          <strong>$O(N n^2)$</strong>
+        </li>
+        <li class="cite">
+          Note: this holds for MSE; exercise — what changes
+          for cross-entropy?
+        </li>
+      </ul>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="mse-inverse">4. Hessian inverse for MSE loss</h2>
+
+      <p>
+        A dense inverse from scratch is generally
+        <strong>$O(n^3)$</strong>. The MSE approximation
+        $H = \tfrac{1}{N}\sum_i X_i X_i^\top$ is a sum of rank-1 matrices, so we
+        can maintain $H^{-1}$ with rank-1 updates.
+      </p>
+
+      <h3>Sherman–Morrison (rank-1 update)</h3>
+      <p>
+        For invertible $A$ and vectors $u,v$ with
+        $1 + v^\top A^{-1}u \neq 0$:
+      </p>
+      <div class="eq-box">
+        \[
+        (A + uv^\top)^{-1}
+        =
+        A^{-1}
+        -
+        \frac{A^{-1}uv^\top A^{-1}}{1 + v^\top A^{-1}u}.
+        \]
+      </div>
+
+      <h3>Iterative construction</h3>
+      <p>
+        Write $H_k = H_{k-1} + \tfrac{1}{N} X^{(k)} X^{(k)\top}$ with
+        $X^{(k)} = \nabla_w F(\vec{w},\mathrm{in}^{(k)})$. Then
+      </p>
+      <div class="eq">
+        \[
+        a
+        =
+        1
+        +
+        \tfrac{1}{N}\,
+        X^{(k)\top} H_{k-1}^{-1} X^{(k)},
+        \]
+      </div>
+      <div class="eq-box">
+        \[
+        H_k^{-1}
+        =
+        H_{k-1}^{-1}
+        -
+        \frac{
+          H_{k-1}^{-1}
+          X^{(k)}
+          X^{(k)\top}
+          H_{k-1}^{-1}
+        }{
+          N\, a
+        }.
+        \]
+      </div>
+      <p>
+        Equivalently, with $u = v = (\nabla F)_k$ absorbed into the same
+        rank-1 form:
+      </p>
+      <div class="eq">
+        \[
+        H_k^{-1}
+        =
+        H_{k-1}^{-1}
+        -
+        \frac{
+          H_{k-1}^{-1} u\, v^\top H_{k-1}^{-1}
+        }{
+          1 + v^\top H_{k-1}^{-1} u
+        }.
+        \]
+      </div>
+
+      <h3>Initialization and regularization</h3>
+      <ul>
+        <li>
+          Start from $H_0 = \lambda I$ with $\lambda$ small (so $H_0^{-1}$
+          exists)
+        </li>
+        <li>
+          For small $\lambda$, the final inverse is insensitive to the exact
+          choice
+        </li>
+        <li>
+          $\lambda \neq 0$ is equivalent to $\ell_2$ weight decay on the loss:
+        </li>
+      </ul>
+      <div class="eq-box">
+        \[
+        E
+        =
+        \frac{1}{2N}
+        \sum_i
+        \bigl(F(\vec{x}_i,\vec{w}) - t_i\bigr)^2
+        +
+        \frac{\lambda}{2}\,\|\vec{w}\|_2^2.
+        \]
+      </div>
+
+      <div class="remark">
+        <span class="label">Complexity</span>
+        Updating $H^{-1}$ over $N$ samples costs
+        <strong>$O(N n^2)$</strong> (one outer-product-scale update per
+        sample), avoiding a separate $O(n^3)$ factorization. Contrast with
+        forming $H$ then inverting from scratch:
+        $O(N n^2 + n^3)$.
+      </div>
+
+      <p class="next">
+        Next: use $H^{-1}$ in OBS saliency / weight updates, or fall back to
+        the $O(n)$ diagonal for OBD / IMP.
+      </p>
+    </div>
+  </body>
+</html>

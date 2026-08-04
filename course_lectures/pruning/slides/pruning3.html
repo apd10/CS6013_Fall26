@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Pruning</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      /* Shared slide background template (course_lectures/assets/) */
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        background: transparent;
+        /* Keep text clear of corner graphics */
+        padding: 0 8%;
+      }
+
+      /* Subtle tech grid overlay */
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h2 {
+        border-bottom: 2px solid var(--accent);
+        display: inline-block;
+        padding-bottom: 0.12em;
+        margin-bottom: 0.55em;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal small {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        letter-spacing: 0.03em;
+        color: var(--muted);
+      }
+
+      .reveal ul {
+        list-style: none;
+      }
+
+      .reveal ul > li {
+        position: relative;
+        padding-left: 1.1em;
+      }
+
+      .reveal ul > li::before {
+        content: "›";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--accent);
+        font-weight: 700;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal ol {
+        list-style: none;
+        counter-reset: tech;
+      }
+
+      .reveal ol > li {
+        position: relative;
+        counter-increment: tech;
+        padding-left: 1.75em;
+      }
+
+      .reveal ol > li::before {
+        content: counter(tech, decimal-leading-zero);
+        position: absolute;
+        left: 0;
+        top: 0.08em;
+        color: var(--accent-deep);
+        font-size: 0.72em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-weight: 600;
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.55);
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+      }
+
+      .reveal a {
+        color: var(--accent-deep);
+        text-decoration-color: var(--accent);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .reveal .compact {
+        font-size: 0.78em;
+        margin-bottom: 0.6em;
+      }
+
+      .reveal .compact-list {
+        font-size: 0.72em;
+        line-height: 1.3;
+        text-align: left;
+      }
+
+      .reveal .compact-list > li {
+        margin-bottom: 0.35em;
+      }
+
+      .reveal .compact-list.tighter {
+        font-size: 0.65em;
+        margin-top: 0.5em;
+      }
+
+      .reveal code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85em;
+        color: var(--accent-deep);
+        background: rgba(7, 26, 51, 0.06);
+        padding: 0.08em 0.35em;
+        border: 1px solid var(--line);
+      }
+
+      .reveal .slide-figure {
+        display: block;
+        margin: 0.55em auto 0;
+        max-width: min(70%, 520px);
+        max-height: 28vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .reveal .q {
+        background: rgba(14, 165, 233, 0.1);
+        border-left: 4px solid var(--accent);
+        padding: 0.45em 0.7em;
+        border-radius: 0 6px 6px 0;
+        text-align: left;
+        color: var(--ink-soft);
+      }
+
+      .reveal .q strong {
+        color: var(--accent-deep);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.9em;
+      }
+
+      .reveal .eq-box {
+        display: inline-block;
+        margin: 0.25em auto 0.4em;
+        padding: 0.3em 0.9em;
+        border: 2px solid var(--accent-deep);
+        border-radius: 8px;
+        background: rgba(14, 165, 233, 0.08);
+        color: var(--ink);
+        font-size: 0.72em;
+        max-width: 95%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        
+        <section>
+          <h3> Pruning LLMs</h3>
+          <p> <i>and now llms...</i></p>
+          
+          <ol>
+            <li> Sparse GPT, Wanda </li>
+            <li> Bonsai </li>
+          </ol>
+        </section>
+        
+
+          <section>
+            <h3> Can we apply OBS to LLMS?</h3>
+          </section>
+          <section>
+            <h3> Can we apply OBS to LLMS?</h3>
+            <ul class="compact-list">
+              <li> O(nkN^2) for OBS  (with hessian inverse simplification)</li>
+              <ul>
+                <li>n = number of calibration data points</li>
+                <li>k = number of pruning steps</li>
+                <li>N = number of weights in the model</li>
+              </ul>
+              <li> Remark: This algorithms can "potentially" be applied to LLMs without retraining</li>
+              <li> what about OBD ?</li>
+            </ul>
+          </section>
+          <section>
+            <h3> Can we apply OBD/IMP to LLMS?</h3>
+            <ul class="compact-list">
+              <li> O(nkN) for OBD  (with forward-backward pass simplification)</li>
+              <ul>
+                <li>n = number of calibration data points</li>
+                <li>k = number of pruning steps</li>
+                <li>N = number of weights in the model</li>
+              </ul>
+              <li> Remark: These algorithms need retraining !! </li>
+              <li> IMP?: <span style="color: red;">Retraining even more important!!</span></li> <small>( some labs like mistral have done it with iterative training)</small>
+              <li> Since training is generally not an option, we need to be as "accurate" as possible while pruning: lets go back to OBS!</li>
+            </ul>
+          </section>
+          <section>
+            <h3> Applying OBS to LLMs</h3>
+            <ul class="compact-list">
+              <li> Idea 1: Break into sub-problems: If we approximate each layer accurately, the overall error will be low.</li>
+              <li> This breaks down approximation further since each row is an independent problem: we approximating each neuron.</li>
+              <li> Complexity of applying OBS to a neuron </li>
+              <ul>
+                <li> O(d^3) for OBS </li>
+                <li> O(nd^2) for OBS with hessian inverse simplification </li>
+                <ul style="color: red;"> This needs sequential computation -- cannot be parallelized</ul>
+              </ul>
+            </ul>
+            <code>O(d<sub>row</sub>d<sup>3</sup>)</code> for OBS one layer LLM
+            <p> Still quite expensive for one layer!!</p>
+          </section>
+
+          <!-- ========== SparseGPT Explanation ========== -->
+          <section>
+            <h2>SparseGPT</h2>
+            <p>Frantar &amp; Alistarh, 2023</p>
+          </section>
+
+          <section>
+            <h3>Revisit: pruning a neuron</h3>
+            <ul>
+              <li>Jointly optimizing the <strong>mask</strong> and the <strong>weights</strong> is NP-hard.</li>
+              <li>So assume we already have a mask $M_i$.</li>
+            </ul>
+            <p class="q" style="margin-top: 1em;">
+              <strong>Q.</strong> Can we then solve the reconstruction problem?
+            </p>
+          </section>
+
+          <section>
+            <h3>Yes — closed-form solution</h3>
+            <div class="eq" style="margin: 0.6em 0;">
+              \[
+                w^{i}_{M_i}
+                =
+                \bigl(X_{M_i} X_{M_i}^\top\bigr)^{-1}
+                X_{M_i}
+                (w^{i} X)^\top
+              \]
+            </div>
+            <ul class="compact-list">
+              <li>$M_i$ — kept indices for row $i$</li>
+              <li>$X_{M_i}$ — data restricted to those features</li>
+              <li>$w^{i}_{M_i}$ — updated sparse weights for that row</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> If we do this, what is the complexity?
+            </p>
+          </section>
+
+          <section>
+            <h3>Complexity: still dominated by $H^{-1}$</h3>
+            <ul>
+              <li>Main cost: Hessian inverse $\sim O(d^3)$</li>
+              <li>Per layer: $O(d_{\mathrm{row}}\, d^3)$</li>
+              <li>Hessian depends on <em>data</em>, not weights.</li>
+              <li>
+                But we <strong>cannot reuse</strong> computation across rows:
+                different masks ⇒ different submatrices ⇒ different inverses.
+              </li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> What do we do? Make the masks the same?
+            </p>
+          </section>
+
+          <section>
+            <h3>Same masks ⇒ structured pruning</h3>
+            <ul>
+              <li>Shared masks would let us reuse one $H^{-1}$.</li>
+              <li>That yields <strong>structured</strong> pruning.</li>
+              <li>Efficient for hardware, but generally worse for accuracy.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> So what is the way around it?
+            </p>
+          </section>
+
+          <section>
+            <h3>Reuse one Hessian for another</h3>
+            <ul>
+              <li>Bottleneck is computing many different $H^{-1}$.</li>
+              <li>We know relations between inverses of nested submatrices.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> Does this remind you of some identity?
+            </p>
+          </section>
+
+          <section>
+            <h3>Gaussian-elimination update of $H^{-1}$</h3>
+            <ul class="compact-list">
+              <li>
+                Start with $U_1 = \{1,\ldots,d\}$; each $U_{j+1}$ drops the next index from $U_j$.
+              </li>
+              <li>
+                Share the nested inverses
+                $(H_{U_j})^{-1} = ((XX^\top)_{U_j})^{-1}$
+                across <em>all</em> rows of $W$.
+              </li>
+              <li>
+                With $B = (H_{U_j})^{-1}$, one Gaussian-elimination step gives the next inverse in $O(d_{\mathrm{col}}^2)$:
+              </li>
+            </ul>
+            <div class="eq" style="margin: 0.45em 0;">
+              \[
+                (H_{U_{j+1}})^{-1}
+                =
+                \left(
+                  B
+                  -
+                  \frac{1}{[B]_{11}}\,
+                  B_{:,1} B_{1,:}
+                \right)_{2:,\,2:}
+              \]
+            </div>
+            <p class="q" style="margin-top: 0.5em;">
+              <strong>Q.</strong> Can we use this somehow?
+            </p>
+          </section>
+
+          <section>
+            <h3>Need rank-1 removals</h3>
+            <ul>
+              <li>To match the identity, each next Hessian must be one column smaller.</li>
+              <li>Start from the <strong>full</strong> inverse (no mask).</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> Which inverse is then cheap to get by reusing that matrix?
+            </p>
+          </section>
+
+          <section>
+            <h3>Answer: remove one column at a time</h3>
+            <ul>
+              <li>Any matrix with one column/channel removed.</li>
+              <li>⇒ Sweep left→right: prune a column, update remaining weights, shrink $H^{-1}$.</li>
+            </ul>
+            <p class="compact" style="margin-top: 0.8em; color: var(--accent-deep);">
+              So let’s do a sweep!
+            </p>
+          </section>
+
+          <section>
+            <h3>SparseGPT reconstruction sweep</h3>
+            <img
+              src="../assets/sparsegpt_sweep.png"
+              alt="SparseGPT column-wise reconstruction with shrinking Hessian"
+              style="max-width: 92%; max-height: 48vh; object-fit: contain; background: #fff; border-radius: 8px;"
+            />
+            <ul class="compact-list">
+              <li>Compute $H^{-1}$; mask the first column; update weights to the right.</li>
+              <li>Shrink the Hessian; repeat for the next column.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.4em;">
+              <strong>Q.</strong> How does this relate to an exact greedy compression framework?
+            </p>
+          </section>
+
+          <section>
+            <h3>Weight-freezing interpretation</h3>
+            <ul>
+              <li>
+                Exact greedy view: compress column by column, optimally updating all not-yet-compressed weights.
+              </li>
+              <li>
+                SparseGPT only zeros <em>some</em> weights in a column and only updates a subset of the rest —
+                but “compress” means fix a value and never decompress it again.
+              </li>
+              <li>
+                Define column-wise compression as
+              </li>
+            </ul>
+            <div class="eq" style="margin: 0.4em 0;">
+              \[
+                \mathrm{compress}(w^j)_i
+                =
+                \begin{cases}
+                  0 & \text{if } j \notin M_i \\
+                  w^j_i & \text{otherwise}
+                \end{cases}
+              \]
+            </div>
+            <ul class="compact-list">
+              <li>⇒ Exact column-wise greedy scheme.</li>
+              <li>Same view cleanly merges sparsification and quantization in one pass.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.4em;">
+              <strong>Q.</strong> Should the pruning mask be fixed in advance?
+            </p>
+          </section>
+
+          <section>
+            <h3>Adaptive mask selection</h3>
+            <ul>
+              <li>Fixed mask (e.g. magnitude / AdaPrune) is a baseline.</li>
+              <li>During reconstruction, weight updates change values a lot (correlations).</li>
+              <li>SparseGPT chooses the mask <strong>adaptively while reconstructing</strong>.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> Why not just prune the easiest $p\%$ weights in every column?
+            </p>
+          </section>
+
+          <section>
+            <h3>Uniform per-column sparsity is too rigid</h3>
+            <ul>
+              <li>Forces the same sparsity in every column.</li>
+              <li>Especially bad for LLMs: a few <strong>outlier features</strong> are highly sensitive.</li>
+            </ul>
+            <p class="q" style="margin-top: 0.8em;">
+              <strong>Q.</strong> How do we allow non-uniform selection?
+            </p>
+          </section>
+
+          <section>
+            <h3>Answer: iterative blocking</h3>
+            <div style="display: flex; gap: 1em; align-items: center;">
+              <img
+                src="../assets/sparsegpt_blocking_fig.png"
+                alt="Adaptive mask selection via iterative blocking"
+                style="max-width: 42%; max-height: 55vh; object-fit: contain; background: #fff; border-radius: 8px;"
+              />
+              <ul class="compact-list" style="flex: 1; margin: 0;">
+                <li>Select the mask for a block of $B_s = 128$ columns at a time.</li>
+                <li>Criterion: OBS reconstruction error $\varepsilon$ from Hessian diagonals.</li>
+                <li>Update those $B_s$ columns; then move to the next block.</li>
+                <li>⇒ Non-uniform sparsity across columns, using Hessian info + prior updates.</li>
+                <li>For a single column, the criterion reduces to magnitude ($[H^{-1}]_{jj}$ constant across rows).</li>
+              </ul>
+            </div>
+          </section>
+
+          <section>
+            <h3>Extension: structured / N:M sparsity</h3>
+            <ul>
+              <li>Same sweepsection>
+
+          <section>
+            <h2>Wanda</h2>
+            <p>Sun. et. al 2023</p>
+          </section>
+
+          <section>
+            <h3>Wanda: Applying OBD to every neuron</h3>
+            <ul class="compact-list">
+              <li>OBD-style saliency: $S_{ij} = W_{ij}^2\, H_{jj}$</li>
+              <li>$H = X^\top X \;\Longrightarrow\; H_{jj} = \|X_j\|_2^2$ where $X_j$ is all data for jth feature </li>
+
+              <li>$\Rightarrow\; S_{ij} = W_{ij}^2\, \|X_j\|_2^2$</li>
+              <li>Wanda score (same ranking): $S_{ij} = |W_{ij}|\, \|X_j\|_2$</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Wanda: Applying OBD to every neuron</h3>
+            <ul class="compact-list">
+              <li> No Weight update </li>
+              <li> Faster to compute than SparseGPT</li>
+              <li> uniform sparsity in each neuron </li>
+
+            </ul>
+          </section>
+          <section>
+            <h1>Results from the paper</h1>
+          <p>
+            "Let LLM Tell You What to Prune and How Much to Prune" by Yang et al. 2025 (ICML)
+          </p>
+          </section>
+          <section>
+            <img src="../assets/prune_llm_1.png" alt="LLM Pruner" style="width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 8px;">
+          </section>
+          <section>
+            <img src="../assets/prune_llm_2.png" alt="LLM Pruner" style="width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 8px;">
+          </section>
+          <section>
+            <h3> Takeaways for LLM Pruning</h3>
+            <ul class="compact-list">
+            <li> Perplexity and Downstream quality are severely affected by pruning (w.o retraining)</li>
+            <li> Note that this is just evaluation of base models. The effect on instruction tuned / reasoning model etc is not even evaluated.</li>
+            <li> Even after so many papers, <span style="color: red;">(structured)</span> pruning is not a solved problem.</span></li>
+          </ul>
+          </section>
+
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+        plugins: [RevealNotes],
+      });
+    </script>
+  </body>
+</html>
