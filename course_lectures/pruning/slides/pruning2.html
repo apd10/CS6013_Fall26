@@ -632,18 +632,23 @@
         <img src="../assets/structured_pruning_1.png" alt="Structured Pruning" style="max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); margin-bottom: 1em;">
       </section>
         <section> 
-          <h3> Pruning a Linear layer -- a hardware friendly way</h3>
-        <div style="display: flex; flex-direction: column; align-items: center;">
-          <img 
-            src="../assets/gemm.webp" 
-            alt="GEMM Pruning - Linear Layer Hardware Friendly" 
-            style="max-width: 60%; max-height: 50vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); margin-bottom: 1em;"
-          />
-        </div>
+          <h3>Pruning a Linear layer -- a hardware friendly way</h3>
+          <div style="display: flex; justify-content: center; align-items: flex-start; gap: 2em;">
+            <img 
+              src="../assets/gemm.webp" 
+              alt="GEMM Pruning - Linear Layer Hardware Friendly" 
+              style="max-width: 48%; max-height: 50vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); margin-bottom: 1em;"
+            />
+            <ol style="flex: 1; font-size: 0.92em; margin: 0.5em 0 0 0;" class="compact-list tighter">
+              <li>What is the algorithm for MM (matrix multiplication) on GPU?</li>
+              <li>Why is tiling important?</li>
+              <li>How would you prune?</li>
+            </ol>
+          </div>
         </section>
         
         <section> 
-          <h3>Pruning a Linear layer -- a hardware friendly way</h3>
+          <h3>Pruning a Linear layer : a hardware friendly way</h3>
           <div style="display: flex; justify-content: center; align-items: center; gap: 1.2em;">
             <img 
               src="../assets/gemm.webp" 
@@ -1023,6 +1028,11 @@
 
         <section>
           <h3>Estimating $\beta$</h3>
+          <img src="../assets/picture_bonsai.png" alt="Estimating $\beta$" style="max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); margin-bottom: 1em;">
+        </section>
+
+        <section>
+          <h3>Estimating $\beta$</h3>
           <ul class="compact-list tighter">
             <li>Build a small dataset of virtual sub-models
               $\mathbb{D} = \{\bar{m}_k, U_k\}_{k\in[n]}$ with $n \ll |\mathcal{F}_p$</li>
@@ -1055,14 +1065,6 @@
             <li>Sample with prior $\rho_i$ (usefulness):
               $P(m_i \text{ included}) \propto \rho_i$</li>
             <li>Priors from pruning literature: Wanda, activation magnitude, …</li>
-            <li>For $W\in\mathbb{R}^{d\times d}$, keep column $i$ with
-              \[
-              \rho_i \propto \hat{a}_i
-              =
-              \frac{1}{B}\sum_b
-              \bigl|\sigma\!\bigl((W^\top[i,:])\,x_b\bigr)\bigr|
-              \]
-              (cheap: forward passes on unmodified $M_\theta$)</li>
           </ul>
         </section>
 
