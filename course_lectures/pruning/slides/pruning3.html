@@ -266,335 +266,467 @@
   <body>
     <div class="reveal">
       <div class="slides">
-        
         <section>
-          <h3> Pruning LLMs</h3>
-          <p> <i>and now llms...</i></p>
-          
-          <ol>
-            <li> Sparse GPT, Wanda </li>
-            <li> Bonsai </li>
-          </ol>
+          <h1>Efficient AI</h1>
+          <p>Pruning / Sparsity</p>
+          <p>
+            <small>Aditya Desai</small>
+          </p>
+          <p style="margin-top: 2.5em;">
+            <small style="font-size: 0.45em; line-height: 1.35; display: inline-block; max-width: 85%;">
+              Many thanks to all the resources listed in References on the main
+              website. Almost all figures are taken from these resources; some
+              were generated with Gemini. Some images are taken from Google
+              Images and still need proper citation (in progress).
+            </small>
+          </p>
+        </section>
+        <section>
+          <h3> Structured Sparsity vs Unstructured Sparsity</h3>
+          <ul class="compact-list">
+            <li>Structured sparsity is more hardware friendly. But usually not very accurate</li>
+            <li>Unstructured sparsity is more accurate. But usually not hardware friendly</li>
+            <li> Enter: Hardware support</li>
+          </ul>
+        </section>
+
+        <section>
+          <h1> Hardware Support for Sparsity </h1>
         </section>
         
-
-          <section>
-            <h3> Can we apply OBS to LLMS?</h3>
-          </section>
-          <section>
-            <h3> Can we apply OBS to LLMS?</h3>
-            <ul class="compact-list">
-              <li> O(nkN^2) for OBS  (with hessian inverse simplification)</li>
-              <ul>
-                <li>n = number of calibration data points</li>
-                <li>k = number of pruning steps</li>
-                <li>N = number of weights in the model</li>
-              </ul>
-              <li> Remark: This algorithms can "potentially" be applied to LLMs without retraining</li>
-              <li> what about OBD ?</li>
-            </ul>
-          </section>
-          <section>
-            <h3> Can we apply OBD/IMP to LLMS?</h3>
-            <ul class="compact-list">
-              <li> O(nkN) for OBD  (with forward-backward pass simplification)</li>
-              <ul>
-                <li>n = number of calibration data points</li>
-                <li>k = number of pruning steps</li>
-                <li>N = number of weights in the model</li>
-              </ul>
-              <li> Remark: These algorithms need retraining !! </li>
-              <li> IMP?: <span style="color: red;">Retraining even more important!!</span></li> <small>( some labs like mistral have done it with iterative training)</small>
-              <li> Since training is generally not an option, we need to be as "accurate" as possible while pruning: lets go back to OBS!</li>
-            </ul>
-          </section>
-          <section>
-            <h3> Applying OBS to LLMs</h3>
-            <ul class="compact-list">
-              <li> Idea 1: Break into sub-problems: If we approximate each layer accurately, the overall error will be low.</li>
-              <li> This breaks down approximation further since each row is an independent problem: we approximating each neuron.</li>
-              <li> Complexity of applying OBS to a neuron </li>
-              <ul>
-                <li> O(d^3) for OBS </li>
-                <li> O(nd^2) for OBS with hessian inverse simplification </li>
-                <ul style="color: red;"> This needs sequential computation -- cannot be parallelized</ul>
-              </ul>
-            </ul>
-            <code>O(d<sub>row</sub>d<sup>3</sup>)</code> for OBS one layer LLM
-            <p> Still quite expensive for one layer!!</p>
-          </section>
-
-          <!-- ========== SparseGPT Explanation ========== -->
-          <section>
-            <h2>SparseGPT</h2>
-            <p>Frantar &amp; Alistarh, 2023</p>
-          </section>
-
-          <section>
-            <h3>Revisit: pruning a neuron</h3>
-            <ul>
-              <li>Jointly optimizing the <strong>mask</strong> and the <strong>weights</strong> is NP-hard.</li>
-              <li>So assume we already have a mask $M_i$.</li>
-            </ul>
-            <p class="q" style="margin-top: 1em;">
-              <strong>Q.</strong> Can we then solve the reconstruction problem?
-            </p>
-          </section>
-
-          <section>
-            <h3>Yes — closed-form solution</h3>
-            <div class="eq" style="margin: 0.6em 0;">
-              \[
-                w^{i}_{M_i}
-                =
-                \bigl(X_{M_i} X_{M_i}^\top\bigr)^{-1}
-                X_{M_i}
-                (w^{i} X)^\top
-              \]
-            </div>
-            <ul class="compact-list">
-              <li>$M_i$ — kept indices for row $i$</li>
-              <li>$X_{M_i}$ — data restricted to those features</li>
-              <li>$w^{i}_{M_i}$ — updated sparse weights for that row</li>
-            </ul>
-            <p class="q" style="margin-top: 0.8em;">
-              <strong>Q.</strong> If we do this, what is the complexity?
-            </p>
-          </section>
-
-          <section>
-            <h3>Complexity: still dominated by $H^{-1}$</h3>
-            <ul>
-              <li>Main cost: Hessian inverse $\sim O(d^3)$</li>
-              <li>Per layer: $O(d_{\mathrm{row}}\, d^3)$</li>
-              <li>Hessian depends on <em>data</em>, not weights.</li>
-              <li>
-                But we <strong>cannot reuse</strong> computation across rows:
-                different masks ⇒ different submatrices ⇒ different inverses.
-              </li>
-            </ul>
-            <p class="q" style="margin-top: 0.8em;">
-              <strong>Q.</strong> What do we do? Make the masks the same?
-            </p>
-          </section>
-
-          <section>
-            <h3>Same masks ⇒ structured pruning</h3>
-            <ul>
-              <li>Shared masks would let us reuse one $H^{-1}$.</li>
-              <li>That yields <strong>structured</strong> pruning.</li>
-              <li>Efficient for hardware, but generally worse for accuracy.</li>
-            </ul>
-            <p class="q" style="margin-top: 0.8em;">
-              <strong>Q.</strong> So what is the way around it?
-            </p>
-          </section>
-
-          <section>
-            <h3>Reuse one Hessian for another</h3>
-            <ul>
-              <li>Bottleneck is computing many different $H^{-1}$.</li>
-              <li>We know relations between inverses of nested submatrices.</li>
-            </ul>
-            <p class="q" style="margin-top: 0.8em;">
-              <strong>Q.</strong> Does this remind you of some identity?
-            </p>
-          </section>
-
-          <section>
-            <h3>Gaussian-elimination update of $H^{-1}$</h3>
-            <ul class="compact-list">
-              <li>
-                Start with $U_1 = \{1,\ldots,d\}$; each $U_{j+1}$ drops the next index from $U_j$.
-              </li>
-              <li>
-                Share the nested inverses
-                $(H_{U_j})^{-1} = ((XX^\top)_{U_j})^{-1}$
-                across <em>all</em> rows of $W$.
-              </li>
-              <li>
-                With $B = (H_{U_j})^{-1}$, one Gaussian-elimination step gives the next inverse in $O(d_{\mathrm{col}}^2)$:
-              </li>
-            </ul>
-            <div class="eq" style="margin: 0.45em 0;">
-              \[
-                (H_{U_{j+1}})^{-1}
-                =
-                \left(
-                  B
-                  -
-                  \frac{1}{[B]_{11}}\,
-                  B_{:,1} B_{1,:}
-                \right)_{2:,\,2:}
-              \]
-            </div>
-            <p class="q" style="margin-top: 0.5em;">
-              <strong>Q.</strong> Can we use this somehow?
-            </p>
-          </section>
-
-          <section>
-            <h3>Need rank-1 removals</h3>
-            <ul>
-              <li>To match the identity, each next Hessian must be one column smaller.</li>
-              <li>Start from the <strong>full</strong> inverse (no mask).</li>
-            </ul>
-            <p class="q" style="margin-top: 0.8em;">
-              <strong>Q.</strong> Which inverse is then cheap to get by reusing that matrix?
-            </p>
-          </section>
-
-          <section>
-            <h3>Answer: remove one column at a time</h3>
-            <ul>
-              <li>Any matrix with one column/channel removed.</li>
-              <li>⇒ Sweep left→right: prune a column, update remaining weights, shrink $H^{-1}$.</li>
-            </ul>
-            <p class="compact" style="margin-top: 0.8em; color: var(--accent-deep);">
-              So let’s do a sweep!
-            </p>
-          </section>
-
-          <section>
-            <h3>SparseGPT reconstruction sweep</h3>
-            <img
-              src="../assets/sparsegpt_sweep.png"
-              alt="SparseGPT column-wise reconstruction with shrinking Hessian"
-              style="max-width: 92%; max-height: 48vh; object-fit: contain; background: #fff; border-radius: 8px;"
-            />
-            <ul class="compact-list">
-              <li>Compute $H^{-1}$; mask the first column; update weights to the right.</li>
-              <li>Shrink the Hessian; repeat for the next column.</li>
-            </ul>
-            <p class="q" style="margin-top: 0.4em;">
-              <strong>Q.</strong> How does this relate to an exact greedy compression framework?
-            </p>
-          </section>
-
-          <section>
-            <h3>Weight-freezing interpretation</h3>
-            <ul>
-              <li>
-                Exact greedy view: compress column by column, optimally updating all not-yet-compressed weights.
-              </li>
-              <li>
-                SparseGPT only zeros <em>some</em> weights in a column and only updates a subset of the rest —
-                but “compress” means fix a value and never decompress it again.
-              </li>
-              <li>
-                Define column-wise compression as
-              </li>
-            </ul>
-            <div class="eq" style="margin: 0.4em 0;">
-              \[
-                \mathrm{compress}(w^j)_i
-                =
-                \begin{cases}
-                  0 & \text{if } j \notin M_i \\
-                  w^j_i & \text{otherwise}
-                \end{cases}
-              \]
-            </div>
-            <ul class="compact-list">
-              <li>⇒ Exact column-wise greedy scheme.</li>
-              <li>Same view cleanly merges sparsification and quantization in one pass.</li>
-            </ul>
-            <p class="q" style="margin-top: 0.4em;">
-              <strong>Q.</strong> Should the pruning mask be fixed in advance?
-            </p>
-          </section>
-
-          <section>
-            <h3>Adaptive mask selection</h3>
-            <ul>
-              <li>Fixed mask (e.g. magnitude / AdaPrune) is a baseline.</li>
-              <li>During reconstruction, weight updates change values a lot (correlations).</li>
-              <li>SparseGPT chooses the mask <strong>adaptively while reconstructing</strong>.</li>
-            </ul>
-            <p class="q" style="margin-top: 0.8em;">
-              <strong>Q.</strong> Why not just prune the easiest $p\%$ weights in every column?
-            </p>
-          </section>
-
-          <section>
-            <h3>Uniform per-column sparsity is too rigid</h3>
-            <ul>
-              <li>Forces the same sparsity in every column.</li>
-              <li>Especially bad for LLMs: a few <strong>outlier features</strong> are highly sensitive.</li>
-            </ul>
-            <p class="q" style="margin-top: 0.8em;">
-              <strong>Q.</strong> How do we allow non-uniform selection?
-            </p>
-          </section>
-
-          <section>
-            <h3>Answer: iterative blocking</h3>
-            <div style="display: flex; gap: 1em; align-items: center;">
-              <img
-                src="../assets/sparsegpt_blocking_fig.png"
-                alt="Adaptive mask selection via iterative blocking"
-                style="max-width: 42%; max-height: 55vh; object-fit: contain; background: #fff; border-radius: 8px;"
-              />
-              <ul class="compact-list" style="flex: 1; margin: 0;">
-                <li>Select the mask for a block of $B_s = 128$ columns at a time.</li>
-                <li>Criterion: OBS reconstruction error $\varepsilon$ from Hessian diagonals.</li>
-                <li>Update those $B_s$ columns; then move to the next block.</li>
-                <li>⇒ Non-uniform sparsity across columns, using Hessian info + prior updates.</li>
-                <li>For a single column, the criterion reduces to magnitude ($[H^{-1}]_{jj}$ constant across rows).</li>
-              </ul>
-            </div>
-          </section>
-
-          <section>
-            <h3>Extension: structured / N:M sparsity</h3>
-            <ul>
-              <li>Same sweepsection>
-
-          <section>
-            <h2>Wanda</h2>
-            <p>Sun. et. al 2023</p>
-          </section>
-
-          <section>
-            <h3>Wanda: Applying OBD to every neuron</h3>
-            <ul class="compact-list">
-              <li>OBD-style saliency: $S_{ij} = W_{ij}^2\, H_{jj}$</li>
-              <li>$H = X^\top X \;\Longrightarrow\; H_{jj} = \|X_j\|_2^2$ where $X_j$ is all data for jth feature </li>
-
-              <li>$\Rightarrow\; S_{ij} = W_{ij}^2\, \|X_j\|_2^2$</li>
-              <li>Wanda score (same ranking): $S_{ij} = |W_{ij}|\, \|X_j\|_2$</li>
-            </ul>
-          </section>
-
-          <section>
-            <h3>Wanda: Applying OBD to every neuron</h3>
-            <ul class="compact-list">
-              <li> No Weight update </li>
-              <li> Faster to compute than SparseGPT</li>
-              <li> uniform sparsity in each neuron </li>
-
-            </ul>
-          </section>
-          <section>
-            <h1>Results from the paper</h1>
-          <p>
-            "Let LLM Tell You What to Prune and How Much to Prune" by Yang et al. 2025 (ICML)
-          </p>
-          </section>
-          <section>
-            <img src="../assets/prune_llm_1.png" alt="LLM Pruner" style="width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 8px;">
-          </section>
-          <section>
-            <img src="../assets/prune_llm_2.png" alt="LLM Pruner" style="width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 8px;">
-          </section>
-          <section>
-            <h3> Takeaways for LLM Pruning</h3>
-            <ul class="compact-list">
-            <li> Perplexity and Downstream quality are severely affected by pruning (w.o retraining)</li>
-            <li> Note that this is just evaluation of base models. The effect on instruction tuned / reasoning model etc is not even evaluated.</li>
-            <li> Even after so many papers, <span style="color: red;">(structured)</span> pruning is not a solved problem.</span></li>
+        <section>
+          <h3> N:M Semi Structured sparsity (Nvidia)</h3>
+          <ul class="compact-list">
+            <li>Structured:Every M consecutive weights have exactly N non-zero weights </li>
+            <li>Unstructured: Sparsity pattern in side that block is arbitrary</li>
+            <li>Starting Ampere compute architecture, N:M sparsity is supported natively(N=2,M=4)</li>
           </ul>
+        </section>
+
+
+        <section>
+          <h3> N:M sparsity</h3>
+          <img src="../assets/2_4_sparsity.jpg" alt="N:M sparsity" style="width: 60%; max-width: 60%; max-height: 60vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          <small> how many bits are required to store the sparsity pattern? </small>
+        </section>
+
+        <section>
+          <h3> N:M sparsity</h3>
+          <img src="../assets/2_4_sparsity.jpg" alt="N:M sparsity" style="width: 60%; max-width: 60%; max-height: 60vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);" />
+          <small> Nvidia uses 2 bits per non-zero element (i.e. 4 bits per 2:4 sparsity block) </small>
+        </section>
+
+        <section>
+          <h3>2:4 sparse GEMM speedups on NVIDIA A100</h3>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45em;">
+            <img
+              src="../assets/speedup-sparse-gemms-1.png"
+              alt="A100 sparse versus dense GEMM speedup with K fixed"
+              style="width: 60%; max-width: 60%; max-height: 60vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <img
+              src="../assets/speedup-sparse-gemms-2.png"
+              alt="A100 sparse versus dense GEMM speedup with MN fixed"
+              style="width: 60%; max-width: 60%; max-height: 60vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+          </div>
+          <small> why are speedups not 2x? Also, note that the workloads used here are quite large. why?</small>
+        </section>
+
+        <section>
+          <h3>2:4 sparse GEMM speedups on NVIDIA A100</h3>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 0.45em;">
+            <img
+              src="../assets/speedup-sparse-gemms-1.png"
+              alt="A100 sparse versus dense GEMM speedup with K fixed"
+              style="width: 60%; max-width: 60%; max-height: 60vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+            <img
+              src="../assets/speedup-sparse-gemms-2.png"
+              alt="A100 sparse versus dense GEMM speedup with MN fixed"
+              style="width: 60%; max-width: 60%; max-height: 60vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+            />
+          </div>
+          <small> 1. hardware overhead 2. smaller workloads fail to completely populate the tensor cores</small>
+        </section>
+
+        <section>
+          <h3> why you wont see speedups at times (esp. on newer hardware)</h3>
+          <ul class="compact-list">
+            <li> Hardware overhead</li>
+            <li> Smaller workloads fail to completely populate the tensor cores</li>
+            <li><span style="color: red;">Under optimized kernels </span> (dense kernels are optimized a lot more than sparse kernels just because of popularity)</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3> Other hardware support for sparsity: Cerebras</h3>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 1em;">
+          <img
+            src="../assets/cerebras_arc.png"
+            alt="Cerebras arc"
+            style="flex: 0 1 40%; max-width: 40%; max-height: 70vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+          />
+          <img
+            src="../assets/nvidia.jpeg"
+            alt="Cerebras arc2"
+            style="flex: 0 1 55%; max-width: 55%; max-height: 70vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+          />
+        </div>
+
+        </section>
+
+        <section>
+          <h3> Cerebras vs Nvidia</h3>
+          <img src="../assets/cerebras_arc2.png" alt="Cerebras vs Nvidia" style="width: 60%; max-width: 60%; max-height: 60vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);">
+          <ul class="compact-list">
+            <li>Memory bandwidth is 10^4 times higher. Memory movement is essentially free.</li>
+          </ul>
+        </section>
+
+        
+        <section>
+          <h3>Cerebras vs. Nvidia</h3>
+          <img src="../assets/cerebras.png" alt="Cerebras for unstructured sparsity" style="max-width: 60%; max-height: 50vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); margin-bottom: 1em;">
+          <ul class="compact-list">
+              <li>Additionally data execution flow is different: operation is triggered by data arrival. Zero data is ignored. Native support for sparsity. 
+              </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Cerebras vs. Nvidia</h3>
+          <img src="../assets/cerebras4.png" alt="Cerebras for unstructured sparsity" style="max-width: 60%; max-height: 50vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); margin-bottom: 1em;">
+          <ul class="compact-list">
+              <li>Nvidia only supports 2:4 (or 4:8) sparisty i.e. 50% sparsity. Cerebras supports arbitrary sparsity. </li>
+          </ul>
+        </section>
+
+        <section>
+          <h1> Pruning LLMs</h1>
+        </section>
+          <section>
+            <h3> Applying OBS, OBD, IMP to LLMs</h3>
+            <ul class="compact-list">
+              <li> OBS: Is out of the question in its original form just because of scale</li>
+              <li> OBD: 
+                <ul class="compact-list">
+                    <li> Hessiann diagonal computation complexity depends on intermediate width of the graph</li>
+                    <li> Since LLMs are generalists, we need to be careful on the data we use.</li>
+                    <li> OBD needs retraining of the model.</li>
+                </ul>
+              </li>
+              <li> IMP: Easiest to implement, but iterative retraining is required</li>
+            </ul>
           </section>
+
+          <section>
+            <h3> SparseGPT (Frantar &amp; Alistarh, 2023): Apply OBS to sub-components.</h3>
+            <ul class="compact-list">
+              Let us apply the pruning to sub-component trying to preserve their behavior and hope for the best!
+            </ul>
+            <aside class="notes">
+              1. Linear layer dimensionss : 2K-10K. 
+              2. Hessian - O(d^4) and then we have to iterate on. Hessian inverse is O(d^6) n = $d^2$
+              3. The cost is just too high.
+            </aside>
+          </section>
+
+          <section>
+            <h3> SparseGPT (Frantar &amp; Alistarh, 2023): Apply OBS to sub-components.</h3>
+
+            \[ \mathcal{L} = || X (\Delta W)^\top  ||_2^2 \,\,\,\, X \in R^{N \times d}, \Delta W \in R^{d \times d}
+            \]
+
+            
+            \[ \mathcal{L} = \sum_j || X \delta w_j ||_2^2 \]
+            <small> (sum over all neurons in the layer)</small>
+            <p class="compact"> What is the hessian of the loss w.r.t $W$? </p>
+        
+
+
+          </section>
+          <section>
+            <h3> SparseGPT (Frantar &amp; Alistarh, 2023): Apply OBS to Linear Layers.</h3>
+            <ul class="compact-list">
+              <li> Linear Layer pruning -- is a set of neuron pruning problems</li>
+              <li>
+                Hessian-related costs:
+                <ul>
+                  <li>Hessian computation: $O(d^2)$</li>
+                  <li>Hessian inverse: $O(d^3)$</li>
+                </ul>
+              </li>
+              <li> <span style="color: red;">$O(d^3)$ per pruning iteration </span></li>
+            </ul>
+          </section>
+
+          <section>
+            <h3> Hessian is shared. But</h3>
+          <ul class="compact-list">
+            <li> Inverse for first step is the same. But after one pruning step, if we dont prune the same set of neurons, then inverse computation will diverge.</li>
+          </ul>
+          <img src="../assets/sparge_gpt_1.png" alt="Hessian divergence" style="max-width: 50%; max-height: 50%; object-fit: contain; background: #fff; border-radius: 8px;">
+          </section>
+
+          <section>
+            <h3> Solve the problem of Hessian inverse Reuse</h3>
+          <ul class="compact-list">
+            <li> If same set of neurons were pruned, then we can reuse the inverse across neurons</li>
+            <li> Idea 1: Sweep from the left. whatever is not pruned, we "freeze" it. </li>
+          </ul>
+          <img src="../assets/sparse_gpt_2.png" alt="Hessian divergence" style="max-width: 75%; max-height: 75%; object-fit: contain; background: #fff; border-radius: 8px;">
+          </section>
+          
+
+          <section>
+            <h3> How to reduce complexity of Hessian inverse computation?</h3>
+          <ul class="compact-list">
+            <li> O(d) Hessian inverse computations. So $O(d \times d^3) = O(d^4)$ </li>
+          </ul>
+          <img src="../assets/sparse_gpt_2.png" alt="Hessian divergence" style="max-width: 75%; max-height: 75%; object-fit: contain; background: #fff; border-radius: 8px;">
+          </section>
+          
+          <section>
+            <h3> Recall: Inverse of a submatrix using inverse of full matrix </h3>
+            <img src="../assets/sparse_gpt_3.png" alt="Inverse of a submatrix" style="max-width: 75%; max-height: 75%; object-fit: contain; background: #fff; border-radius: 8px;">
+            <ul class="compact-list">
+              <li> Compexity : O(d^3) for first inverse, then $O(d \times d^2)$ for all other inverses. SO overall $O(d^3)$ </li>
+              <li> Remark: There are further simplications. </li>
+            </ul>
+          </section>
+
+          <section>
+            <h3> How to achieve a p% sparsity? </h3>
+            <ul class="compact-list">
+              <li> Every Column having p% sparsity? </li>
+              <li> A block of columns having p% sparsity? </li>
+            </ul>
+          </section>
+
+
+          <section>
+            <h3> Final Algorithm: SparseGPT </h3>
+            <img src="../assets/sparse_gpt_4.png" alt="Final Algorithm: SparseGPT" style="max-width: 100%; max-height: 100%; object-fit: contain; background: #fff; border-radius: 8px;">
+          </section>
+
+          <section>
+            <h3 style="font-size: 1.25em; margin-bottom: 0.35em;">
+              What if we make the Hessian diagonal assumption? (OBD)
+            </h3>
+            <div style="display: flex; align-items: center; gap: 1em;">
+              <ul class="compact-list" style="flex: 0 1 52%; margin: 0; font-size: 0.62em;">
+                <li>
+                  Saliency (cost of pruning weight $w_q$) under the diagonal
+                  Hessian assumption:
+                  \[
+                    \text{OBD Saliency}
+                    = \frac{1}{2} w_q^2 H_{qq}
+                    = \frac{1}{2} w_q^2 \|X_q\|_2^2
+                  \]
+                </li>
+                <li>Wanda score: $|w_q|\,\|X_q\|_2$</li>
+              </ul>
+              <div style="flex: 0 1 44%; display: flex; flex-direction: column; align-items: center;">
+                <img
+                  src="../assets/wanda_1.png"
+                  alt="Hessian diagonal assumption"
+                  style="max-width: 100%; max-height: 48vh; object-fit: contain; background: #fff; border-radius: 8px; display: block;"
+                >
+                <small style="max-width: 100%; display: block; text-align: center; line-height: 1.25; font-size: 0.34em; margin-top: 0.45em;">
+                  Sun, Mingjie, Zhuang Liu, Anna Bair, and J. Zico Kolter.
+                  <em>A Simple and Effective Pruning Approach for Large Language Models.</em> 2024.
+                </small>
+              </div>
+            </div>
+          </section>
+
+
+          <section>
+            <h3> These methods can be extended to N:M sparsity</h3>
+            <ul>
+              <li> Look at the block of M elements and prune N using the saliency of specific methods.</li>
+              <li> SparseGPT: sweeping block size can be M </li>
+            </ul>
+          </section>
+
+
+        <section>
+          <h1> Bonsai: Structured Sparsity with only Inference </h1>
+        </section>
+
+        <section>
+          <h3> How to select structured sparsity if you can only do inference? </h3>
+          <ul class="compact-list">
+            <li> what if you only had enough resources to run a inference</li>
+            <li> Gradient / Hessian based methods are expensive to compute. Often times with large models, you may want to use only forward passes.</li>
+            <li> Magnitude pruning generally found to not work without good amount of training </li>
+            <li> What can we do? </li>
+            
+          </ul>
+        </section>
+
+        <section>
+          <h3>Estimate Module Relevance with forward passes only</h3>
+          <p class="compact"><strong>Notation</strong></p>
+          <ul class="compact-list tighter">
+            <li>$M_\theta$: LLM with parameters $\theta \in \mathbb{R}^D$</li>
+            <li>$U$: utility (e.g.&nbsp;language-modeling perplexity)</li>
+            <li>$\mathbf{m} = \{m_i\}_{i \in [N]}$: modules (heads, layers, dims, …)</li>
+            <li>$\mathbf{s} = \{s_i\}_{i \in [N]}$: parameter counts, $\sum_i s_i = D$</li>
+            <li>$\bar{\mathbf{m}} \subseteq \mathbf{m}$: kept modules; $M|_{\bar{\mathbf{m}}}$ drops the rest</li>
+            <li>$p$: target sparsity; $\mathcal{F}_p$: feasible sub-models at sparsity $p$</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Structured pruning as combinatorial optimization</h3>
+          <div class="eq-box">
+            \[
+            \mathbf{m}^*
+            =
+            \underset{\bar{\mathbf{m}} \in \mathcal{F}_p}{\arg\max}
+            \;
+            U\!\left(M|_{\bar{\mathbf{m}}}\right)
+            \]
+          </div>
+          <div class="eq-box">
+            \[
+            \mathcal{F}_p
+            =
+            \left\{
+              \bar{\mathbf{m}} \subseteq \mathbf{m}
+              \;\middle|\;
+              \sum_{j:\, m_j \in \bar{\mathbf{m}}} s_j
+              \le (1-p)\,D
+            \right\}
+            \]
+          </div>
+          <p class="compact">
+            Keep at most $(1-p)D$ parameters; maximize utility among feasible
+            module subsets.
+          </p>
+        </section>
+
+        <section>
+          <h3>Approximating the Utility function</h3>
+          <ul class="compact-list tighter">
+            <li>Evaluate $U$ on $n \ll |\mathcal{F}_p|$ candidates $\Rightarrow$ relevance $\beta = \{\beta_i\}_{i \in [N]}$</li>
+            <li>Approximate the combinatorial objective by a linear score:</li>
+          </ul>
+          <div class="eq-box">
+            \[
+            \mathbf{m}^*
+            \approx
+            \mathbf{m}^{\mathrm{approx}}
+            =
+            \underset{\bar{\mathbf{m}} \in \mathcal{F}_p}{\arg\max}
+            \sum_{j \in \bar{\mathbf{m}}} \beta_j
+            \]
+          </div>
+          <ul class="compact-list tighter">
+            <li>Solve by sorting $\beta_j$ and greedily keeping top modules until the budget</li>
+            <li>May slightly overshoot sparsity; negligible since $s_i \ll (1-p)D$</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Estimating $\beta$</h3>
+          <img src="../assets/picture_bonsai.png" alt="Estimating $\beta$" style="max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10); margin-bottom: 1em;">
+        </section>
+
+        <section>
+          <h3>Estimating $\beta$</h3>
+          <ul class="compact-list tighter">
+            <li>Build a small dataset of virtual sub-models
+              $\mathbb{D} = \{\bar{m}_k, U_k\}_{k\in[n]}$ with $n \ll |\mathcal{F}_p$</li>
+            <li>$U_k = U(M|_{\bar{m}_k})$; never instantiate sub-models — zero module outputs instead</li>
+            <li>Mask $\alpha_{\bar{m}_k}\!\in\!\{0,1\}^N$:
+              $(\alpha_{\bar{m}_k})_i = 1$ if module $i$ is kept, else $0$</li>
+            <li>Under-specified regression for relevance $\beta \in \mathbb{R}^N$:</li>
+          </ul>
+          <div class="eq-box">
+            \[
+            \hat{\beta}
+            =
+            \underset{\beta \in \mathbb{R}^N}{\arg\min}
+            \;
+            \frac{1}{n}
+            \sum_{(\bar{m}_k,\,U_k)\in\mathbb{D}}
+            \bigl(U_k - \beta^\top \alpha_{\bar{m}_k}\bigr)^2
+            +
+            \gamma \|\beta\|
+            \]
+          </div>
+        </section>
+
+        <section>
+          <h3>Data generation: selecting sub-models</h3>
+          <ul class="compact-list tighter">
+            <li>Choosing the $n$ candidates for $\mathbb{D}$ is critical</li>
+            <li>Uniform sampling is suboptimal: if $n &lt; N$, a critical $m_i$
+              may never appear $\Rightarrow \hat{\beta}_i = 0$ and $\mathbf{m}^{\mathrm{approx}}$ is poor</li>
+            <li>Sample with prior $\rho_i$ (usefulness):
+              $P(m_i \text{ included}) \propto \rho_i$</li>
+            <li>Priors from pruning literature: Wanda, activation magnitude, …</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Data generation: masks &amp; complements</h3>
+          <ul class="compact-list tighter">
+            <li>Rank modules by $\rho$; keep top $1{-}2p$ <em>fixed</em>;
+              only bottom $2p$ are pruning candidates</li>
+            <li>Draw masks $\alpha_{\bar{m}_k}$ at sparsity $p$ on that candidate set</li>
+            <li>For each mask, also add its complement $\alpha_{\bar{m}_k}^c$
+              (flip bits only in the bottom $2p$; fixed part unchanged)</li>
+            <li>Complement pairs reduce regression variance on binary inputs
+              (Covert &amp; Lee, 2020)</li>
+          </ul>
+        </section>
+
+
+        <section>
+          <h3>Bonsai pruning method</h3>
+          <img
+            src="../assets/bonsai_algo.png"
+            alt="Algorithm 1: Bonsai Pruning Method"
+            style="max-width: 72%; max-height: 68vh; object-fit: contain; border-radius: 8px; box-shadow: 0 2px 12px rgba(14,165,233,0.10);"
+          />
+          <p class="compact" style="margin-top: 0.35em; font-size: 0.42em; color: var(--ink-soft);">
+            Kolawole, S., Dery, L., Kagy, J.F., Smith, V., Neubig, G. and Talwalkar, A., 2024.
+            <a href="https://arxiv.org/abs/2402.05406" target="_blank" rel="noopener">
+              Everybody prune now: Structured pruning of LLMs with only forward passes
+            </a>.
+            arXiv:2402.05406.
+          </p>
+          <aside class="notes">
+            We can use this as a general method to get sensitivities to different approximations. We can for example decide how much to compress
+            a layer / module instead of completely removing it. and so on.
+          </aside>
+        </section>
+
+        <section>
+          <h1>Results from the paper</h1>
+        <p>
+          "Let LLM Tell You What to Prune and How Much to Prune" by Yang et al. 2025 (ICML)
+        </p>
+        </section>
+        <section>
+          <img src="../assets/prune_llm_1.png" alt="LLM Pruner" style="width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 8px;">
+        </section>
+        <section>
+          <img src="../assets/prune_llm_2.png" alt="LLM Pruner" style="width: 100%; height: 100%; object-fit: contain; background: #fff; border-radius: 8px;">
+        </section>
+        <section>
+          <h3> Takeaways for LLM Pruning</h3>
+          <ul class="compact-list">
+          <li> Perplexity and Downstream quality are severely affected by pruning (w.o retraining)</li>
+          <li> Note that this is just evaluation of base models. The effect on instruction tuned / reasoning model etc is not even evaluated.</li>
+          <li> Even after so many papers, <span style="color: red;">(structured)</span> pruning is not a solved problem.</span></li>
+        </ul>
+        </section>
+
 
       </div>
     </div>
