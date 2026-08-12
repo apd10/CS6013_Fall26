@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 300" role="img" aria-labelledby="title desc">
+  <title id="title">Matrix addition C = A + B</title>
+  <desc id="desc">Element-wise addition of matrices A and B into matrix C</desc>
+  <defs>
+    <style>
+      .label { font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: 30px; font-weight: 700; fill: #071a33; }
+      .sub { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 15px; fill: #3d5570; }
+      .cell { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 18px; fill: #152a45; }
+      .idx { font-size: 11px; }
+      .op { font-family: "Space Grotesk", "Segoe UI", sans-serif; font-size: 46px; font-weight: 700; fill: #0369a1; }
+      .mat-fill { fill: rgba(14, 165, 233, 0.08); }
+      .mat-stroke { stroke: #0369a1; stroke-width: 2; fill: none; }
+      .hl { fill: rgba(14, 165, 233, 0.28); stroke: #0ea5e9; stroke-width: 2; }
+      .grid { stroke: #0ea5e9; stroke-opacity: 0.35; stroke-width: 1; }
+    </style>
+  </defs>
+
+  <!-- Matrix A -->
+  <g transform="translate(30, 44)">
+    <text class="label" x="78" y="-14" text-anchor="middle">A</text>
+    <text class="sub" x="78" y="200" text-anchor="middle">m x n</text>
+    <rect class="mat-fill" x="0" y="0" width="156" height="168" rx="6"/>
+    <rect class="mat-stroke" x="0" y="0" width="156" height="168" rx="6"/>
+    <path class="grid" d="M52 0 V168 M104 0 V168 M0 56 H156 M0 112 H156"/>
+    <rect class="hl" x="52" y="56" width="52" height="56" rx="2"/>
+    <text class="cell" x="26"  y="34"  text-anchor="middle">a<tspan class="idx" dy="4">11</tspan></text>
+    <text class="cell" x="78"  y="34"  text-anchor="middle">a<tspan class="idx" dy="4">12</tspan></text>
+    <text class="cell" x="130" y="34"  text-anchor="middle">...</text>
+    <text class="cell" x="26"  y="90"  text-anchor="middle">a<tspan class="idx" dy="4">21</tspan></text>
+    <text class="cell" x="78"  y="90"  text-anchor="middle">a<tspan class="idx" dy="4">ij</tspan></text>
+    <text class="cell" x="130" y="90"  text-anchor="middle">...</text>
+    <text class="cell" x="26"  y="150" text-anchor="middle">:</text>
+    <text class="cell" x="78"  y="150" text-anchor="middle">:</text>
+    <text class="cell" x="130" y="146" text-anchor="middle">a<tspan class="idx" dy="4">mn</tspan></text>
+  </g>
+
+  <text class="op" x="228" y="152" text-anchor="middle">+</text>
+
+  <!-- Matrix B -->
+  <g transform="translate(280, 44)">
+    <text class="label" x="78" y="-14" text-anchor="middle">B</text>
+    <text class="sub" x="78" y="200" text-anchor="middle">m x n</text>
+    <rect class="mat-fill" x="0" y="0" width="156" height="168" rx="6"/>
+    <rect class="mat-stroke" x="0" y="0" width="156" height="168" rx="6"/>
+    <path class="grid" d="M52 0 V168 M104 0 V168 M0 56 H156 M0 112 H156"/>
+    <rect class="hl" x="52" y="56" width="52" height="56" rx="2"/>
+    <text class="cell" x="26"  y="34"  text-anchor="middle">b<tspan class="idx" dy="4">11</tspan></text>
+    <text class="cell" x="78"  y="34"  text-anchor="middle">b<tspan class="idx" dy="4">12</tspan></text>
+    <text class="cell" x="130" y="34"  text-anchor="middle">...</text>
+    <text class="cell" x="26"  y="90"  text-anchor="middle">b<tspan class="idx" dy="4">21</tspan></text>
+    <text class="cell" x="78"  y="90"  text-anchor="middle">b<tspan class="idx" dy="4">ij</tspan></text>
+    <text class="cell" x="130" y="90"  text-anchor="middle">...</text>
+    <text class="cell" x="26"  y="150" text-anchor="middle">:</text>
+    <text class="cell" x="78"  y="150" text-anchor="middle">:</text>
+    <text class="cell" x="130" y="146" text-anchor="middle">b<tspan class="idx" dy="4">mn</tspan></text>
+  </g>
+
+  <text class="op" x="478" y="150" text-anchor="middle">=</text>
+
+  <!-- Matrix C -->
+  <g transform="translate(530, 44)">
+    <text class="label" x="78" y="-14" text-anchor="middle">C</text>
+    <text class="sub" x="78" y="200" text-anchor="middle">m x n</text>
+    <rect class="mat-fill" x="0" y="0" width="156" height="168" rx="6"/>
+    <rect class="mat-stroke" x="0" y="0" width="156" height="168" rx="6"/>
+    <path class="grid" d="M52 0 V168 M104 0 V168 M0 56 H156 M0 112 H156"/>
+    <rect class="hl" x="52" y="56" width="52" height="56" rx="2"/>
+    <text class="cell" x="26"  y="34"  text-anchor="middle">c<tspan class="idx" dy="4">11</tspan></text>
+    <text class="cell" x="78"  y="34"  text-anchor="middle">c<tspan class="idx" dy="4">12</tspan></text>
+    <text class="cell" x="130" y="34"  text-anchor="middle">...</text>
+    <text class="cell" x="26"  y="90"  text-anchor="middle">c<tspan class="idx" dy="4">21</tspan></text>
+    <text class="cell" x="78"  y="90"  text-anchor="middle">c<tspan class="idx" dy="4">ij</tspan></text>
+    <text class="cell" x="130" y="90"  text-anchor="middle">...</text>
+    <text class="cell" x="26"  y="150" text-anchor="middle">:</text>
+    <text class="cell" x="78"  y="150" text-anchor="middle">:</text>
+    <text class="cell" x="130" y="146" text-anchor="middle">c<tspan class="idx" dy="4">mn</tspan></text>
+  </g>
+
+  <!-- Element-wise rule -->
+  <g transform="translate(740, 86)">
+    <rect x="0" y="0" width="184" height="92" rx="8" fill="rgba(14,165,233,0.10)" stroke="#0369a1" stroke-width="1.5"/>
+    <text class="sub" x="92" y="32" text-anchor="middle">for every i, j</text>
+    <text class="label" x="92" y="70" text-anchor="middle" style="font-size: 22px;">c<tspan class="idx" dy="4">ij</tspan><tspan dy="-4"> = a</tspan><tspan class="idx" dy="4">ij</tspan><tspan dy="-4"> + b</tspan><tspan class="idx" dy="4">ij</tspan></text>
+  </g>
+</svg>
