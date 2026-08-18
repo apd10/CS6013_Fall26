@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quantization Basics — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      h4 {
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.35rem;
+        color: var(--accent);
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .toc {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+      }
+
+      .toc .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.4rem;
+      }
+
+      .toc ol {
+        margin: 0;
+      }
+
+      .toc a {
+        color: var(--ink);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .fig {
+        margin: 1.25rem 0;
+        padding: 0.85rem 1rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        text-align: center;
+      }
+
+      .fig img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 6px;
+      }
+
+      .fig .caption {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.45;
+        margin-top: 0.65rem;
+        text-align: left;
+      }
+
+      .cite {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        background: rgba(11, 110, 79, 0.08);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+
+      .exercise {
+        border: 1px dashed var(--accent);
+        background: var(--accent-soft);
+        padding: 0.95rem 1.05rem;
+        margin: 1.25rem 0;
+        border-radius: 8px;
+      }
+
+      .exercise .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        display: block;
+        margin-bottom: 0.4rem;
+        font-weight: 600;
+      }
+
+      .exercise .hint {
+        margin-top: 0.75rem;
+        padding-top: 0.65rem;
+        border-top: 1px solid rgba(11, 110, 79, 0.2);
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .exercise .hint strong {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .compare {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+        margin: 1rem 0;
+        background: var(--card);
+      }
+
+      .compare th,
+      .compare td {
+        border: 1px solid var(--line);
+        padding: 0.55rem 0.7rem;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .compare th {
+        background: var(--accent-soft);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
+      .bit-layout {
+        display: grid;
+        grid-template-columns: 2.5rem 1fr 1.4fr;
+        gap: 0.35rem;
+        margin: 0.75rem 0;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+      }
+
+      .bit-layout div {
+        border: 1.5px solid var(--accent);
+        border-radius: 6px;
+        padding: 0.55rem 0.4rem;
+        text-align: center;
+        background: #fff;
+      }
+
+      .bit-layout .lbl {
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.78rem;
+        padding: 0.15rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="Quantization%20basics.pdf">Quantization basics.pdf</a>
+      </p>
+      <header>
+        <p class="meta">Efficient AI · Quantization notes</p>
+        <h1>Quantization basics</h1>
+        <p>
+          Quantization is the art of representing many real values using a
+          small set of discrete codes. These notes build from reconstruction
+          error to number formats, linear / affine maps, outliers, rotations,
+          codebooks, and downstream inner products.
+        </p>
+      </header>
+
+      <div class="toc">
+        <div class="label">Roadmap</div>
+        <ol>
+          <li><a href="#what">What is quantization?</a></li>
+          <li><a href="#formats">How computers represent numbers</a></li>
+          <li><a href="#ml">Quantization in ML</a></li>
+          <li><a href="#linear">Linear and affine quantization</a></li>
+          <li><a href="#outliers">Outliers, clipping, and projections</a></li>
+          <li><a href="#codebook">When linear fails: codebooks</a></li>
+          <li><a href="#inner-products">Inner products under quantization</a></li>
+        </ol>
+      </div>
+
+      <!-- ========== 1 ========== -->
+      <h2 id="what">1. What is quantization?</h2>
+
+      <p>
+        Quantization maps a continuous (or large) set of values to a smaller
+        discrete set. There are two maps to keep track of:
+      </p>
+      <ul>
+        <li>
+          The <strong>quantization map</strong> sends a real value to a code:
+          \[
+          Q: X \rightarrow \{0,\dots,|Y|-1\}
+          \]
+        </li>
+        <li>
+          The <strong>dequantization map</strong> reconstructs an approximate
+          real value from that code:
+          \[
+          Q^{-1}: \{0,\dots,|Y|-1\} \rightarrow \mathbb{R}
+          \]
+        </li>
+      </ul>
+
+      <p>
+        If the only goal is to store and recover data, then a natural metric is
+        reconstruction error. For values drawn from a distribution $P$, this is
+        the mean squared error:
+      </p>
+      <div class="eq-box">
+        \[
+        \mathrm{Quantization\ error}
+        =
+        \mathbb{E}_{x\sim P}
+        \bigl[
+          \| x - Q^{-1}(Q(x)) \|_2^2
+        \bigr].
+        \]
+      </div>
+
+      <div class="q">
+        <strong>Q.</strong> Should we always care about reconstruction loss?<br />
+        <strong>A.</strong> No — it depends on how the quantized data is used.
+        For example, if we quantize weights $W$, we may care more about the
+        downstream loss or about inner products than about $\|W-\hat W\|_2$.
+      </div>
+
+      <p>
+        This distinction is important in ML: a quantizer that looks good by
+        reconstruction error may not be the one that preserves model quality.
+      </p>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="formats">2. How computers represent numbers</h2>
+
+      <p>
+        Computers already quantize numbers: a dtype determines which values are
+        representable. Before designing our own low-bit maps, recall the two
+        basic families of number formats.
+      </p>
+
+      <h3>(A) Integer formats</h3>
+      <p>
+        Example: signed <code>INT32</code>. Integers are stored in
+        <strong>two’s complement</strong> (this encoding is for integer
+        formats, not floating point):
+      </p>
+      <ul>
+        <li>Max: $2^{31}-1$</li>
+        <li>Min: $-2^{31}$</li>
+        <li>Positive numbers stored as usual; negatives as two’s complement</li>
+        <li>
+          Unlike sign-magnitude integer encodings, two’s complement has a
+          single zero (no separate $+0$ and $-0$)
+        </li>
+      </ul>
+
+      <h3>(B) Floating-point formats</h3>
+      <p>
+        Formats such as FP16, FP32, FP64 use a sign / exponent / mantissa
+        layout (“$1+e+m$ bits”):
+      </p>
+      <div class="bit-layout">
+        <div>S</div>
+        <div>E</div>
+        <div>M</div>
+        <div class="lbl">sign<br />1 bit</div>
+        <div class="lbl">exponent<br />$e$ bits</div>
+        <div class="lbl">mantissa<br />$m$ bits</div>
+      </div>
+
+      <p>What does the bit string represent?</p>
+
+      <h4>Normal numbers ($E \neq 0$, not all-ones)</h4>
+      <div class="eq-box">
+        \[
+        V
+        =
+        (-1)^{s}
+        \times
+        2^{n(E)-\mathrm{bias}}
+        \times
+        \bigl(1 + n(0.M)\bigr),
+        \qquad
+        \mathrm{bias} = 2^{e-1}-1.
+        \]
+      </div>
+      <p class="cite">
+        Here $n(E)$ is the integer encoded by the exponent field, and
+        $n(0.M)$ is the fractional value of the mantissa bits.
+      </p>
+
+      <h4>Subnormals and zero ($E = 0$)</h4>
+      <div class="eq">
+        \[
+        V
+        =
+        (-1)^{s}
+        \times
+        2^{1-\mathrm{bias}}
+        \times
+        n(0.M).
+        \]
+      </div>
+
+      <h4>Special numbers ($E$ all ones)</h4>
+      <ul>
+        <li>$M = 0$ $\rightarrow$ $\pm\infty$</li>
+        <li>$M \neq 0$ $\rightarrow$ NaN</li>
+      </ul>
+
+      <div class="fig">
+        <img src="../assets/fp16_2.png" alt="FP16 bit layout and encoding cases" />
+        <p class="caption">FP16 encoding cases (normals, subnormals, specials).</p>
+      </div>
+
+      <div class="fig">
+        <img src="../assets/dtypes.png" alt="Precision and range of common dtypes" />
+        <p class="caption">
+          Common ML dtypes (FP32, BF16, FP16, INT8, …) trade
+          <strong>precision</strong> (spacing between representable points)
+          against <strong>range</strong> (max − min representable value).
+        </p>
+      </div>
+
+      <!-- ========== 3 ========== -->
+      <h2 id="ml">3. Quantization in ML</h2>
+
+      <p>
+        FP32 and FP16 are the common “go-to” formats, but efficient ML often
+        pushes further toward smaller bit widths:
+      </p>
+      <div class="eq">
+        \[
+        \mathrm{FP16,\ FP32}
+        \;\longrightarrow\;
+        \mathrm{FP8,\ INT8,\ INT4,\ \dots}
+        \]
+      </div>
+
+      <div class="fig">
+        <img src="../assets/fp8.png" alt="FP8 format overview" />
+        <p class="caption">FP8-style formats: still floating point, but very low bit width.</p>
+      </div>
+
+      <p>
+        The objects we quantize are usually tensors or matrices: weights,
+        activations, KV cache entries, and similar model states.
+      </p>
+      <div class="fig">
+        <img src="../assets/matrix.png" alt="Example matrix of floating-point values" />
+      </div>
+
+      <ul>
+        <li>
+          <strong>Dynamic quantization.</strong> Treat the current matrix $M$
+          as the target data and fit $Q$ just for that tensor. If $M$ is an
+          activation batch, the map must be recomputed when the data changes.
+        </li>
+        <li>
+          <strong>Static quantization.</strong> Treat $M$ as a sample from a
+          target distribution; compute $Q$ once (e.g.&nbsp;from calibration
+          data) and reuse it.
+        </li>
+      </ul>
+
+      <p>
+        Either way, once we have a tensor or a calibration distribution, the
+        core design question is how to place a small number of integer codes on
+        the real line.
+      </p>
+
+      <div class="q">
+        <strong>Q.</strong> Given a set of values, how do we design $Q$?
+      </div>
+      <p>
+        Throughout these notes we work with <strong>signed</strong> $b$-bit
+        integer codes: there are $2^b$ representable values, with range
+        \[
+        q \in \bigl\{-2^{b-1},\ldots,2^{b-1}-1\bigr\}
+        \]
+        (e.g.&nbsp;$b=8$ gives $-128,\ldots,127$). How we place those levels on
+        the real line <em>really depends on the data</em>. It helps if a simple
+        parametric map already approximates the data well.
+      </p>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="linear">4. Linear and affine quantization</h2>
+
+      <p>
+        The simplest answer is to use a uniformly spaced grid. Linear
+        quantization stores an integer code and one or two small parameters
+        describing how to convert that code back to a real number.
+      </p>
+
+      <h3>Why linear?</h3>
+      <ul>
+        <li>Simple, and only $O(1)$ storage for the scale</li>
+        <li>
+          Many elementary operations can be done in quantized space
+          (especially useful for inner products, which are ubiquitous in ML)
+        </li>
+      </ul>
+
+      <h3>Symmetric linear map</h3>
+      <p>
+        First assume the data is roughly centered around zero. We can map real
+        values to <strong>signed</strong> integers using only one scale
+        $\lambda$: $r = \lambda q$, with $q$ in the signed $b$-bit range above.
+        Choose $\lambda$ so the largest magnitude maps to the largest positive
+        code.
+      </p>
+      <div class="eq-box">
+        \[
+        r_{\max} = \max_i |x_i|,
+        \qquad
+        q_{\max} = 2^{b-1}-1,
+        \qquad
+        \lambda = \frac{r_{\max}}{q_{\max}}.
+        \]
+      </div>
+      <p class="cite">
+        Using $q_{\max}=2^{b-1}-1$ (rather than $2^{b-1}$) keeps the positive and
+        negative sides symmetric; the most negative code $-2^{b-1}$ is then
+        unused by this particular scale choice.
+      </p>
+      <div class="eq">
+        \[
+        Q^{-1}(q) = \lambda q,
+        \qquad
+        Q(r) = \mathrm{project}\!\left(\frac{r}{\lambda}\right)
+        \]
+      </div>
+      <p class="cite">
+        Example: $\mathrm{project} =$ round to nearest integer, then clamp into
+        $\{-2^{b-1},\ldots,2^{b-1}-1\}$.
+      </p>
+
+      <div class="fig">
+        <img src="../assets/linear.png" alt="Symmetric linear quantization diagram" />
+        <p class="caption">Symmetric linear quantization: one scale, zero aligned at zero.</p>
+      </div>
+
+      <h3>When $r=\lambda q$ is inefficient</h3>
+      <div class="q">
+        <strong>Q.</strong> When is a pure scale map bad?
+      </div>
+      <p>
+        When the distribution is <strong>shifted / asymmetric</strong>: a
+        zero-centered integer grid wastes codes on an empty region of the real
+        line.
+      </p>
+
+      <h3>Affine (asymmetric) quantization</h3>
+      <p>
+        To move the grid left or right, introduce a zero-point $z_q$ as well as
+        a scale:
+      </p>
+      <div class="eq-box">
+        \[
+        r = \lambda(q - z_q).
+        \]
+      </div>
+      <p>
+        Fit the two parameters by mapping the observed extremes onto the
+        signed code endpoints
+        $q_{\min}=-2^{b-1}$, $q_{\max}=2^{b-1}-1$:
+        $r_{\max}\mapsto q_{\max}$, $r_{\min}\mapsto q_{\min}$.
+      </p>
+      <div class="eq">
+        \[
+        r_{\max}=\lambda(q_{\max}-z_q),
+        \qquad
+        r_{\min}=\lambda(q_{\min}-z_q).
+        \]
+      </div>
+      <div class="eq-box">
+        \[
+        \lambda
+        =
+        \frac{r_{\max}-r_{\min}}{q_{\max}-q_{\min}},
+        \qquad
+        z_q
+        =
+        q_{\max} - \frac{r_{\max}}{\lambda}.
+        \]
+      </div>
+      <p class="cite">
+        On paper $z_q$ may come out non-integer. In practice one usually
+        <strong>rounds $z_q$ to an integer</strong> (and may re-fit or slightly
+        adjust $\lambda$) so that dequantization $r=\lambda(q-z_q)$ stays an
+        integer shift in code space — what hardware expects.
+      </p>
+
+      <div class="fig">
+        <img src="../assets/affine_linear.png" alt="Affine linear quantization with zero point" />
+        <p class="caption">Affine / asymmetric linear quantization (zero-point method).</p>
+      </div>
+
+      <!-- ========== 5 ========== -->
+      <h2 id="outliers">5. Outliers, clipping, and projections</h2>
+
+      <div class="q">
+        <strong>Q.</strong> When can linear quantization still fail?
+      </div>
+      <p>
+        <strong>Outliers.</strong> A few extreme values stretch the scale, so
+        most of the mass gets too few effective bits.
+      </p>
+
+      <div class="fig">
+        <img src="../assets/clip1.png" alt="Outliers stretching the quantization range" />
+        <p class="caption">Outliers consume dynamic range that the bulk of the data needs.</p>
+      </div>
+
+      <h3>(A) Clipping</h3>
+      <p>
+        Clip extreme values before fitting the scale. This is reasonable when
+        outliers are noise or otherwise not important for the downstream task.
+        The tradeoff is clear: we improve resolution for the bulk of the data
+        by deliberately distorting the clipped values.
+      </p>
+      <div class="fig">
+        <img src="../assets/clip2.png" alt="Clipping outliers before quantization" />
+      </div>
+      <div class="fig">
+        <img src="../assets/clip3.png" alt="Effect of clipping on effective bit usage" />
+      </div>
+
+      <h3>(B) Rotations</h3>
+      <p>
+        Sometimes the outlier is important, so clipping is too destructive. A
+        different idea is to change coordinates before quantizing. If one
+        coordinate carries too much energy, a rotation can redistribute that
+        energy so no single entry dominates the scale.
+      </p>
+
+      <p>
+        Use a simple 3D orthogonal transform that applies a 2D Hadamard rotation
+        to the first two coordinates and leaves the third coordinate unchanged:
+      </p>
+      <div class="eq">
+        \[
+        R
+        =
+        \begin{bmatrix}
+          \tfrac{1}{\sqrt2} & \tfrac{1}{\sqrt2} & 0 \\
+          \tfrac{1}{\sqrt2} & -\tfrac{1}{\sqrt2} & 0 \\
+          0 & 0 & 1
+        \end{bmatrix}.
+        \]
+      </div>
+      <p>
+        What matters for symmetric quantization is the
+        <strong>abs-max</strong> $\|x\|_\infty=\max_i|x_i|$, since it sets the
+        scale $\lambda$. Rotation “helps” only if
+        $\|Rx\|_\infty &lt; \|x\|_\infty$. Since $R$ is
+        <em>fixed</em>, whether it helps depends entirely on the direction of
+        the data. The next three inputs all have the same energy
+        $\|x\|_2=100$.
+      </p>
+
+      <h4>Example 1 — isolated outlier: rotation helps</h4>
+      <div class="eq-box">
+        \[
+        x = [100,\ 0,\ 0]
+        \;\xrightarrow{\;R\;}\;
+        Rx =
+        \left[
+          \tfrac{100}{\sqrt2},\
+          \tfrac{100}{\sqrt2},\
+          0
+        \right]
+        \approx [70.7,\ 70.7,\ 0].
+        \]
+      </div>
+      <p>
+        The abs-max goes $100 \rightarrow 70.7$ (down by $\sqrt2$). The energy
+        on one coordinate is spread across two coordinates — exactly what we
+        want.
+      </p>
+
+      <h4>Example 2 — already aligned with the rotation: rotation does not help</h4>
+      <div class="eq-box">
+        \[
+        x =
+        \left[
+          \tfrac{100}{\sqrt2},\
+          \tfrac{100}{\sqrt2},\
+          0
+        \right]
+        \;\xrightarrow{\;R\;}\;
+        Rx = [100,\ 0,\ 0].
+        \]
+      </div>
+      <p>
+        The abs-max goes $70.7 \rightarrow 100$ (up by $\sqrt2$). This vector
+        has the same norm as Example 1, but its energy is already aligned with
+        the first row of $R$. The rotation concentrates the energy instead of
+        spreading it.
+      </p>
+
+      <h4>Example 3 — same outlier, different coordinate: rotation does not help</h4>
+      <p>
+        Now keep the single outlier pattern from Example 1, but move the
+        outlier to the third coordinate, which this particular rotation leaves
+        untouched:
+      </p>
+      <div class="eq-box">
+        \[
+        x = [0,\ 0,\ 100]
+        \;\xrightarrow{\;R\;}\;
+        Rx = [0,\ 0,\ 100].
+        \]
+      </div>
+      <p>
+        The abs-max stays $100 \rightarrow 100$. Same magnitude, same norm, and
+        still just one outlier — but the outlier is located in a coordinate that
+        $R$ does not mix. Changing where the outlier lives can therefore change
+        whether a fixed rotation helps.
+      </p>
+
+      <div class="remark">
+        <span class="label">Takeaway</span>
+        Rotation helps when energy is <strong>concentrated</strong> in a few
+        coordinates that the transform actually mixes (Ex. 1). It does not
+        help when the input is already aligned with a bad direction of the
+        transform (Ex. 2), or when the outlier sits in a coordinate that the
+        transform leaves untouched (Ex. 3). No single fixed rotation is good for
+        all inputs.
+      </div>
+
+      <p class="cite">
+        Note that all three inputs have the same norm — orthogonal maps preserve
+        it, $\|Rx\|_2=\|x\|_2$. The rotation only redistributes energy across
+        coordinates; it never removes it.
+      </p>
+
+      <p>
+        If we knew $x$ in advance, we could choose or learn a better rotation
+        for that particular vector. In ML, however, a transform should work for
+        many inputs. Learning
+        a full $d\times d$ orthogonal matrix for a single
+        $x\in\mathbb{R}^d$ is usually not useful — it becomes worthwhile when
+        one matrix applies to many vectors, e.g.&nbsp;a batch
+        $X\in\mathbb{R}^{n\times d}$ with $n\gg d$, where some channels are
+        consistently outliers.
+      </p>
+
+      <h3>Randomized projections as a proxy for rotations</h3>
+      <p>
+        Exact random orthogonal matrices are awkward to sample and analyze by
+        hand. A convenient <strong>proxy</strong> is a
+        <em>randomized linear projection</em> with i.i.d.&nbsp;Gaussian
+        entries. It is not literally a rotation (rows are not exactly
+        orthonormal), but in high dimension it behaves similarly for our
+        purposes and the coordinates of $y=Mx$ are easy to compute with.
+      </p>
+      <div class="eq-box">
+        \[
+        M\in\mathbb{R}^{d\times d},
+        \qquad
+        M_{ij}\ \mathrm{i.i.d.}\ \mathcal{N}\!\left(0,\tfrac{1}{d}\right)
+        \quad\text{(equivalently }M_{ij}=\tfrac{1}{\sqrt{d}}X_{ij},\ X_{ij}\sim\mathcal{N}(0,1)\text{)}.
+        \]
+      </div>
+      <p>For $y=Mx$,</p>
+      <div class="eq">
+        \[
+        y_i = \sum_{j=1}^{d} M_{ij} x_j,
+        \qquad
+        E[y_i]=0,
+        \qquad
+        \mathrm{Var}(y_i)=\frac{\|x\|_2^2}{d},
+        \qquad
+        \mathrm{std}(y_i)=\frac{\|x\|_2}{\sqrt{d}}.
+        \]
+      </div>
+      <p>
+        So each coordinate is (approximately)
+        $\mathcal{N}(0,\|x\|_2^2/d)$, and
+        $E[\|y\|_2^2]=\|x\|_2^2$. Norms are preserved in expectation (and
+        concentrate in high $d$), even though $M$ is not exactly orthogonal. The
+        useful intuition is that each output coordinate sees many small random
+        contributions, so a single large input coordinate is spread across many
+        outputs.
+      </p>
+
+      <div class="exercise">
+        <span class="label">Exercise</span>
+        Bound $\Pr(y_i &gt; t)$ using Chebyshev and Chernoff, using
+        $y_i\sim\mathcal{N}(0,\|x\|_2^2/d)$.
+        <p class="cite" style="margin-top:0.5rem;margin-bottom:0">
+          This “equalizing” effect of random projections is largely an
+          artifact of high dimension.
+        </p>
+      </div>
+
+      <!-- ========== 6 ========== -->
+      <h2 id="codebook">6. When linear fails: codebooks</h2>
+
+      <div class="q">
+        <strong>Q.</strong> Where else does linear quantization fail?
+      </div>
+      <p>
+        Multimodal distributions. A uniform grid spends codes evenly across an
+        interval, but the data may live in separated clusters with empty space
+        between them.
+      </p>
+
+      <div class="fig">
+        <img
+          src="../assets/non-linear-quantization.png"
+          alt="Linear grid failing on a multimodal distribution"
+        />
+        <p class="caption">Linear levels miss multimodal structure.</p>
+      </div>
+
+      <div class="q">
+        <strong>Q.</strong> What can we do?
+      </div>
+      <p>
+        <strong>Codebook / clustering approximation:</strong> learn a set of
+        centroids $\{c_i\}$ and store each value as the index of its nearest
+        centroid. This gives flexible, data-adapted quantization — but
+        dequantization becomes a table lookup, and arithmetic generally
+        requires dequantizing first.
+      </p>
+
+      <p>
+        This is the main tradeoff: codebooks can fit awkward distributions much
+        better than a linearly spaced grid, but they give up some of the
+        hardware simplicity that makes linear quantization attractive.
+      </p>
+
+      <div class="fig">
+        <img
+          src="../assets/weight_clustering.png"
+          alt="Weight clustering into codebook indices and centroids"
+        />
+        <p class="caption">
+          Weight clustering: float weights mapped to low-bit cluster indices
+          plus centroids.
+        </p>
+      </div>
+
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th>Linear quantization</th>
+            <th>Codebook (non-linear)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mapping</td>
+            <td>Affine: $q=\mathrm{round}(x/s)+z$</td>
+            <td>Lookup: $q=\arg\min_i |x-c_i|$</td>
+          </tr>
+          <tr>
+            <td>Reconstruction</td>
+            <td>$x\approx s(q-z)$</td>
+            <td>$x\approx c_q$</td>
+          </tr>
+          <tr>
+            <td>Best for</td>
+            <td>Roughly uniform / unimodal mass</td>
+            <td>Skewed or multimodal mass</td>
+          </tr>
+          <tr>
+            <td>Hardware</td>
+            <td>Excellent (integer ops)</td>
+            <td>Moderate / poor</td>
+          </tr>
+          <tr>
+            <td>Compute</td>
+            <td>Often stays in quantized space</td>
+            <td>Usually needs dequantization</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ========== 7 ========== -->
+      <h2 id="inner-products">7. Inner products under quantization</h2>
+
+      <p>
+        We began with reconstruction error, but in ML the quantized values are
+        usually used inside later computations. The simplest downstream
+        computation to analyze is an inner product.
+      </p>
+      <ul>
+        <li>$w$ — weights that are quantized</li>
+        <li>$x$ — input / activation vector</li>
+        <li>$\Delta$ — quantization error added to the weight vector</li>
+      </ul>
+      <div class="eq">
+        \[
+        \hat{w} = w + \Delta.
+        \]
+      </div>
+      <div class="q">
+        <strong>Q.</strong>
+        What is $\langle \hat{w},\, x\rangle$, and how well does it approximate
+        $\langle w,\, x\rangle$?
+      </div>
+
+      <h3>Deterministic rounding to nearest</h3>
+      <p>
+        Assume a grid of precision $\delta$ (spacing between representable
+        values). Round-to-nearest guarantees
+      </p>
+      <div class="eq">
+        \[
+        |\Delta_i| \le \frac{\delta}{2}
+        \qquad\text{for all } i.
+        \]
+      </div>
+      <p>The quantized inner product expands as</p>
+      <div class="eq">
+        \[
+        \langle x,\, \hat{w}\rangle
+        = \sum_i x_i\,(w_i + \Delta_i)
+        = \langle x,\, w\rangle
+          + \sum_i x_i\,\Delta_i.
+        \]
+      </div>
+
+      <h4>Worst case</h4>
+      <p>
+        If the signs align, every term $x_i\Delta_i$ can push in the same
+        direction. For example, take $x_i \ge 0$ and
+        $\Delta_i=\delta/2$ for all $i$. Then
+      </p>
+      <div class="eq-box">
+        \[
+        \bigl|\langle x,\, \hat{w}\rangle
+              - \langle x,\, w\rangle\bigr|
+        = \frac{\delta}{2}\sum_i |x_i|
+        = \frac{\delta}{2}\,\|x\|_1.
+        \]
+      </div>
+      <p>
+        Squaring gives a worst-case squared error of order
+      </p>
+      <div class="eq">
+        \[
+        \mathrm{MSE}_{\text{nearest}}^{\text{(worst)}}
+        = \frac{\delta^2}{4}\,\|x\|_1^2.
+        \]
+      </div>
+      <p class="cite">
+        Round-to-nearest minimizes per-coordinate error, but the
+        <em>inner-product</em> error can still accumulate coherently across
+        coordinates.
+      </p>
+
+      <h3>Stochastic rounding</h3>
+      <p>
+        Suppose $w_i$ lies between consecutive grid points $a &lt; w_i &lt; b$
+        with $b-a=\delta$. Stochastic rounding sets
+      </p>
+      <div class="eq">
+        \[
+        \hat{w}_i =
+        \begin{cases}
+          a & \text{with probability }
+              \dfrac{b - w_i}{b - a}, \\[0.6em]
+          b & \text{with probability }
+              \dfrac{w_i - a}{b - a}.
+        \end{cases}
+        \]
+      </div>
+      <p>
+        Equivalently, $\hat{w}=w+\Delta$ with a random per-coordinate error
+        $\Delta_i$.
+      </p>
+
+      <h4>Unbiasedness</h4>
+      <div class="eq">
+        \[
+        \mathbb{E}[\Delta_i] = 0
+        \quad\Rightarrow\quad
+        \mathbb{E}[\hat{w}] = w.
+        \]
+      </div>
+      <div class="eq">
+        \[
+        \langle x,\, \hat{w}\rangle
+        = \langle x,\, w\rangle
+          + \sum_i x_i\,\Delta_i,
+        \]
+      </div>
+      <div class="eq-box">
+        \[
+        \mathbb{E}\!\bigl[\langle x,\, \hat{w}\rangle\bigr]
+        = \langle x,\, w\rangle.
+        \]
+      </div>
+      <p class="cite">The quantized inner product is unbiased.</p>
+
+      <h4>Variance / MSE</h4>
+      <p>
+        Assuming independent rounding noise across coordinates,
+      </p>
+      <div class="eq">
+        \[
+        \mathrm{Var}\!\bigl(\langle x,\, \hat{w}\rangle\bigr)
+        = \sum_i x_i^2\,\mathrm{Var}(\Delta_i).
+        \]
+      </div>
+      <p>
+        With fractional part $\alpha_i=(w_i-a)/\delta \in [0,1]$,
+      </p>
+      <div class="eq">
+        \[
+        \mathrm{Var}(\Delta_i)
+        = \alpha_i(1-\alpha_i)\,\delta^2
+        \le \frac{\delta^2}{4}.
+        \]
+      </div>
+      <p>Therefore</p>
+      <div class="eq-box">
+        \[
+        \mathrm{MSE}_{\text{stochastic}}
+        = \mathrm{Var}\!\bigl(\langle x,\, \hat{w}\rangle\bigr)
+        \le \frac{\delta^2}{4}\sum_i x_i^2
+        = \frac{\delta^2}{4}\,\|x\|_2^2.
+        \]
+      </div>
+      <p>
+        The bound can be smaller still, depending on the actual fractional
+        parts $\{\alpha_i\}$ and on $x$.
+      </p>
+
+      <h3>Nearest vs. stochastic</h3>
+      <div class="eq">
+        \[
+        \underbrace{\frac{\delta^2}{4}\,\|x\|_1^2}_
+          {\text{worst-case nearest}}
+        \qquad\text{vs.}\qquad
+        \underbrace{\frac{\delta^2}{4}\,\|x\|_2^2}_
+          {\text{MSE stochastic}}.
+        \]
+      </div>
+      <p>
+        Since $\|x\|_2 \le \|x\|_1 \le \sqrt{d}\,\|x\|_2$, the $\ell_1$
+        worst case can be up to a factor $d$ larger in squared error than the
+        stochastic $\ell_2$ MSE, especially for dense $x$.
+      </p>
+      <div class="q">
+        <strong>Takeaway.</strong>
+        Round-to-nearest is optimal per coordinate, but for the
+        <em>inner product</em> the errors can add coherently. Stochastic
+        rounding keeps the estimate unbiased and replaces an
+        $\ell_1$-scale worst case with an $\ell_2$-scale MSE.
+      </div>
+
+      <div class="exercise">
+        <span class="label">Exercise</span>
+        <p style="margin-top: 0">
+          Apply Chernoff bounds to the stochastic-rounding estimator
+          $\langle x,\, \hat{w}\rangle$ to show that the error
+          $S=\sum_i x_i\,\Delta_i$ concentrates around zero. Derive a bound of
+          the form
+        </p>
+        <div class="eq">
+          \[
+          \Pr\!\bigl(|S| \ge t\bigr)
+          \le 2\exp\!\bigl(-f(t,\delta,x)\bigr)
+          \]
+        </div>
+        <p>
+          for an explicit rate function $f$.
+        </p>
+        <p class="hint">
+          <strong>Hint.</strong>
+          Each coordinate under stochastic rounding is a shifted Bernoulli
+          random variable, so $S=\sum_i x_i\,\Delta_i$ is a
+          <em>weighted sum of independent Bernoullis</em>. Start from the moment
+          generating function
+          $\mathbb{E}[e^{\lambda S}]
+          = \prod_i \mathbb{E}[e^{\lambda x_i\Delta_i}]$,
+          optimize over $\lambda$, and obtain a Chernoff tail.
+        </p>
+      </div>
+
+      <div class="remark">
+        <span class="label">Randomness matters</span>
+        Independence of the $\Delta_i$ is what lets the variance sum as
+        $\sum x_i^2\mathrm{Var}(\Delta_i)$, and what licenses an MGF / Chernoff
+        argument. In practice one often wants cheap, high-quality randomness
+        (for example, from hashing-based schemes) so the analysis applies.
+      </div>
+
+      <p class="cite next">
+        Related notes:
+        <a href="rotation_outliers.html">rotation_outliers.html</a>,
+        <a href="prune_a_model_to_quantization.html"
+          >prune_a_model_to_quantization.html</a
+        >.
+      </p>
+    </div>
+  </body>
+</html>

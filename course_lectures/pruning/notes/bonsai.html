@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bonsai — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .toc {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+      }
+
+      .toc .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.4rem;
+      }
+
+      .toc ol {
+        margin: 0;
+      }
+
+      .toc a {
+        color: var(--ink);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .diagram {
+        margin: 1.25rem 0;
+        padding: 1rem 1.15rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .diagram .caption {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.45;
+        margin-top: 0.65rem;
+      }
+
+      .fig-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 1.1rem;
+        margin: 1.25rem 0;
+      }
+
+      .fig-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 0.85rem 1rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .fig-row .fig-note {
+        flex: 1 1 10rem;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .fig-row svg {
+        flex: 0 0 auto;
+        max-width: 100%;
+      }
+
+      .cite {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .dims {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        background: rgba(11, 110, 79, 0.08);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+
+      .matrix-grid {
+        display: grid;
+        grid-template-columns: auto auto auto;
+        gap: 0.35rem 0.75rem;
+        align-items: center;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        margin: 0.75rem 0;
+      }
+
+      .matrix-grid .label {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="Bonsai.pdf">Bonsai.pdf</a>
+      </p>
+      <header>
+        <p class="meta">Efficient AI · Lecture notes</p>
+        <h1>Bonsai</h1>
+        <p>
+          A forward-pass-only recipe for structured pruning: sample feasible
+          sub-models, measure their utility, fit module scores, and keep the
+          best components under a sparsity budget.
+        </p>
+      </header>
+
+      <div class="toc">
+        <div class="label">Five parts</div>
+        <ol>
+          <li><a href="#setup">Problem setting</a></li>
+          <li><a href="#sampling">Sampling feasible sub-models</a></li>
+          <li><a href="#utility">Turning samples into supervision</a></li>
+          <li><a href="#linear">Fitting module scores</a></li>
+          <li><a href="#regularize">Regularization and complements</a></li>
+        </ol>
+      </div>
+
+      <!-- ========== 1 ========== -->
+      <h2 id="setup">1. Problem setting</h2>
+
+      <p>
+        We want to do <strong>structured pruning</strong> when the only
+        affordable operation is inference. In particular, assume we can run a
+        reasonable number of forward passes, but we cannot rely on gradients,
+        Hessians, or expensive retraining loops.
+      </p>
+
+      <div class="q">
+        <strong>Starting point.</strong> How do we prune with only this much
+        access?
+      </div>
+
+      <p>
+        SparseGPT, Wanda, and magnitude pruning already give useful saliency
+        scores, so one option is one-shot pruning. Bonsai asks whether those
+        saliency scores can instead guide a small set of forward-pass
+        experiments, so we learn a better structured pruning decision.
+      </p>
+
+      <p>
+        The core idea is to sample several feasible pruned models
+        $\hat{M}_i$, run each on a task or calibration set, and record its
+        score $s_i$. This produces a small dataset:
+      </p>
+
+      <div class="eq-box">
+        \[
+        \mathcal{D}
+        =
+        \{(\hat{M}_i, s_i)\}_{i=1}^{n},
+        \]
+      </div>
+
+      <div class="q">
+        <strong>Two questions.</strong> How should we sample the
+        $\hat{M}_i$? Once we have $\mathcal{D}$, how do we turn it into a
+        pruning rule?
+      </div>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="sampling">2. Sampling feasible sub-models</h2>
+
+      <p>
+        Uniformly sampling structured sub-models is too wasteful. Some samples
+        are obviously broken; for example, dropping every component in a layer
+        can destroy the model. We therefore keep the sampling layer-aware and
+        bias it using saliency from existing methods.
+      </p>
+
+      <div class="remark">
+        <span class="label">Notation: sparsity $p$</span>
+        $p \in (0,1)$ is the target <strong>sparsity</strong> (fraction
+        pruned). Example: $p = 0.1$ means prune $10\%$ and
+        <strong>keep $90\%$</strong> of the weights / modules.
+      </div>
+
+      <div class="remark">
+        <span class="label">Freeze most of the model</span>
+        Within each layer, keep the most salient $(1-2p)$ fraction of
+        components <em>fixed</em> (always chosen). The remaining $2p$ fraction
+        is the candidate pool. Each sampled mask keeps about half of that pool,
+        giving total keep fraction $(1-2p)+p = 1-p$ and sparsity $p$.
+      </div>
+
+      <div class="fig-row">
+        <svg
+          width="420"
+          height="200"
+          viewBox="0 0 420 200"
+          aria-label="Frozen modules vs remaining candidate space"
+        >
+          <defs>
+            <pattern
+              id="hatch"
+              width="6"
+              height="6"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="6"
+                stroke="#0b6e4f"
+                stroke-width="1.4"
+              />
+            </pattern>
+          </defs>
+          <!-- outer frame -->
+          <rect
+            x="48"
+            y="28"
+            width="220"
+            height="144"
+            fill="none"
+            stroke="#1a2332"
+            stroke-width="1.6"
+            rx="4"
+          />
+          <!-- three layer bars -->
+          <rect x="60" y="42" width="100" height="28" fill="url(#hatch)" stroke="#0b6e4f" stroke-width="1.2" />
+          <rect x="160" y="42" width="96" height="28" fill="#fff" stroke="#5a6a7d" stroke-width="1.2" />
+          <rect x="60" y="86" width="100" height="28" fill="url(#hatch)" stroke="#0b6e4f" stroke-width="1.2" />
+          <rect x="160" y="86" width="96" height="28" fill="#fff" stroke="#5a6a7d" stroke-width="1.2" />
+          <rect x="60" y="130" width="100" height="28" fill="url(#hatch)" stroke="#0b6e4f" stroke-width="1.2" />
+          <rect x="160" y="130" width="96" height="28" fill="#fff" stroke="#5a6a7d" stroke-width="1.2" />
+          <!-- left brace label -->
+          <path
+            d="M44 42 L36 42 L36 158 L44 158"
+            fill="none"
+            stroke="#0b6e4f"
+            stroke-width="1.5"
+          />
+          <text
+            x="8"
+            y="108"
+            font-size="11"
+            fill="#0b6e4f"
+            font-family="IBM Plex Mono, monospace"
+            transform="rotate(-90 8 108)"
+          >
+            frozen
+          </text>
+          <defs>
+            <marker
+              id="arr"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a4b08" />
+            </marker>
+          </defs>
+          <!-- right arrow / label -->
+          <line
+            x1="268"
+            y1="100"
+            x2="292"
+            y2="100"
+            stroke="#8a4b08"
+            stroke-width="1.5"
+            marker-end="url(#arr)"
+          />
+          <foreignObject x="298" y="58" width="118" height="90">
+            <div
+              xmlns="http://www.w3.org/1999/xhtml"
+              style="font-family: IBM Plex Mono, monospace; font-size: 11px; color: #8a4b08; line-height: 1.35;"
+            >
+              Remaining candidate pool ($2p$) — keep half $\Rightarrow$ total keep $1-p$
+            </div>
+          </foreignObject>
+        </svg>
+        <div class="fig-note">
+          <strong style="color: var(--ink)">Layer-wise split</strong><br />
+          Hatched: always kept ($(1-2p)$).<br />
+          Open: candidate pool (size $2p$); keep half of it
+          ($\Rightarrow$ total keep $1-p$).
+        </div>
+      </div>
+
+      <ul>
+        <li>
+          The prior controls which candidate modules are more likely to appear
+          in sampled sub-models. Saliency gives a natural prior; pure uniform
+          sampling is usually too noisy.
+        </li>
+      </ul>
+
+      <!-- ========== 3 ========== -->
+      <h2 id="utility">3. Turning samples into supervision</h2>
+
+      <p>
+        After sampling, the most direct strategy is to pick the best evaluated
+        sub-model. That wastes most of the information in $\mathcal{D}$: every
+        score says something about many modules at once.
+      </p>
+
+      <div class="q">
+        <strong>Why not just pick the best sample?</strong>
+      </div>
+
+      <p>
+        The number of possible structured components (neurons, heads, channels,
+        blocks, etc.) is much larger than the number of forward passes we can
+        afford. Most configurations will never be evaluated. Instead of treating
+        each sample as an isolated candidate, we fit a surrogate that explains
+        each score in terms of the modules that were kept.
+      </p>
+
+      <div class="remark">
+        <span class="label">Utility model</span>
+        Each forward pass gives an observed utility $s_i = U(\hat{M}_i)$.
+        The surrogate predicts $\hat{s}_i$ from the set of modules kept in
+        $\hat{M}_i$.
+      </div>
+
+      <p>
+        For example, $U$ might be validation accuracy, downstream task score,
+        or negative perplexity. The important distinction is that $s_i$ is
+        measured, while $\hat{s}_i$ is predicted:
+      </p>
+      <div class="eq-box">
+        \[
+        s_i = U(\hat{M}_i),
+        \qquad
+        \hat{s}_i
+        =
+        \hat{u}\bigl(\{m_j : m_j \in \hat{M}_i\}\bigr)
+        \approx s_i.
+        \]
+      </div>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="linear">4. Fitting module scores</h2>
+
+      <h3>Linear model</h3>
+      <p>
+        The simplest surrogate assumes that each module contributes additively.
+        If module $m_j$ is kept, it contributes a score $\beta_j$; if it is
+        pruned, it contributes nothing.
+      </p>
+      <div class="eq-box">
+        \[
+        \hat{s}_i
+        =
+        \sum_{m_j \in \hat{M}_i}
+        \beta_j
+        =
+        \beta^\top \alpha_{\hat{M}_i},
+        \]
+      </div>
+      <p class="cite">
+        where $\alpha_{\hat{M}_i}\in\{0,1\}^N$ has a $1$ in positions of kept
+        modules.
+      </p>
+
+      <h3>As a linear regression problem</h3>
+      <p>
+        Stack the binary masks into a sparse design matrix. Rows correspond to
+        sampled sub-models, columns correspond to structural components under
+        consideration.
+      </p>
+      <ul>
+        <li>
+          $N$: # modules / structural components under consideration
+          (columns)
+        </li>
+        <li>$n$: # data samples / # forward passes (rows)</li>
+      </ul>
+
+      <div class="eq">
+        \[
+        \hat{M}\,\vec{\beta} = \vec{s}
+        \]
+      </div>
+
+      <div class="diagram">
+        <div class="matrix-grid">
+          <div>
+            \[
+            \underbrace{
+              \begin{bmatrix}
+                1 & 1 & 1 & 0 & 0 & 0 & 1 & \cdots \\
+                \vdots & & & & & & & \\
+              \end{bmatrix}
+            }_{\text{sparse mask matrix } \hat{M}\ (n\times N)}
+            \;
+            \underbrace{
+              \begin{bmatrix}
+                \beta_1 \\ \vdots \\ \beta_N
+              \end{bmatrix}
+            }_{N\times 1}
+            =
+            \underbrace{
+              \begin{bmatrix}
+                s_1 \\ \vdots \\ s_n
+              \end{bmatrix}
+            }_{n\times 1}
+            \]
+          </div>
+        </div>
+        <p class="caption">
+          Typically $N \gg n$ — the system is underspecified.
+        </p>
+      </div>
+
+      <p>
+        The goal is to estimate $\beta$, one score per module. If the linear
+        model is a good approximation, pruning becomes simple: keep the frozen
+        $(1-2p)$ modules, then from the candidate pool keep the highest-$\beta$
+        modules until the total keep budget $1-p$ is reached.
+      </p>
+
+      <div class="remark">
+        <span class="label">Summary</span>
+        $\hat{M}\beta = s$ is underspecified when $N \gg n$.
+      </div>
+
+      <!-- ========== 5 ========== -->
+      <h2 id="regularize">5. Regularization and complements</h2>
+
+      <p>
+        Usually $N \gg n$, so the regression is underspecified. We therefore
+        fit $\beta$ with squared loss plus $\ell_2$ regularization:
+      </p>
+      <div class="eq-box">
+        \[
+        \beta^*
+        =
+        \underset{\beta}{\arg\min}
+        \;
+        \frac{1}{n}
+        \sum_{i=1}^{n}
+        \bigl(
+          s_i - \beta^\top \alpha_{\hat{M}_i}
+        \bigr)^2
+        +
+        \gamma\,\|\beta\|_2^2
+        \]
+      </div>
+      <p class="cite">
+        Equivalently $\|\hat{M}\beta - s\|_2^2 + \gamma\|\beta\|_2^2$, where
+        each row of $\hat{M}$ is the binary mask $\alpha_{\hat{M}_i}$.
+      </p>
+
+      <p>
+        When constructing each row of $\hat{M}$, draw a mask at sparsity $p$
+        <strong>per layer</strong>. This keeps the samples feasible and avoids
+        rows that accidentally remove too much of one layer while leaving
+        another layer untouched.
+      </p>
+
+      <p>
+        A remaining issue is coverage. Even with a saliency prior, some module
+        may rarely or never appear in the sampled masks. Then its coefficient
+        $\beta_j$ will be poorly estimated.
+      </p>
+
+      <div class="remark">
+        <span class="label">Complement trick</span>
+        If you sample $\hat{M}_i$, also sample its
+        <strong>complement</strong> $\hat{M}_i^{c}$. Flip bits
+        <em>only</em> inside the candidate pool (the bottom $2p$); the frozen
+        $(1-2p)$ part stays unchanged.
+        <div class="eq" style="margin-bottom: 0">
+          \[
+          \hat{M}_i^{c}
+          =
+          \bigl\{\,
+            m
+            \;\big|\;
+            m \notin \hat{M}_i
+            \text{ and } m \text{ is in the candidate pool}
+          \,\bigr\}
+          \;\cup\;
+          \{\text{frozen modules}\}.
+          \]
+        </div>
+      </div>
+
+      <div class="q">
+        <strong>Exercise.</strong> Prove that having the complement of a sample
+        in the data helps reduce the variance of $\beta$ estimation.
+      </div>
+
+      <p class="cite next">
+        Kolawole et al.,
+        <a
+          href="https://arxiv.org/abs/2402.05406"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Everybody Prune Now: Structured Pruning of LLMs with Only Forward
+          Passes</a
+        >
+        (arXiv:2402.05406). Complements reduce regression variance on binary
+        inputs (cf.&nbsp;Covert &amp; Lee, 2020).
+      </p>
+    </div>
+  </body>
+</html>

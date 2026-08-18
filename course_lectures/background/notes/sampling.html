@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sampling — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      h4 {
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.35rem;
+        color: var(--accent);
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .toc {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+      }
+
+      .toc .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.4rem;
+      }
+
+      .toc ol {
+        margin: 0;
+      }
+
+      .toc a {
+        color: var(--ink);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .fig {
+        margin: 1.25rem 0;
+        padding: 0.85rem 1rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        text-align: center;
+      }
+
+      .fig svg {
+        max-width: 100%;
+        height: auto;
+      }
+
+      .fig .caption {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.45;
+        margin-top: 0.65rem;
+        text-align: left;
+      }
+
+      .cite {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      .exercise {
+        border: 1px dashed var(--accent);
+        background: var(--accent-soft);
+        padding: 0.95rem 1.05rem;
+        margin: 1.25rem 0;
+        border-radius: 8px;
+      }
+
+      .exercise .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        display: block;
+        margin-bottom: 0.4rem;
+        font-weight: 600;
+      }
+
+      .algo {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0;
+      }
+
+      .algo .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        display: block;
+        margin-bottom: 0.45rem;
+        font-weight: 600;
+      }
+
+      .algo ol {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="Sampling.pdf">Sampling.pdf</a>
+      </p>
+      <header>
+        <p class="meta">Efficient AI · Other topics</p>
+        <h1>Sampling</h1>
+        <p>
+          Sampling turns hard expectations and hard-to-draw distributions into
+          algorithms. These notes build from Monte Carlo averages to inverse
+          transform sampling, importance sampling, and rejection sampling.
+        </p>
+      </header>
+
+      <div class="toc">
+        <div class="label">Roadmap</div>
+        <ol>
+          <li><a href="#why">Why sample?</a></li>
+          <li><a href="#inverse">Inverse transform sampling</a></li>
+          <li><a href="#importance">Importance sampling</a></li>
+          <li><a href="#optimal">Which proposal is best?</a></li>
+          <li><a href="#rejection">Rejection sampling</a></li>
+        </ol>
+      </div>
+
+      <p class="cite">
+        Big picture: sometimes we want <strong>estimates</strong>, such as
+        $\mathbb{E}[X]$ or $\mathbb{E}_f[w(X)]$; sometimes we want actual
+        <strong>samples</strong> from a distribution. The algorithms below
+        differ mainly in which of these goals they solve and what access they
+        assume.
+      </p>
+
+      <!-- ========== 1 ========== -->
+      <h2 id="why">1. Why sample?</h2>
+      <p>
+        Sampling is a way to learn about a random variable: estimate
+        expectations, distributional properties, and other functionals that are
+        hard to compute in closed form. The simplest case is when we can run
+        the random process itself many times.
+      </p>
+
+      <h3>Application: estimating an expectation</h3>
+      <p>
+        Suppose there is a randomized process with associated random variable
+        $X$. How do we discover $\mathbb{E}[X]=\mu$?
+      </p>
+      <div class="q">
+        <strong>Ans.</strong> Monte Carlo estimation. Sample and average:
+        \[
+        \mathbb{E}[X]
+        \approx
+        \frac{1}{n}\sum_{i=1}^{n} X_i.
+        \]
+      </div>
+      <p>
+        The law of large numbers is the reason this works: as $n$ grows, the
+        sample average becomes a better estimate of the true expectation.
+      </p>
+
+      <div class="q">
+        <strong>Q.</strong> How do we sample data from a distribution $f(x)$?
+      </div>
+      <ul>
+        <li>
+          In <strong>physical</strong> processes, an experiment itself may be
+          one run of a randomized trial.
+        </li>
+        <li>
+          On <strong>computers</strong>, we typically only have access to
+          pseudo-random uniforms $U[0,1]$.
+        </li>
+      </ul>
+      <p class="cite">
+        So the first algorithmic question becomes: if the computer gives us
+        uniforms, how do we turn those uniforms into samples from some target
+        distribution $f$?
+      </p>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="inverse">2. Inverse transform sampling</h2>
+      <div class="q">
+        <strong>Q.</strong>
+        If I have access to $U(0,1)$, how do I create samples from $f(x)$?
+      </div>
+
+      <p>
+        The target density $f$ tells us where probability mass lives. For a
+        continuous density, the probability of landing in a small bin around
+        $x$ is the area under $f$ over that bin:
+      </p>
+      <div class="eq">
+        \[
+        \text{sample from }(x\pm\delta)
+        \quad\text{with probability}\quad
+        \int_{x-\delta}^{x+\delta} f(t)\,dt.
+        \]
+      </div>
+
+      <p>
+        The cumulative distribution function (CDF) packages these areas into a
+        monotone map $F$. This monotonicity is the key: a uniform number
+        $r\in[0,1]$ can be interpreted as a target cumulative probability.
+      </p>
+      <div class="eq-box">
+        \[
+        F(x)=\Pr(X\le x)=\int_{-\infty}^{x} f(t)\,dt,
+        \qquad
+        \Pr(a &lt; X &lt; b)=F(b)-F(a).
+        \]
+      </div>
+
+      <div class="fig">
+        <svg viewBox="0 0 420 220" role="img" aria-label="Inverse CDF sampling sketch">
+          <line x1="40" y1="190" x2="390" y2="190" stroke="#1a2332" stroke-width="1.5" />
+          <line x1="40" y1="190" x2="40" y2="20" stroke="#1a2332" stroke-width="1.5" />
+          <path
+            d="M40 180 C 90 175, 130 150, 170 110 C 210 70, 250 45, 300 35 C 340 28, 370 25, 390 24"
+            fill="none"
+            stroke="#0b6e4f"
+            stroke-width="2.5"
+          />
+          <line x1="40" y1="70" x2="235" y2="70" stroke="#5a6a7d" stroke-dasharray="4 4" />
+          <line x1="235" y1="70" x2="235" y2="190" stroke="#5a6a7d" stroke-dasharray="4 4" />
+          <circle cx="235" cy="70" r="3.5" fill="#0b6e4f" />
+          <text x="48" y="64" font-family="IBM Plex Mono, monospace" font-size="13" fill="#5a6a7d">r</text>
+          <text x="242" y="205" font-family="IBM Plex Mono, monospace" font-size="13" fill="#5a6a7d">X</text>
+          <text x="330" y="50" font-family="IBM Plex Mono, monospace" font-size="14" fill="#0b6e4f">F(x)</text>
+          <text x="28" y="28" font-family="IBM Plex Mono, monospace" font-size="12" fill="#5a6a7d">1</text>
+          <text x="28" y="205" font-family="IBM Plex Mono, monospace" font-size="12" fill="#5a6a7d">0</text>
+        </svg>
+        <p class="caption">
+          Draw $r\sim U[0,1]$, then read off $X=F^{-1}(r)$ from the CDF.
+        </p>
+      </div>
+
+      <div class="algo">
+        <span class="label">Inversion method</span>
+        <ol>
+          <li>Generate $r\sim U[0,1]$.</li>
+          <li>Return $X=F^{-1}(r)$.</li>
+        </ol>
+      </div>
+      <p>
+        The returned value has the desired distribution. This method is exact
+        whenever the inverse CDF is available and cheap enough to compute.
+      </p>
+
+      <!-- ========== 3 ========== -->
+      <h2 id="importance">3. Importance sampling</h2>
+      <p>
+        Inverse transform gives actual samples from $f$, but it needs
+        $F^{-1}$. Often that is not realistic. A different goal is easier:
+        instead of sampling from $f$, estimate expectations under $f$ using a
+        distribution we <em>can</em> sample from.
+      </p>
+      <div class="q">
+        <strong>Setup.</strong>
+        Suppose you want to estimate properties of a function $w(x)$ for
+        $x\sim f(x)$. Assume $f(x)$ is known/evaluable, but there is no direct
+        way to sample from $f$.
+      </div>
+      <p><strong>Why direct sampling may be hard.</strong></p>
+      <ul>
+        <li>The inverse CDF $F^{-1}$ may be unavailable or expensive.</li>
+        <li>
+          There may be no simple physical or computational procedure that
+          directly generates $x\sim f$.
+        </li>
+      </ul>
+
+      <p>
+        Suppose instead we can sample from a proposal $g(x)$. Start from the
+        target expectation:
+      </p>
+      <div class="eq">
+        \[
+        \mathbb{E}_f[w(x)]
+        =
+        \int w(x)\,f(x)\,dx
+        \]
+      </div>
+      <p>and rewrite it under $g$:</p>
+      <div class="eq-box">
+        \[
+        \mathbb{E}_f[w(x)]
+        =
+        \int w(x)\cdot\frac{f(x)}{g(x)}\,g(x)\,dx
+        =
+        \mathbb{E}_g\!\left[\frac{f(x)\,w(x)}{g(x)}\right].
+        \]
+      </div>
+      <p>
+        Estimate the right-hand side by Monte Carlo with samples
+        $x_i\sim g$:
+      </p>
+      <div class="eq-box">
+        \[
+        \mathbb{E}_f[w(x)]
+        \approx
+        \frac{1}{n}\sum_{i=1}^{n}
+        \frac{f(x_i)\,w(x_i)}{g(x_i)}.
+        \]
+      </div>
+      <p>
+        Thus we can estimate $\mathbb{E}_f[w(x)]$ using a proposal distribution
+        $g$, without ever sampling from $f$. The price is that each sample gets
+        reweighted by $f(x_i)/g(x_i)$.
+      </p>
+
+      <div class="remark">
+        <span class="label">Required conditions</span>
+        We still need to evaluate the ratio $f(x)/g(x)$ at sampled points, and
+        $g$ must cover the important support: $g(x)&gt;0$ wherever
+        $f(x)w(x)\ne 0$. Otherwise the estimator is undefined or misses part of
+        the expectation.
+      </div>
+
+      <div class="q">
+        <strong>Q.</strong> Are all distributions $g$ good?<br />
+        <strong>Q.</strong> What should we look at to know if $g$ is good?<br />
+        <strong>A.</strong> How good is the estimate produced by the estimator
+        that uses $g$ — typically its variance.
+      </div>
+
+      <p>
+        Write the importance-weighted random variable
+      </p>
+      <div class="eq">
+        \[
+        y=\frac{w(x)\,f(x)}{g(x)},
+        \qquad x\sim g(x).
+        \]
+      </div>
+      <p>
+        Then $\mathbb{E}_g[y]=\mathbb{E}_f[w]=\mu$, but $\mathrm{Var}_g(y)$
+        depends strongly on the choice of $g$.
+      </p>
+
+      <p>
+        This is the central tradeoff in importance sampling: unbiasedness is
+        easy to preserve, but a poor proposal can make the variance enormous.
+      </p>
+
+      <div class="remark">
+        <span class="label">Note</span>
+        Importance sampling does <strong>not</strong> let us sample from
+        $f(x)$. It only lets us estimate $\mathbb{E}_f(\cdot)$ using samples
+        from $g(x)$.
+      </div>
+
+      <div class="remark">
+        <span class="label">Even direct sampling can be inefficient</span>
+        Even if direct samples from $f$ were available, they may be inefficient
+        for estimating a particular expectation. If there exist rare $x$ where
+        $|w(x)|$ is very large but $f(x)$ is small, those rare regions can
+        dominate the expectation and naive Monte Carlo from $f$ can have high
+        variance.
+      </div>
+
+      <div class="exercise">
+        <span class="label">Exercise</span>
+        Discuss when a softmax can be approximated via randomly uniform
+        sampling of tokens.
+      </div>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="optimal">4. Which proposal is best?</h2>
+      <p>
+        The previous section reduced proposal quality to estimator variance.
+        Now ask what proposal would be ideal. We want a proposal that keeps the
+        estimator unbiased while minimizing variance. With $y=f w / g$ and
+        $x\sim g$,
+      </p>
+      <div class="eq">
+        \[
+        \mathbb{E}_g[y]=\mu,
+        \qquad
+        \mathrm{Var}_g(y)
+        =
+        \mathbb{E}_g[(y-\mu)^2]
+        =
+        \mathbb{E}_g[y^2]-\mu^2
+        =
+        \int \frac{f(x)^2 w(x)^2}{g(x)}\,dx - \mu^2.
+        \]
+      </div>
+      <p>So the design question is:</p>
+      <div class="eq">
+        \[
+        \min_g\ \mathrm{Var}_g(y)
+        \quad\text{subject to}\quad
+        g\ge 0,\ \int g=1,\ \text{and } g(x)&gt;0\text{ when }f(x)w(x)\ne0.
+        \]
+      </div>
+
+      <h3>Lower bound via Cauchy–Schwarz</h3>
+      <div class="eq">
+        \[
+        \Bigl(\int a(x)b(x)\,dx\Bigr)^2
+        \le
+        \int a(x)^2\,dx\cdot\int b(x)^2\,dx.
+        \]
+      </div>
+      <p>Taking $a=f|w|/\sqrt{g}$ and $b=\sqrt{g}$ gives</p>
+      <div class="eq-box">
+        \[
+        \Bigl(\int f|w|\,dx\Bigr)^2
+        \le
+        \int\frac{f^2 w^2}{g}\,dx
+        \cdot
+        \underbrace{\int g\,dx}_{=1},
+        \]
+        so
+        \[
+        \int\frac{f^2 w^2}{g}\,dx
+        \ge
+        \bigl(\mathbb{E}_f[|w|]\bigr)^2.
+        \]
+      </div>
+
+      <h3>When is the bound tight?</h3>
+      <p>
+        Equality holds when the two factors are proportional:
+      </p>
+      <div class="eq">
+        \[
+        \frac{f|w|}{\sqrt{g}}
+        =
+        C\sqrt{g}
+        \quad\Rightarrow\quad
+        g=\frac{1}{C}\,f|w|.
+        \]
+      </div>
+      <div class="eq-box">
+        \[
+        g^\star \propto f\,|w|.
+        \]
+      </div>
+      <p>
+        If $w(x)&gt;0$ for all $x$, the absolute value disappears and
+        $g\propto f\,w$.
+      </p>
+
+      <h3>The zero-variance fantasy</h3>
+      <p>
+        When $w&gt;0$ and we take $g=f w / c$ with
+        $c=\int f w\,dx=\mu$,
+      </p>
+      <div class="eq">
+        \[
+        \mathrm{Var}
+        =
+        \int\frac{f^2 w^2\cdot c}{f w}\,dx-\mu^2
+        =
+        c\int f w\,dx-\mu^2
+        =
+        c\mu-\mu^2
+        =
+        0.
+        \]
+      </div>
+      <div class="remark">
+        <span class="label">Why this is not free</span>
+        Knowing this optimal $g$ already requires knowing $\mu$ — which is
+        exactly what we wanted to estimate. So the zero-variance proposal is a
+        characterization of the ideal, not a free algorithm.
+      </div>
+      <p class="cite">
+        Still, the message is practical: a good proposal should put mass where
+        $|f w|$ is large. It does not have to be exactly optimal to help; it
+        just needs to avoid wasting samples in unimportant regions.
+      </p>
+
+      <div class="fig">
+        <svg viewBox="0 0 440 200" role="img" aria-label="Good vs bad proposal sketch">
+          <line x1="30" y1="170" x2="410" y2="170" stroke="#1a2332" stroke-width="1.5" />
+          <path d="M40 160 C 80 155, 110 90, 140 55 C 170 25, 190 25, 220 55 C 250 90, 280 155, 320 165" fill="none" stroke="#1a2332" stroke-width="2" opacity="0.45" />
+          <path d="M90 160 C 130 150, 160 70, 200 40 C 240 20, 270 35, 300 80 C 330 125, 350 155, 380 165" fill="none" stroke="#0b6e4f" stroke-width="2.5" />
+          <path d="M180 160 C 220 155, 250 110, 290 55 C 320 25, 350 25, 380 60 C 400 90, 410 140, 415 160" fill="none" stroke="#b42318" stroke-width="2.5" />
+          <text x="185" y="28" font-family="IBM Plex Mono, monospace" font-size="13" fill="#0b6e4f">good</text>
+          <text x="355" y="45" font-family="IBM Plex Mono, monospace" font-size="13" fill="#b42318">bad</text>
+          <text x="20" y="28" font-family="IBM Plex Mono, monospace" font-size="13" fill="#5a6a7d">g(x)</text>
+        </svg>
+        <p class="caption">
+          A good proposal overlaps the important region of $|f w|$; a bad one
+          wastes samples where the integrand is tiny.
+        </p>
+      </div>
+
+      <div class="exercise">
+        <span class="label">Exercise</span>
+        <p style="margin-top:0">
+          Let $S=x_1+\cdots+x_n$ with $x_i\in\mathbb{R}$. Estimate the sum by
+          sampling indices $i$ instead of reading every term. If index $i$ is
+          sampled with probability $p_i$, an unbiased one-sample estimator is
+          $x_i/p_i$. What choice of $p_i$ minimizes the estimator variance?
+        </p>
+        <p>
+          What if instead $\vec S=\vec x_1+\cdots+\vec x_n$ with
+          $\vec x_i\in\mathbb{R}^d$? What should the sampling probabilities
+          depend on now?
+        </p>
+      </div>
+
+      <!-- ========== 5 ========== -->
+      <h2 id="rejection">5. Rejection sampling</h2>
+      <p>
+        Importance sampling estimates expectations under $f$, but its samples
+        still come from $g$. Sometimes we really need accepted samples whose
+        distribution is $f$ itself. Rejection sampling converts proposal samples
+        into target samples by randomly accepting only some of them.
+      </p>
+      <p>
+        Suppose we can sample from a proposal $g$, and we know a constant $M$
+        such that $g$ covers the support of $f$ and
+      </p>
+      <div class="eq-box">
+        \[
+        M\,g(x)\ \ge\ f(x)
+        \qquad\text{for all }x.
+        \]
+      </div>
+
+      <div class="algo">
+        <span class="label">Rejection sampling</span>
+        <ol>
+          <li>Sample $x\sim g(x)$.</li>
+          <li>Sample an independent $u\sim U[0,1]$.</li>
+          <li>
+            Accept $x$ if
+            $u\le \dfrac{f(x)}{M g(x)}$; otherwise reject and resample.
+          </li>
+        </ol>
+      </div>
+
+      <div class="fig">
+        <svg viewBox="0 0 420 210" role="img" aria-label="Envelope Mg(x) over f(x)">
+          <line x1="40" y1="180" x2="390" y2="180" stroke="#1a2332" stroke-width="1.5" />
+          <path d="M70 175 C 110 170, 140 70, 190 40 C 240 15, 280 35, 320 95 C 350 135, 365 165, 380 175" fill="none" stroke="#0b6e4f" stroke-width="2.5" />
+          <path d="M95 175 C 125 168, 155 105, 195 75 C 235 50, 270 65, 305 115 C 330 145, 345 165, 360 175" fill="none" stroke="#1a2332" stroke-width="2.5" />
+          <line x1="220" y1="48" x2="220" y2="180" stroke="#5a6a7d" stroke-dasharray="4 4" />
+          <circle cx="220" cy="180" r="3.5" fill="#1a2332" />
+          <text x="226" y="198" font-family="IBM Plex Mono, monospace" font-size="13" fill="#5a6a7d">x</text>
+          <text x="300" y="45" font-family="IBM Plex Mono, monospace" font-size="14" fill="#0b6e4f">Mg(x)</text>
+          <text x="275" y="95" font-family="IBM Plex Mono, monospace" font-size="14" fill="#1a2332">f(x)</text>
+        </svg>
+        <p class="caption">
+          The envelope $Mg$ must dominate $f$. Acceptance probability at $x$ is
+          the vertical ratio $f(x)/(Mg(x))$.
+        </p>
+      </div>
+
+      <p>
+        Accepted samples follow the target density. Schematically,
+      </p>
+      <div class="eq">
+        \[
+        p(x)
+        \propto
+        g(x)\cdot\frac{f(x)}{M g(x)}
+        \propto
+        \frac{f(x)}{M}.
+        \]
+      </div>
+      <p class="cite">
+        The constant $M$ affects efficiency, not the final accepted
+        distribution: larger $M$ means lower acceptance probability.
+      </p>
+
+      <h3>How to choose a good $g$</h3>
+      <ul>
+        <li>Keep $M$ as small as possible.</li>
+        <li>
+          Choose $g$ close in shape to $f$, so $Mg$ tightly envelopes $f$ and
+          the rejection rate stays small.
+        </li>
+      </ul>
+
+      <div class="exercise">
+        <span class="label">Exercise</span>
+        <p style="margin-top:0">
+          Sample a point uniformly from the unit disk in $d=2$ using only
+          Uniform$(0,1)$ coordinates. First map two uniforms to a point in the
+          square $[-1,1]^2$, then reject points outside the unit circle.
+        </p>
+        <div class="fig" style="margin:0.85rem 0;text-align:center">
+          <svg viewBox="0 0 180 180" width="160" role="img" aria-label="Circle inscribed in a square">
+            <rect x="20" y="20" width="140" height="140" fill="none" stroke="#1a2332" stroke-width="2" />
+            <circle cx="90" cy="90" r="70" fill="rgba(11,110,79,0.12)" stroke="#0b6e4f" stroke-width="2.5" />
+            <text x="125" y="55" font-family="IBM Plex Mono, monospace" font-size="12" fill="#5a6a7d">d=2</text>
+          </svg>
+        </div>
+        <p>
+          The rejection rate is
+          \[
+          1-\frac{\mathrm{Area(circle)}}{\mathrm{Area(square)}}.
+          \]
+          For $d=2$, the acceptance probability is $\pi/4$, so the rejection
+          rate is $1-\pi/4$. What happens as $d$ grows? Can the same approach
+          be used for a high-dimensional ball?
+        </p>
+      </div>
+
+      <p class="cite next">
+        Sampling is the algorithmic side of the same concentration ideas that
+        appear in the tail-bounds notes: once you can draw samples, Monte Carlo
+        turns expectations into averages with explicit variance and
+        concentration tradeoffs.
+      </p>
+    </div>
+  </body>
+</html>

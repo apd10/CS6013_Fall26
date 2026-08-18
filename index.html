@@ -62,16 +62,13 @@
             <dl>
               <div>
                 <dt>TA 1</dt>
-                <dd>Lavinia Nongbri · Office hours: TBD</dd>
+                <dd>Lavinia Nongbri</dd>
               </div>
               <div>
                 <dt>TA 2</dt>
-                <dd>Hasmita Kurre · Office hours: T Th 11:00-12:00</dd>
-              </div>
-              <div>
-                <dt>TA 3</dt>
-                <dd>TBD · Office hours: TBD</dd>
-              </div>
+                <dd>Hasmita Kurre</dd>
+                <dd>Office hours: T Th 11:00-12:00</dd>
+      
             </dl>
           </div>
         </section>
@@ -198,25 +195,38 @@
                 <tr>
                   <td>8/12/2026</td>
                   <td>5</td>
-                  <td>Background (Tail Bounds, GPU programming model)</td>
+                  <td>Tail Bounds, GPU programming model</td>
                   <td>
-                    <a href="course_lectures/background/slides/index.html">Background</a>
+                    <a href="course_lectures/background/slides/index.html">GPU programming model</a>
                   </td>
-                  <td>—</td>
+                  <td>
+                    <a href="course_lectures/background/notes/tailbounds.html">tailbounds</a>
+                  </td>
                 </tr>
                 <tr>
                   <td>8/14/2026</td>
                   <td>6</td>
-                  <td></td>
-                  <td>—</td>
-                  <td>—</td>
+                  <td><em>Visiting Lecture: Piyush Sawarkar, BharatGen</em></td>
+            
+                  <td>
+                    <a href="https://docs.google.com/presentation/d/1ktB1wF4OnbVPQaET30bVgAZsSK9FwqDoLH8dIt8uNGc/edit?usp=sharing" target="_blank">RL: From Imitation to Reasoning to Agentic</a>
+                  </td>
+                  <td>
+                  </td>
                 </tr>
                 <tr>
                   <td>8/19/2026</td>
                   <td>7</td>
-                  <td></td>
-                  <td>—</td>
-                  <td>—</td>
+                  <td>Bonsai, Quantization basics</td>
+                  <td>
+                    <a href="course_lectures/quantization/slides/index.html">Quantization</a>
+                  </td>
+                  <td>
+                    <a href="course_lectures/pruning/notes/bonsai.html">bonsai</a><br />
+                    <a href="course_lectures/quantization/notes/quantization_basics.html">quantization_basics</a><br />
+                    <a href="course_lectures/background/notes/sampling.html">sampling</a>
+                  </td>
+         
                 </tr>
                 <tr class="seminar">
                   <td>8/21/2026</td>
@@ -422,7 +432,7 @@
                   </td>
                 </tr>
                 <tr>
-                  <td>Background</td>
+                  <td>Tail Bounds and GPU programming model</td>
                   <td>
                     <ul class="refs-list">
                       <li>Mitzenmacher and Upfal. “<a href="https://randall.math.gatech.edu/Randalgs/mitzbook.pdf" target="_blank">Probability and Computing</a>.” Chapters 3–4.</li>
@@ -459,6 +469,32 @@
                       <li>Wen et al. “<a href="https://arxiv.org/abs/1608.03665" target="_blank">Learning Structured Sparsity in Deep Neural Networks</a>.” arXiv:1608.03665, 2016.</li>
                       <li>Yang et al. “<a href="https://openreview.net/forum?id=zFR5aWGaUs" target="_blank">Let LLM Tell What to Prune and How Much to Prune</a>.” ICML 2025.</li>
                       <li>Zheng et al. “<a href="https://doi.org/10.1145/3731599.3767395" target="_blank">Enabling Unstructured Sparse Fine-Tuning and Inference for Foundation Models on Wafer-Scale Engine</a>.” SC Workshops 2025.</li>
+                    </ul>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Quantization</td>
+                  <td>
+                    <ul class="refs-list">
+                      <li>Dettmers et al. “<a href="https://arxiv.org/abs/2208.07339" target="_blank">LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale</a>.” arXiv:2208.07339, 2022.</li>
+                      <li>Han, Mao, and Dally. “<a href="https://arxiv.org/abs/1510.00149" target="_blank">Deep Compression: Compressing Deep Neural Networks with Pruning, Trained Quantization and Huffman Coding</a>.” arXiv:1510.00149, 2016.</li>
+                      <li>Frantar et al. “<a href="https://arxiv.org/abs/2210.17323" target="_blank">GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers</a>.” arXiv:2210.17323, 2023.</li>
+                      <li>Dong et al. “<a href="https://arxiv.org/abs/1905.03696" target="_blank">HAWQ: Hessian AWare Quantization of Neural Networks with Mixed-Precision</a>.” arXiv:1905.03696, 2019.</li>
+                      <li>Lin et al. “<a href="https://arxiv.org/abs/2306.00978" target="_blank">AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration</a>.” arXiv:2306.00978, 2023.</li>
+                      <li>Xiao et al. “<a href="https://arxiv.org/abs/2211.10438" target="_blank">SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models</a>.” arXiv:2211.10438, 2022.</li>
+                      <li>Zadeh et al. “<a href="https://arxiv.org/abs/2404.00456" target="_blank">QuaRot: Outlier-Free 4-Bit Inference in Rotated LLMs</a>.” arXiv:2404.00456, 2024.</li>
+                      <li>Ben-Basat et al. “<a href="https://arxiv.org/abs/2605.06014" target="_blank">Quantizing With Randomized Hadamard Transforms: Efficient Heuristic Now Proven</a>.” arXiv:2605.06014, 2026.</li>
+                      <li>Jégou, Douze, and Schmid. “<a href="https://doi.org/10.1109/TPAMI.2010.57" target="_blank">Product Quantization for Nearest Neighbor Search</a>.” IEEE TPAMI, 2011.</li>
+                      <li>Grootendorst. “<a href="https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-quantization" target="_blank">A Visual Guide to Quantization</a>.”</li>
+                      <li>ggml-org. “<a href="https://github.com/ggml-org/ggml/blob/master/docs/gguf.md" target="_blank">GGUF documentation</a>.” GitHub.</li>
+                      <li>NVIDIA. “<a href="https://developer.nvidia.com/blog/model-quantization-concepts-methods-and-why-it-matters/" target="_blank">Model Quantization: Concepts, Methods, and Why It Matters</a>.” Technical Blog, 2025.</li>
+                      <li>NVIDIA. “<a href="https://developer.nvidia.com/blog/floating-point-8-an-introduction-to-efficient-lower-precision-ai-training/" target="_blank">Floating-Point 8: An Introduction to Efficient, Lower-Precision AI Training</a>.” Technical Blog, 2025.</li>
+                      <li>NVIDIA. “<a href="https://developer.nvidia.com/blog/per-tensor-and-per-block-scaling-strategies-for-effective-fp8-training/" target="_blank">Per-Tensor and Per-Block Scaling Strategies for Effective FP8 Training</a>.” Technical Blog, 2025.</li>
+                      <li>NVIDIA. “<a href="https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/" target="_blank">NVIDIA Hopper Architecture In-Depth</a>.” Technical Blog, 2022.</li>
+                      <li>NVIDIA. “<a href="https://docs.nvidia.com/deeplearning/transformer-engine/user-guide/examples/fp8_primer.html" target="_blank">Using FP8 and FP4 with Transformer Engine</a>.” Transformer Engine documentation.</li>
+                      <li>NVIDIA. “<a href="https://docs.nvidia.com/deeplearning/transformer-engine/user-guide/features/low_precision_training/mxfp8/mxfp8.html" target="_blank">MXFP8</a>.” Transformer Engine documentation.</li>
+                      <li>PyTorch. “<a href="https://pytorch.org/blog/hadacore/" target="_blank">HadaCore: Tensor Core Accelerated Hadamard Transform Kernel</a>.”</li>
+                      <li>PyTorch. “<a href="https://pytorch.org/blog/quantization-aware-training/" target="_blank">Quantization-Aware Training for Large Language Models with PyTorch</a>.”</li>
                     </ul>
                   </td>
                 </tr>

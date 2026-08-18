@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tail Bounds — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .toc {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+      }
+
+      .toc .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.4rem;
+      }
+
+      .toc ol {
+        margin: 0;
+      }
+
+      .toc a {
+        color: var(--ink);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .fig-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 0.85rem 1rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        margin: 1.25rem 0;
+      }
+
+      .fig-row .fig-note {
+        flex: 1 1 10rem;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .fig-row svg {
+        flex: 0 0 auto;
+        max-width: 100%;
+      }
+
+      .cite {
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        background: rgba(11, 110, 79, 0.08);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+
+      .highlight {
+        background: var(--accent-soft);
+        border: 1px solid rgba(11, 110, 79, 0.25);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin: 1rem 0;
+        text-align: center;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="tailbounds.pdf">tailbounds.pdf</a>
+      </p>
+      <header>
+        <p class="meta">Efficient AI · Lecture notes</p>
+        <h1>Tail bounds</h1>
+        <p>
+          A ladder of deviation bounds: start with the mean, add variance,
+          then use moment generating functions to get exponentially small
+          bounds for sums of independent Bernoulli variables.
+        </p>
+      </header>
+
+      <div class="toc">
+        <div class="label">Roadmap</div>
+        <ol>
+          <li><a href="#motivation">Why tail probabilities?</a></li>
+          <li><a href="#markov">Markov’s inequality</a></li>
+          <li><a href="#chebyshev">Chebyshev’s inequality</a></li>
+          <li><a href="#mgf">Moment generating functions</a></li>
+          <li><a href="#chernoff">Chernoff bounds</a></li>
+          <li><a href="#poisson">Poisson trials and the binomial example</a></li>
+        </ol>
+      </div>
+
+      <div class="remark">
+        <span class="label">Main story</span>
+        We repeatedly ask the same question: how large can
+        $\Pr(X \ge a)$ be, given limited information about $X$?
+        <ul>
+          <li><strong>Mean only</strong> $\Rightarrow$ Markov.</li>
+          <li><strong>Mean + variance</strong> $\Rightarrow$ Chebyshev.</li>
+          <li><strong>All exponential moments</strong> $\Rightarrow$ Chernoff.</li>
+        </ul>
+      </div>
+
+      <!-- ========== 1 ========== -->
+      <h2 id="motivation">1. Why tail probabilities?</h2>
+
+      <p>
+        Randomized algorithms — and randomized proposals for compression —
+        need probabilistic analysis. Typical random variables of interest:
+      </p>
+      <ul>
+        <li>$X =$ running time of an algorithm</li>
+        <li>$X =$ fraction of failures (or other error measure)</li>
+      </ul>
+      <p>
+        We need a way to understand how large these quantities can become.
+        Instead of asking for the exact distribution of $X$, we often only ask
+        for an upper bound on a <strong>tail probability</strong> such as
+        $\Pr(X \ge a)$.
+      </p>
+
+      <div class="fig-row">
+        <svg
+          width="320"
+          height="150"
+          viewBox="0 0 320 150"
+          aria-label="Density with a true tail and an upper bound"
+        >
+          <path
+            d="M20 120 C60 118, 80 40, 140 40 C200 40, 220 118, 300 120"
+            fill="none"
+            stroke="#0b6e4f"
+            stroke-width="2"
+            stroke-dasharray="4 3"
+          />
+          <line x1="210" y1="30" x2="210" y2="125" stroke="#1a2332" stroke-width="1.5" />
+          <path
+            d="M210 78 C230 95, 255 112, 290 120 L210 120 Z"
+            fill="url(#tailHatch)"
+            stroke="#8a4b08"
+            stroke-width="1"
+          />
+          <defs>
+            <pattern id="tailHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(40)">
+              <line x1="0" y1="0" x2="0" y2="6" stroke="#8a4b08" stroke-width="1.2" />
+            </pattern>
+          </defs>
+          <line x1="210" y1="55" x2="295" y2="55" stroke="#0b6e4f" stroke-width="2" />
+          <text x="225" y="48" font-size="11" fill="#0b6e4f" font-family="IBM Plex Mono, monospace">upper bound</text>
+          <text x="230" y="108" font-size="11" fill="#8a4b08" font-family="IBM Plex Mono, monospace">true prob.</text>
+          <text x="205" y="140" font-size="12" fill="#1a2332" font-family="Source Serif 4, Georgia, serif">$a$</text>
+        </svg>
+        <div class="fig-note">
+          Goal: bound the shaded tail by something computable.<br />
+          $\Pr(X \ge a) \le$ (some upper bound).
+        </div>
+      </div>
+
+      <div class="remark">
+        <span class="label">Two regimes</span>
+        If the distribution of $X$ is known and easy to analyze, use
+        $1 - F(a)$. Otherwise, use <strong>tail bounds</strong> that depend
+        only on moments / MGFs.
+      </div>
+
+      <p>
+        Running example throughout: independent coin tosses (Bernoulli /
+        Poisson trials)
+      </p>
+      <div class="eq-box">
+        \[
+        X = X_1 + X_2 + \dots + X_n,
+        \qquad
+        X_i \sim \mathrm{Bern}(p_i).
+        \]
+      </div>
+      <div class="q">
+        <strong>Question.</strong> What is $\Pr(\#\text{heads} \ge 3n/4)$?
+        If all $p_i$ are equal, this is binomial. If the $p_i$ differ, exact
+        manipulation is less convenient — but the same bounds still apply.
+      </div>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="markov">2. Markov’s inequality</h2>
+
+      <p>
+        The weakest useful information about a nonnegative random variable is
+        its expectation. Markov’s inequality says that even this alone limits
+        how much probability mass can sit far out in the tail.
+      </p>
+
+      <div class="q">
+        <strong>Question.</strong> What can you say about the tail if you know
+        only the expectation $E(X)$?
+      </div>
+
+      <div class="eq-box">
+        \[
+        \Pr(X \ge a)
+        \;\le\;
+        \frac{E(X)}{a}
+        \qquad\text{if $X$ is nonnegative.}
+        \]
+      </div>
+
+      <h3>Intuition</h3>
+      <p>
+        Fix $\mu = E(X)$ and $X \ge 0$. To maximize $\Pr(X \ge a)$ under this
+        mean constraint, push mass to the extremes: put mass $1-p$ at $0$ and
+        mass $p$ at $a$. Then $ap=\mu$, so $p=\mu/a$. That worst-case
+        probability is exactly Markov’s bound.
+      </p>
+
+      <h3>Proof</h3>
+      <div class="eq">
+        \[
+        E(X)
+        =
+        \sum_x x\,\Pr(x)
+        =
+        \underbrace{\sum_{x \lt a} x\,\Pr(x)}_{\ge 0}
+        +
+        \sum_{x \ge a} x\,\Pr(x)
+        \;\ge\;
+        a\,\Pr(X \ge a).
+        \]
+      </div>
+      <p>Divide by $a > 0$ to finish.</p>
+
+      <div class="remark">
+        <span class="label">Tightness</span>
+        Yes — equality is achieved by the two-point distribution above (mass at
+        $0$ and $a$).
+      </div>
+
+      <h3>Binomial example (Markov)</h3>
+      <p>
+        Take unbiased coins: $E(X)=np=n/2$. Then
+      </p>
+      <div class="eq">
+        \[
+        \Pr\!\left(X \ge \tfrac{3n}{4}\right)
+        \;\le\;
+        \frac{n/2}{3n/4}
+        =
+        \tfrac{2}{3}.
+        \]
+      </div>
+      <p class="cite">
+        This is a constant bound. It is valid with very little information, but
+        it does not improve as $n$ grows. To get decay with $n$, we need more
+        information than just the mean.
+      </p>
+
+      <!-- ========== 3 ========== -->
+      <h2 id="chebyshev">3. Chebyshev’s inequality</h2>
+
+      <p>
+        The next piece of information is the variance. It measures how much
+        $X$ typically deviates from its mean. Variance is the centered second
+        moment:
+        $\mathrm{Var}(X)=E((X-\mu)^2)=E(X^2)-E(X)^2$.
+      </p>
+
+      <div class="eq-box">
+        \[
+        \Pr(|X-\mu| \ge a)
+        =
+        \Pr\bigl((X-\mu)^2 \ge a^2\bigr)
+        \;\le\;
+        \frac{E((X-\mu)^2)}{a^2}
+        =
+        \frac{\mathrm{Var}(X)}{a^2}.
+        \]
+      </div>
+      <p class="cite">Proof: apply Markov to $Y=(X-\mu)^2 \ge 0$.</p>
+
+      <h3>Tightness</h3>
+      <p>
+        Equality is achievable. Take a three-point law for $X-\mu$:
+      </p>
+      <ul>
+        <li>$0$ with probability $1-p$</li>
+        <li>$-a$ with probability $p/2$</li>
+        <li>$+a$ with probability $p/2$</li>
+      </ul>
+      <p>
+        Then $E((X-\mu)^2)=a^2 p$, and Chebyshev’s bound is tight for this
+        $Y$. (Equivalently: $X=\mu$, $\mu-a$, $\mu+a$ with probabilities
+        $1-v$, $v/2$, $v/2$.)
+      </p>
+
+      <h3>Binomial example (Chebyshev)</h3>
+      <p>
+        For $X_i\sim\mathrm{Bern}(1/2)$: $E(X)=n/2$, $\mathrm{Var}(X)=n/4$.
+      </p>
+      <div class="eq">
+        \[
+        \Pr\!\left(\left|X-\tfrac{n}{2}\right| \ge \tfrac{n}{4}\right)
+        \;\le\;
+        \frac{n/4}{(n/4)^2}
+        =
+        \frac{4}{n}.
+        \]
+      </div>
+      <p>
+        This is the bound Chebyshev actually gives (two-sided). For the
+        one-sided event $X \ge 3n/4$, the notes write
+        $\tfrac{4}{n}\cdot\tfrac12=\tfrac{2}{n}$ by symmetry — that is a
+        heuristic, not a consequence of Chebyshev alone. Either way we already
+        improve from Markov’s constant $2/3$ to an $O(1/n)$ guarantee.
+      </p>
+
+      <div class="remark">
+        <span class="label">Higher moments</span>
+        Chebyshev is Markov applied to a squared deviation. The same trick can
+        use higher even powers:
+        \[
+        \Pr(|X-\mu|\ge a)
+        \;\le\;
+        \frac{E\bigl((X-\mu)^{2k}\bigr)}{a^{2k}}.
+        \]
+        Larger $k$ often improves the bound when those moments exist, but this
+        is not automatic for every distribution and threshold.
+      </div>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="mgf">4. Moment generating functions</h2>
+
+      <p>
+        Instead of choosing one moment at a time, Chernoff bounds package
+        exponential moments into one object: the
+        <strong>moment generating function</strong>.
+      </p>
+      <div class="eq-box">
+        \[
+        M_X(t) = E(e^{tX}).
+        \]
+      </div>
+      <p>
+        We mainly care that $M_X(t)$ exists in a neighborhood of $t=0$.
+        Differentiating under the expectation (under mild conditions),
+      </p>
+      <div class="eq">
+        \[
+        M_X^{(r)}(t) = E(X^r e^{tX}),
+        \qquad
+        M_X^{(r)}(0) = E(X^r).
+        \]
+      </div>
+      <p>
+        Thus the derivatives of the MGF at zero recover the moments of $X$.
+        We use $r$ for derivative order here to avoid confusing it with the
+        number of Bernoulli trials $n$.
+      </p>
+
+      <div class="remark">
+        <span class="label">Uniqueness</span>
+        If $M_X(t)=M_Y(t)$ for all $t\in(-\delta,\delta)$ for some
+        $\delta > 0$, then $X$ and $Y$ have the same distribution.
+        Matching all moments alone is <em>not</em> enough in general
+        (there are distinct laws with identical moment sequences); the
+        neighborhood-of-zero MGF hypothesis is the right sufficient condition.
+      </div>
+
+      <div class="eq-box">
+        \[
+        \text{If $X,Y$ independent:}
+        \quad
+        M_{X+Y}(t) = M_X(t)\, M_Y(t).
+        \]
+      </div>
+
+      <!-- ========== 5 ========== -->
+      <h2 id="chernoff">5. Chernoff bounds</h2>
+
+      <p>
+        The Chernoff trick is simple: exponentiate $X$, apply Markov to the
+        nonnegative random variable $e^{tX}$, and then choose the best $t$.
+        The sign of $t$ selects which tail we control.
+      </p>
+
+      <h3>Upper tail ($t > 0$)</h3>
+      <div class="eq">
+        \[
+        \Pr(X \ge a)
+        =
+        \Pr(e^{tX} \ge e^{ta})
+        \;\le\;
+        \frac{E[e^{tX}]}{e^{ta}}
+        =
+        \frac{M_X(t)}{e^{ta}}.
+        \]
+      </div>
+      <p>
+        This holds for every $t > 0$, so we may optimize:
+      </p>
+      <div class="eq-box">
+        \[
+        \Pr(X \ge a)
+        \;\le\;
+        \min_{t > 0}
+        \frac{M_X(t)}{e^{ta}}.
+        \]
+      </div>
+
+      <h3>Lower tail ($t < 0$)</h3>
+      <p>
+        The same calculation with $t < 0$ bounds $\Pr(X \le a)$, again
+        minimizing $M_X(t)/e^{ta}$ over $t < 0$.
+      </p>
+
+      <div class="remark">
+        <span class="label">Takeaway</span>
+        More information about $X$ (mean $\to$ variance $\to$ MGF) yields
+        better analytic tail bounds. Chernoff is the MGF-optimized Markov
+        bound.
+      </div>
+
+      <!-- ========== 6 ========== -->
+      <h2 id="poisson">6. Poisson trials and the binomial example</h2>
+
+      <p>
+        Now specialize to independent Bernoulli variables. This is the setting
+        where Chernoff becomes especially useful: independence makes the MGF of
+        the sum factor into a product.
+      </p>
+      <div class="eq-box">
+        \[
+        X=\sum_{i=1}^n X_i,
+        \qquad
+        X_i\in\{0,1\},
+        \qquad
+        \Pr(X_i=1)=p_i,
+        \qquad
+        \mu=\sum_i p_i.
+        \]
+      </div>
+
+      <h3>MGF bound</h3>
+      <div class="eq">
+        \[
+        \begin{aligned}
+        M_X(t)
+        &=
+        \prod_i E(e^{tX_i})
+        =
+        \prod_i\bigl(1 + p_i(e^t-1)\bigr) \\
+        &\le
+        \prod_i e^{(e^t-1)p_i}
+        =
+        e^{(e^t-1)\mu},
+        \end{aligned}
+        \]
+      </div>
+      <p class="cite">using $1+x \le e^x$.</p>
+
+      <h3>Theorem (multiplicative Chernoff)</h3>
+      <p>
+        Plugging the MGF bound into the optimized Markov bound gives the
+        following standard upper-tail forms.
+      </p>
+      <ol>
+        <li>
+          For any $\delta > 0$,
+          \[
+          \Pr\bigl(X \ge (1+\delta)\mu\bigr)
+          \lt
+          \left(
+            \frac{e^\delta}{(1+\delta)^{1+\delta}}
+          \right)^{\!\mu}.
+          \]
+        </li>
+        <li>
+          For $0 < \delta < 1$,
+          \[
+          \Pr\bigl(X \ge (1+\delta)\mu\bigr)
+          \;\le\;
+          e^{-\mu \delta^2 / 3}.
+          \]
+        </li>
+        <li>
+          For $R \ge 6\mu$,
+          \[
+          \Pr(X \ge R) \;\le\; 2^{-R}.
+          \]
+        </li>
+      </ol>
+
+      <h3>Proof sketch of (1)</h3>
+      <div class="eq">
+        \[
+        \Pr\bigl(X \ge (1+\delta)\mu\bigr)
+        \;\le\;
+        \frac{E[e^{tX}]}{e^{t(1+\delta)\mu}}
+        \;\le\;
+        \frac{e^{(e^t-1)\mu}}{e^{t(1+\delta)\mu}}.
+        \]
+      </div>
+      <p>
+        Choose $t=\ln(1+\delta)$ (with $\delta > 0$) to obtain
+      </p>
+      <div class="eq-box">
+        \[
+        \left(
+          \frac{e^\delta}{(1+\delta)^{1+\delta}}
+        \right)^{\!\mu}.
+        \]
+      </div>
+
+      <h3>Special cases</h3>
+      <ul>
+        <li>
+          For $0 < \delta < 1$, one can verify
+          $e^\delta/(1+\delta)^{1+\delta} \le e^{-\delta^2/3}$, which yields
+          bound (2).
+        </li>
+        <li>
+          For large deviations, set $R=(1+\delta)\mu$ with $R\ge 6\mu$
+          (so $\delta\ge 5$). Then
+          \[
+          \left(
+            \frac{e^\delta}{(1+\delta)^{1+\delta}}
+          \right)^{\!\mu}
+          \;\le\;
+          \left(\frac{e}{1+\delta}\right)^{R}
+          \;\le\;
+          \left(\frac{e}{6}\right)^{R}
+          \;\le\;
+          2^{-R}.
+          \]
+        </li>
+      </ul>
+
+      <h3>Back to the binomial question</h3>
+      <p>
+        Unbiased coins: $\mu=n/2$. The event $X\ge 3n/4$ is
+        $X\ge(1+\delta)\mu$ with $\delta=1/2$. Bound (2) gives
+      </p>
+      <div class="eq">
+        \[
+        \Pr\!\left(X \ge \tfrac{3n}{4}\right)
+        \;\le\;
+        e^{-\mu \delta^2 / 3}
+        =
+        e^{-(n/2)\,(1/4)\,/\,3}
+        =
+        e^{-n/24}.
+        \]
+      </div>
+      <div class="highlight">
+        Exponential bound: $\displaystyle e^{-n/24}$
+      </div>
+      <p class="cite">
+        Compare: Markov $\le 2/3$, Chebyshev $\le O(1/n)$, Chernoff
+        $\le e^{-\Theta(n)}$. More structure $\Rightarrow$ sharper tails.
+      </p>
+
+      <p class="cite next">
+        Standard reference: Mitzenmacher and Upfal,
+        <em>Probability and Computing</em>, Chapters 3–4.
+      </p>
+    </div>
+  </body>
+</html>
