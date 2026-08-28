@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Rejection Sampling</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        background: transparent;
+        padding: 0 8%;
+      }
+
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h3 {
+        display: inline-block;
+        margin: 0 0 0.45em;
+        padding-bottom: 0.1em;
+        border-bottom: 2px solid var(--accent);
+        font-size: 1.15em;
+      }
+
+      .reveal h4 {
+        margin: 0.15em 0 0.5em;
+        color: var(--accent-deep);
+        font-size: 0.95em;
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+      }
+
+      .reveal small {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.55);
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal .content {
+        width: 92%;
+        margin: 0 auto;
+        font-size: 0.76em;
+        line-height: 1.35;
+        text-align: left;
+      }
+
+      .reveal .content p {
+        margin: 0.42em 0;
+      }
+
+      .reveal .content ul,
+      .reveal .content ol {
+        margin: 0.35em 0;
+        padding-left: 1.3em;
+      }
+
+      .reveal .content li {
+        margin: 0.25em 0;
+      }
+
+      .reveal .eq {
+        margin: 0.38em auto;
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .eq mjx-container {
+        margin: 0.2em 0 !important;
+      }
+
+      .reveal .eq-box {
+        width: fit-content;
+        max-width: 94%;
+        margin: 0.5em auto;
+        padding: 0.24em 0.68em;
+        border: 2px solid var(--accent);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .q {
+        margin: 0.45em 0;
+        padding: 0.38em 0.65em;
+        border-left: 4px solid var(--accent);
+        border-radius: 0 6px 6px 0;
+        background: rgba(14, 165, 233, 0.1);
+        color: var(--ink-soft);
+      }
+
+      .reveal .answer {
+        color: var(--accent-deep);
+        font-weight: 600;
+      }
+
+      .reveal .aside {
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.8em;
+      }
+
+      .reveal .emphasis {
+        color: var(--accent-deep);
+        font-size: 1.05em;
+        font-weight: 700;
+      }
+
+      .reveal .compact {
+        font-size: 0.66em;
+      }
+
+      .reveal .indent {
+        margin-left: 1.2em;
+      }
+
+      .reveal .indent-2 {
+        margin-left: 2.4em;
+      }
+
+      .reveal .fig {
+        display: block;
+        margin: 0.35em auto;
+        max-width: 92%;
+        max-height: 38vh;
+      }
+
+      .reveal .fig-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.2em;
+        margin-top: 0.4em;
+      }
+
+      .reveal .algo {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.92em;
+      }
+
+      .reveal .fragment.current-line.current-fragment {
+        color: var(--accent-deep);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Rejection Sampling</p>
+          <p><small>Aditya Desai</small></p>
+        </section>
+
+        <section>
+          <h3>From expectations to samples</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              So importance sampling lets us compute \(\mathbb{E}_f[w(x)]\)
+            </p>
+            <p class="q fragment current-line">
+              but what if we want to get samples from \(f(x)\)
+            </p>
+            <p class="fragment current-line">
+              but cannot sample directly from it.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Example: uniform in a circle</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              <strong>Example:</strong> Get a point \(x\) in 2D
+            </p>
+            <p class="fragment current-line">
+              sampled uniformly at random from a circle of radius \(r\)
+            </p>
+            <p class="fragment current-line">
+              using only \(U[0,1]\) variables.
+            </p>
+            <svg
+              class="fig fragment current-line"
+              viewBox="0 0 280 160"
+              width="280"
+              aria-hidden="true"
+            >
+              <circle
+                cx="140"
+                cy="80"
+                r="58"
+                fill="none"
+                stroke="#071a33"
+                stroke-width="3"
+              />
+              <line
+                x1="140"
+                y1="80"
+                x2="198"
+                y2="80"
+                stroke="#0369a1"
+                stroke-width="2.5"
+              />
+              <circle cx="140" cy="80" r="3.5" fill="#071a33" />
+              <text
+                x="162"
+                y="72"
+                font-size="18"
+                fill="#0369a1"
+                font-family="Space Grotesk, sans-serif"
+              >
+                r
+              </text>
+            </svg>
+          </div>
+        </section>
+
+        <section>
+          <h3>Solution</h3>
+          <div class="content">
+            <h4 class="fragment current-line">Solution:</h4>
+            <div class="fig-row fragment current-line">
+              <svg viewBox="0 0 260 220" width="280" aria-hidden="true">
+                <rect
+                  x="50"
+                  y="28"
+                  width="160"
+                  height="160"
+                  fill="none"
+                  stroke="#071a33"
+                  stroke-width="3"
+                />
+                <circle
+                  cx="130"
+                  cy="108"
+                  r="80"
+                  fill="none"
+                  stroke="#071a33"
+                  stroke-width="3"
+                />
+                <text
+                  x="124"
+                  y="114"
+                  font-size="22"
+                  fill="#071a33"
+                  font-family="Space Grotesk, sans-serif"
+                >
+                  ×
+                </text>
+                <line
+                  x1="50"
+                  y1="198"
+                  x2="210"
+                  y2="198"
+                  stroke="#0369a1"
+                  stroke-width="2"
+                  marker-end="url(#arr)"
+                />
+                <line
+                  x1="42"
+                  y1="188"
+                  x2="42"
+                  y2="28"
+                  stroke="#0369a1"
+                  stroke-width="2"
+                  marker-end="url(#arr)"
+                />
+                <defs>
+                  <marker
+                    id="arr"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="6"
+                    refY="4"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L8,4 L0,8 z" fill="#0369a1" />
+                  </marker>
+                </defs>
+                <text
+                  x="108"
+                  y="216"
+                  font-size="16"
+                  fill="#0369a1"
+                  font-family="IBM Plex Mono, monospace"
+                >
+                  2rx
+                </text>
+                <text
+                  x="4"
+                  y="120"
+                  font-size="16"
+                  fill="#0369a1"
+                  font-family="IBM Plex Mono, monospace"
+                  transform="rotate(-90 12 120)"
+                >
+                  2ry
+                </text>
+              </svg>
+              <div class="eq">\[x,y\in U[0,1]\]</div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Reject outside the circle</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              * Sample uniformly in square
+            </p>
+            <p class="fragment current-line emphasis">
+              → Reject if outside the circle
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>The generic case</h3>
+          <div class="content">
+            <p class="fragment current-line">Now consider the generic case</p>
+            <p class="fragment current-line">\(f(x)\): target distribution</p>
+            <p class="fragment current-line">
+              \(g(x)\): distribution to be used.
+            </p>
+            <div class="eq fragment current-line">\[a\sim g(x)\]</div>
+            <p class="q fragment current-line">
+              How do we make sure that probability of getting \(x\) is actually
+              \(f(x)\)?
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>If \(g(a) > f(a)\)</h3>
+          <div class="content compact">
+            <p class="fragment current-line">
+              if \(\underline{g(a) > f(a)}\)
+            </p>
+            <p class="answer fragment current-line">
+              → Reduce the probability.
+            </p>
+            <p class="fragment current-line emphasis">
+              → start <strong>rejecting</strong> the sample!
+            </p>
+            <div class="fig-row fragment current-line">
+              <svg viewBox="0 0 280 160" width="280" aria-hidden="true">
+                <line
+                  x1="20"
+                  y1="130"
+                  x2="260"
+                  y2="130"
+                  stroke="#071a33"
+                  stroke-width="2.5"
+                />
+                <circle cx="140" cy="130" r="4" fill="#071a33" />
+                <text
+                  x="132"
+                  y="150"
+                  font-size="16"
+                  fill="#071a33"
+                  font-family="IBM Plex Mono, monospace"
+                >
+                  a
+                </text>
+                <line
+                  x1="140"
+                  y1="130"
+                  x2="140"
+                  y2="78"
+                  stroke="#071a33"
+                  stroke-width="2"
+                  stroke-dasharray="4 4"
+                />
+                <line
+                  x1="140"
+                  y1="78"
+                  x2="140"
+                  y2="28"
+                  stroke="#0369a1"
+                  stroke-width="2"
+                  stroke-dasharray="4 4"
+                />
+                <circle cx="140" cy="78" r="3.5" fill="#071a33" />
+                <circle cx="140" cy="28" r="3.5" fill="#0369a1" />
+                <text
+                  x="150"
+                  y="82"
+                  font-size="16"
+                  fill="#071a33"
+                  font-family="IBM Plex Mono, monospace"
+                >
+                  f(a)
+                </text>
+                <text
+                  x="150"
+                  y="32"
+                  font-size="16"
+                  fill="#0369a1"
+                  font-family="IBM Plex Mono, monospace"
+                >
+                  g(a)
+                </text>
+              </svg>
+              <div class="eq-box">
+                \[
+                \text{accept with prb.}\left(\frac{f(a)}{g(a)}\right)
+                \]
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Algo till now</h3>
+          <div class="content compact algo">
+            <p class="fragment current-line">Sample \(a \sim g(x)\)</p>
+            <p class="fragment current-line">if \(g(a) \ge f(a)\):</p>
+            <p class="indent fragment current-line">
+              \(r = \mathrm{Uniform}[0,1]\)
+            </p>
+            <p class="indent fragment current-line">
+              if \(r > f(a)/g(a)\)
+            </p>
+            <p class="indent-2 fragment current-line">
+              Reject and go sample again
+            </p>
+            <p class="indent fragment current-line">otherwise</p>
+            <p class="indent-2 fragment current-line">Accept, return \(a\)</p>
+            <p class="q fragment current-line"><strong>else</strong> ??</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>What if \(f(a) > g(a)\)?</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              What about if \(f(a) > g(a)\)
+            </p>
+            <p class="fragment current-line">
+              → we need to increase the probability of \(a\)
+            </p>
+            <p class="q fragment current-line">But how?</p>
+            <p class="answer fragment current-line">
+              ⇒ Decrease probability of other "\(x\)" enough so that we can
+              relatively use \(g(a)\)
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Envelope</h3>
+          <div class="content compact">
+            <p class="fragment current-line">
+              <strong>Envelope:</strong> Choose an \(M\) s.t.
+              \(Mg(x) > f(x)\ \forall x\)
+            </p>
+            <p class="fragment current-line"><strong>Algo:</strong></p>
+            <p class="algo fragment current-line">Sample \(a \sim g(x)\)</p>
+            <p class="algo fragment current-line">\(r = U[0,1]\)</p>
+            <p class="algo fragment current-line">
+              if \(r < \dfrac{f(a)}{Mg(a)}\): Accept
+            </p>
+            <p class="algo fragment current-line">
+              else: Reject and Sample again
+            </p>
+            <svg
+              class="fig fragment current-line"
+              viewBox="0 0 420 240"
+              width="340"
+              aria-hidden="true"
+            >
+              <line
+                x1="30"
+                y1="210"
+                x2="400"
+                y2="210"
+                stroke="#071a33"
+                stroke-width="2.5"
+              />
+              <path
+                d="M40 190 C 110 180, 150 40, 210 40 C 270 40, 310 180, 390 195"
+                fill="none"
+                stroke="#22c55e"
+                stroke-width="4"
+              />
+              <path
+                d="M55 200 C 120 190, 160 95, 210 95 C 260 95, 300 190, 375 200"
+                fill="none"
+                stroke="#071a33"
+                stroke-width="3"
+              />
+              <line
+                x1="210"
+                y1="210"
+                x2="210"
+                y2="40"
+                stroke="#071a33"
+                stroke-width="2"
+              />
+              <circle cx="210" cy="95" r="4" fill="#071a33" />
+              <circle cx="210" cy="40" r="4" fill="#16a34a" />
+              <text
+                x="220"
+                y="102"
+                font-size="16"
+                fill="#071a33"
+                font-family="IBM Plex Mono, monospace"
+              >
+                f(a)
+              </text>
+              <text
+                x="220"
+                y="36"
+                font-size="16"
+                fill="#16a34a"
+                font-family="IBM Plex Mono, monospace"
+              >
+                Mg(a)
+              </text>
+            </svg>
+          </div>
+        </section>
+
+        <section>
+          <h3>Where to use rejection sampling</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Example of where to use the Rejection Sampling (Cooked up)
+            </p>
+            <p class="fragment current-line">Consider Attention Computation.</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Attention computation</h3>
+          <div class="content compact">
+            <div class="fig-row fragment current-line">
+              <svg viewBox="0 0 420 160" width="400" aria-hidden="true">
+                <text
+                  x="0"
+                  y="28"
+                  font-size="13"
+                  fill="#0369a1"
+                  font-family="IBM Plex Mono, monospace"
+                >
+                  R^{d×n}
+                </text>
+                <rect
+                  x="70"
+                  y="12"
+                  width="230"
+                  height="36"
+                  fill="none"
+                  stroke="#071a33"
+                  stroke-width="2.5"
+                />
+                <text
+                  x="175"
+                  y="36"
+                  font-size="18"
+                  fill="#071a33"
+                  font-family="Space Grotesk, sans-serif"
+                >
+                  K
+                </text>
+                <text
+                  x="0"
+                  y="88"
+                  font-size="13"
+                  fill="#0369a1"
+                  font-family="IBM Plex Mono, monospace"
+                >
+                  R^{d×n}
+                </text>
+                <rect
+                  x="70"
+                  y="72"
+                  width="230"
+                  height="36"
+                  fill="none"
+                  stroke="#071a33"
+                  stroke-width="2.5"
+                />
+                <text
+                  x="175"
+                  y="96"
+                  font-size="18"
+                  fill="#071a33"
+                  font-family="Space Grotesk, sans-serif"
+                >
+                  V
+                </text>
+                <circle
+                  cx="360"
+                  cy="30"
+                  r="22"
+                  fill="none"
+                  stroke="#0369a1"
+                  stroke-width="2.5"
+                />
+                <text
+                  x="352"
+                  y="36"
+                  font-size="18"
+                  fill="#0369a1"
+                  font-family="Space Grotesk, sans-serif"
+                >
+                  q
+                </text>
+                <text
+                  x="348"
+                  y="68"
+                  font-size="12"
+                  fill="#0369a1"
+                  font-family="IBM Plex Mono, monospace"
+                >
+                  R^{d×1}
+                </text>
+                <path
+                  d="M338 30 C 320 8, 310 8, 300 22"
+                  fill="none"
+                  stroke="#0369a1"
+                  stroke-width="2"
+                  marker-end="url(#arr2)"
+                />
+                <defs>
+                  <marker
+                    id="arr2"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="6"
+                    refY="4"
+                    orient="auto"
+                  >
+                    <path d="M0,0 L8,4 L0,8 z" fill="#0369a1" />
+                  </marker>
+                </defs>
+              </svg>
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Att}(K,V,q)
+              =
+              \frac{\sum_{i=1}^{n} e^{\langle k_i,q\rangle}\, v_i}
+              {\sum_{i=1}^{n} e^{\langle k_i,q\rangle}}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Approximate the denominator</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Let us say you wanted to approximate the denominator with a
+              sample
+            </p>
+            <div class="eq-box fragment current-line">
+              \[
+              S=\sum_{i=1}^{n} e^{\langle k_i,q\rangle}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>What is the best sampling distribution?</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              What is the best sampling probability distribution?
+            </p>
+            <p class="fragment current-line">→ Importance Sampling say</p>
+            <div class="eq-box fragment current-line">
+              \[
+              p(i)\propto e^{\langle k_i,q\rangle}
+              \]
+            </div>
+            <p class="fragment current-line emphasis">
+              Note \(q\) is not available beforehand in decode.
+            </p>
+
+          </div>
+        </section>
+
+        <section>
+          <h3>A representative query</h3>
+          <div class="content compact">
+            <p class="fragment current-line">
+              Say somehow we have obtained the sample proportional to
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \phi(\langle k_i,\bar q\rangle)
+              \]
+            </div>
+            <p class="fragment current-line">
+              where \(\bar q\) is some "representative" query.
+            </p>
+            <svg
+              class="fig fragment current-line"
+              viewBox="0 0 420 170"
+              width="380"
+              aria-hidden="true"
+            >
+              <rect
+                x="40"
+                y="16"
+                width="260"
+                height="36"
+                fill="none"
+                stroke="#071a33"
+                stroke-width="2.5"
+              />
+              <text
+                x="160"
+                y="40"
+                font-size="18"
+                fill="#071a33"
+                font-family="Space Grotesk, sans-serif"
+              >
+                K
+              </text>
+              <rect
+                x="40"
+                y="72"
+                width="260"
+                height="36"
+                fill="none"
+                stroke="#071a33"
+                stroke-width="2.5"
+              />
+              <text
+                x="160"
+                y="96"
+                font-size="18"
+                fill="#071a33"
+                font-family="Space Grotesk, sans-serif"
+              >
+                V
+              </text>
+              <circle
+                cx="360"
+                cy="34"
+                r="22"
+                fill="none"
+                stroke="#0369a1"
+                stroke-width="2.5"
+              />
+              <text
+                x="352"
+                y="40"
+                font-size="18"
+                fill="#0369a1"
+                font-family="Space Grotesk, sans-serif"
+              >
+                q
+              </text>
+              <path
+                d="M338 34 C 320 10, 312 10, 300 24"
+                fill="none"
+                stroke="#0369a1"
+                stroke-width="2"
+                marker-end="url(#arr3)"
+              />
+              <defs>
+                <marker
+                  id="arr3"
+                  markerWidth="8"
+                  markerHeight="8"
+                  refX="6"
+                  refY="4"
+                  orient="auto"
+                >
+                  <path d="M0,0 L8,4 L0,8 z" fill="#0369a1" />
+                </marker>
+              </defs>
+              <text
+                x="40"
+                y="132"
+                font-size="14"
+                fill="#3d5570"
+                font-family="IBM Plex Mono, monospace"
+              >
+                1  2  …
+              </text>
+              <text
+                x="175"
+                y="148"
+                font-size="16"
+                fill="#0369a1"
+                font-family="IBM Plex Mono, monospace"
+              >
+                q̄
+              </text>
+              <text
+                x="285"
+                y="132"
+                font-size="14"
+                fill="#3d5570"
+                font-family="IBM Plex Mono, monospace"
+              >
+                n
+              </text>
+            </svg>
+          </div>
+        </section>
+
+        <section>
+          <h3>A subset from \(\bar q\)</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              [i_1,i_2,\ldots,i_n]
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              p(i_j)\propto \phi(\langle k_{i_j},\bar q\rangle
+                            )              \]
+            </div>
+            <p class="q fragment current-line">
+              Now can you get a sample from this subset that is s.t.
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              p(i_{j_k})\propto \phi(\langle k_{i_{j_k}}, q\rangle)
+              \]
+            </div>
+            <p class="fragment current-line">
+              where \(q\) is the actual query?
+            </p>
+            <p class="answer fragment current-line emphasis">
+              → Can use Rejection Sampling!!
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+        plugins: [RevealNotes],
+      });
+    </script>
+  </body>
+</html>

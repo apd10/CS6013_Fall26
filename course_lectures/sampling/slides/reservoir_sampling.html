@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Reservoir Sampling</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        background: transparent;
+        padding: 0 8%;
+      }
+
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h3 {
+        display: inline-block;
+        margin: 0 0 0.45em;
+        padding-bottom: 0.1em;
+        border-bottom: 2px solid var(--accent);
+        font-size: 1.15em;
+      }
+
+      .reveal h4 {
+        margin: 0.15em 0 0.5em;
+        color: var(--accent-deep);
+        font-size: 0.95em;
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+      }
+
+      .reveal small {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.55);
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal .content {
+        width: 92%;
+        margin: 0 auto;
+        font-size: 0.76em;
+        line-height: 1.35;
+        text-align: left;
+      }
+
+      .reveal .content p {
+        margin: 0.42em 0;
+      }
+
+      .reveal .content ul,
+      .reveal .content ol {
+        margin: 0.35em 0;
+        padding-left: 1.3em;
+      }
+
+      .reveal .content li {
+        margin: 0.25em 0;
+      }
+
+      .reveal .eq {
+        margin: 0.38em auto;
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .eq mjx-container {
+        margin: 0.2em 0 !important;
+      }
+
+      .reveal .eq-box {
+        width: fit-content;
+        max-width: 94%;
+        margin: 0.5em auto;
+        padding: 0.24em 0.68em;
+        border: 2px solid var(--accent);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .q {
+        margin: 0.45em 0;
+        padding: 0.38em 0.65em;
+        border-left: 4px solid var(--accent);
+        border-radius: 0 6px 6px 0;
+        background: rgba(14, 165, 233, 0.1);
+        color: var(--ink-soft);
+      }
+
+      .reveal .answer {
+        color: var(--accent-deep);
+        font-weight: 600;
+      }
+
+      .reveal .aside {
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.8em;
+      }
+
+      .reveal .emphasis {
+        color: var(--accent-deep);
+        font-size: 1.05em;
+        font-weight: 700;
+      }
+
+      .reveal .compact {
+        font-size: 0.66em;
+      }
+
+      .reveal .very-compact {
+        font-size: 0.57em;
+      }
+
+      .reveal .content .indent {
+        margin-left: 1.6em;
+      }
+
+      .reveal .content .indent-2 {
+        margin-left: 3.2em;
+      }
+
+      .reveal .algo {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.92em;
+      }
+
+      .reveal .fragment.current-line.current-fragment {
+        color: var(--accent-deep);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Reservoir Sampling</p>
+          <p><small>Aditya Desai</small></p>
+        </section>
+
+        <section>
+          <h3>Previous cooked up example</h3>
+          <div class="content">
+            <p class="fragment current-line">Previous Cooked up example:</p>
+            <p class="fragment current-line">
+              Assumed that we had a sample of KV
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              p(i)\propto \phi(\langle k_i,\bar q\rangle)
+              \]
+            </div>
+            <p class="fragment current-line emphasis">
+              But in a auto-regressive generation total KV tokens keep on
+              increasing
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>How do we maintain a sample?</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              <strong>Q.</strong> How do we "maintain" a sample in that case?
+            </p>
+            <p class="answer fragment current-line">
+              <strong>A.</strong> Reservoir Sampling.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Maintaining a sample of size \(k\)</h3>
+          <div class="content compact">
+            <p class="fragment current-line">Consider a stream of data</p>
+            <div class="eq fragment current-line">
+              \[
+              \{x_1,x_2,\ldots,x_t,\ldots\}
+              \]
+            </div>
+            <p class="fragment current-line">
+              at each point \(t\), we want to keep a sample of size \(k\)
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \{x_{i_1},x_{i_2},\ldots,x_{i_k}\}
+              \]
+            </div>
+            <p class="fragment current-line">such that</p>
+            <div class="eq-box fragment current-line">
+              \[
+              P(x_i\text{ is in sample})=\frac{k}{t}
+              \qquad\forall t
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>What does "stream" mean?</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              "Stream": we process the data point only once and "throw" it
+              away.
+            </p>
+            <p class="fragment current-line">
+              At time \(t\) we look at \(x_t\)
+            </p>
+            <p class="fragment current-line emphasis">
+              "Build a streaming algorithm for sampling"
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>State at time \(t\)</h3>
+          <div class="content">
+            <h4 class="fragment current-line">A.</h4>
+            <p class="fragment current-line">let us say we have a sample</p>
+            <div class="eq fragment current-line">
+              \[
+              \{x_{i_1},\ldots,x_{i_k}\}
+              \quad\text{at time }t
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              P(i)=\frac{k}{t}.
+              \]
+            </div>
+            <p class="fragment current-line">
+              At time \((t+1)\), we got \(x_{t+1}\)
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>With what probability do we choose \(x_{t+1}\)?</h3>
+          <div class="content compact">
+            <p class="q fragment current-line">
+              <strong>Q.</strong> Choose \(x_{t+1}\) with Prob?
+            </p>
+            <div class="eq-box fragment current-line">
+              \[
+              \left(\frac{k}{t+1}\right)
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \left\{
+              \begin{array}{l}
+              \text{check }r\sim U[0,1]\\
+              r\le \dfrac{k}{t+1}
+              \end{array}
+              \right.
+              \]
+            </div>
+            <p class="q fragment current-line">
+              <strong>Q.</strong> If chosen, throw one of the other sampled
+              data with uniform probability
+            </p>
+          </div>
+
+
+        </section>
+
+        <section>
+          <h3>Why does it work?</h3>
+
+          <div class="content">
+            <div class="eq-box fragment current-line">
+              \[
+              P(x_{t+1}\text{ is in sample at }(t+1))=\frac{k}{t+1}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Why does it work?</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              P(x_i\text{ is in sample at }(t+1))
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              P(x_i\text{ is in sample at }t)
+              \times
+              P(x_i\text{ is not thrown})
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =\frac{k}{t}\big[\;\cdots\;\big]
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Why does it work?</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              =\frac{k}{t}\left[
+              \frac{1+t-k}{1+t}\cdot 1
+              +\cdots
+              \right]
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =\frac{k}{t}\left[
+              \frac{1+t-k}{1+t}
+              +
+              \frac{k}{1+t}\cdot\frac{k-1}{k}
+              \right]
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =\frac{k}{t}\left[
+              \frac{1+t-k+k-1}{1+t}
+              \right]
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Thus the algorithm (Algorithm 1) works</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              =\frac{k}{t}\cdot\frac{t}{1+t}
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              =\frac{k}{1+t}
+              \]
+            </div>
+            <p class="answer fragment current-line">
+              Thus the algorithm works.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Another simple algorithm</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              <strong>Another simple algorithm:</strong> Random Key algorithm.
+            </p>
+            <p class="fragment current-line">
+              → Every \(x_i\) is assigned a random value \(r_i\sim U[0,1]\)
+            </p>
+            <p class="fragment current-line">
+              → At each point \(t\), the sample is the \(x_i\)s with
+            </p>
+            <p class="fragment current-line emphasis">Highest \(k\) values.</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Why random keys work</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              → random key assignment gives a permutation.
+            </p>
+            <p class="fragment current-line">
+              → probability that any key is chosen is \(k/t\) at all times
+              \(t\).
+            </p>
+            <p class="fragment current-line">
+              → At each time you only have to keep track of top \(k\) \(x_i\)s
+              and their scores
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>At \(t+1\)</h3>
+          <div class="content compact algo">
+            <div class="eq fragment current-line">
+              \[
+              S=\{x_{i_1},\ldots,x_{i_k}\}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              R=\{r_{i_1},\ldots,r_{i_k}\}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              r_{t+1}=U[0,1]
+              \]
+            </div>
+            <p class="fragment current-line">
+              If \(r_{t+1} \lt \min R\):
+            </p>
+            <p class="indent fragment current-line">discard \(x_{t+1}\)</p>
+            <p class="fragment current-line">Else</p>
+            <p class="indent fragment current-line">
+              Add \((x_{t+1},r_{t+1})\) and discard the min
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Weighted Reservoir Sampling</h3>
+          <div class="content compact">
+            <p class="fragment current-line">
+              In our previous example we wanted to sample proportionate to some
+              weights.
+            </p>
+            <p class="fragment current-line">
+              <strong>Weighted Reservoir Sampling</strong>
+            </p>
+            <p class="fragment current-line">Given a stream,</p>
+            <div class="eq fragment current-line">
+              \[
+              \{(x_1,w_1),(x_2,w_2),\ldots\}
+              \]
+            </div>
+            <p class="fragment current-line">
+              Maintain a sample of \(k\) values s.t.
+            </p>
+            <div class="eq-box fragment current-line">
+              \[
+              P(x_i\text{ in sample})\propto w_i
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Random key Algorithm</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Assign every value \(x_i\) a random value computed as
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              r_i\sim U[0,1]
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              \mathrm{key}_i=r_i^{1/w_i}
+              \]
+            </div>
+            <p class="fragment current-line emphasis">Keep top-\(k\) keys.</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Lemma</h3>
+          <div class="content compact">
+            <p class="fragment current-line">
+              If \(r_1\) and \(r_2\) are \(U[0,1]\),
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              X_1=r_1^{1/w_1},\qquad X_2=r_2^{1/w_2}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              w_i>0
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              P(X_1\le X_2)=\frac{w_2}{w_1+w_2}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Proof</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              P_r(X_1\le X_2)
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              P_r\!\left(r_1^{1/w_1}\lt r_2^{1/w_2}\right)
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              P_r\!\left(r_1\lt r_2^{w_1/w_2}\right)
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Proof (contd.)</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              =
+              \int_{r_2=0}^{1}
+              \int_{r_1=0}^{r_2^{w_1/w_2}}
+              \,dr_1\,dr_2
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \int_{0}^{1}
+              r_2^{w_1/w_2}\,dr_2
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \left.
+              \frac{r_2^{w_1/w_2+1}}{\frac{w_1}{w_2}+1}
+              \right|_{0}^{1}
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              =
+              \frac{w_2}{w_1+w_2}
+              \qquad\square
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3> Extending(Algorithm 1) to WRS</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              How to extend the previous algorithm (non random key based) to WRS?
+            </p>
+            <p class="answer fragment current-line">
+              → <strong>A.</strong> Chao algorithm.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Weighted Reservoir Sampling</h3>
+          <div class="content compact">
+            <p class="fragment current-line">Stream</p>
+            <div class="eq fragment current-line">
+              \[
+              \{(x_1,w_1),(x_2,w_2),\ldots,(x_t,w_t),\ldots\}
+              \]
+            </div>
+            <p class="fragment current-line">
+              Maintain a sample of size \(k\) such that
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              P(x_i\text{ in sample at }t)\propto w_i
+              \]
+            </div>
+            <p class="q fragment current-line">Can we apply Same Algo?</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Selecting \(x_{t+1}\)</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              \(x_{t+1}\) is selected with probability?
+            </p>
+            <p class="fragment current-line">Say</p>
+            <div class="eq-box fragment current-line">
+              \[
+              P_{t+1}=\frac{w_{t+1}\cdot k}{\sum_{i=1}^{t+1} w_i}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>The catch</h3>
+          <div class="content">
+            <p class="q fragment current-line">What is the issue?</p>
+            <p class="answer fragment current-line">
+              \(P_{t+1}\) can be \(>1\)
+            </p>
+            <p class="q fragment current-line">
+              <strong>Q:</strong> How do we get around this.?
+              <strong>[Exercise]</strong>
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+        plugins: [RevealNotes],
+      });
+    </script>
+  </body>
+</html>

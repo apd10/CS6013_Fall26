@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Importance Sampling</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        background: transparent;
+        padding: 0 8%;
+      }
+
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h3 {
+        display: inline-block;
+        margin: 0 0 0.45em;
+        padding-bottom: 0.1em;
+        border-bottom: 2px solid var(--accent);
+        font-size: 1.15em;
+      }
+
+      .reveal h4 {
+        margin: 0.15em 0 0.5em;
+        color: var(--accent-deep);
+        font-size: 0.95em;
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+      }
+
+      .reveal small {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.55);
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal .content {
+        width: 92%;
+        margin: 0 auto;
+        font-size: 0.76em;
+        line-height: 1.35;
+        text-align: left;
+      }
+
+      .reveal .content p {
+        margin: 0.42em 0;
+      }
+
+      .reveal .content ul {
+        margin: 0.35em 0;
+      }
+
+      .reveal .content li {
+        margin: 0.25em 0;
+      }
+
+      .reveal .eq {
+        margin: 0.38em auto;
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .eq mjx-container {
+        margin: 0.2em 0 !important;
+      }
+
+      .reveal .eq-box {
+        width: fit-content;
+        max-width: 94%;
+        margin: 0.5em auto;
+        padding: 0.24em 0.68em;
+        border: 2px solid var(--accent);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .q {
+        margin: 0.45em 0;
+        padding: 0.38em 0.65em;
+        border-left: 4px solid var(--accent);
+        border-radius: 0 6px 6px 0;
+        background: rgba(14, 165, 233, 0.1);
+        color: var(--ink-soft);
+      }
+
+      .reveal .answer {
+        color: var(--accent-deep);
+        font-weight: 600;
+      }
+
+      .reveal .aside {
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.8em;
+      }
+
+      .reveal .emphasis {
+        color: var(--accent-deep);
+        font-size: 1.05em;
+        font-weight: 700;
+      }
+
+      .reveal .compact {
+        font-size: 0.66em;
+      }
+
+      .reveal .very-compact {
+        font-size: 0.57em;
+      }
+
+      .reveal .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.8em;
+        align-items: center;
+      }
+
+      .reveal .fragment.current-line.current-fragment {
+        color: var(--accent-deep);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Importance Sampling</p>
+          <div class="eq">\[\mathbb{E}_f[w(x)]\]</div>
+          <p><small>Aditya Desai</small></p>
+        </section>
+
+        <section>
+          <h3>Why importance sampling?</h3>
+          <div class="content">
+            <h4>Example 1</h4>
+            <div class="eq fragment current-line">
+              \[
+              \mathbb{E}_f[w(x)]
+              =
+              \frac{1}{n}\sum_{i=1}^{n}w(x_i),
+              \qquad x_i\sim f(x)
+              \]
+            </div>
+            <p class="fragment current-line emphasis">
+              but we cannot sample from \(f(x)\).
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Why importance sampling?</h3>
+          <div class="content">
+            <h4>Example 2</h4>
+            <p class="fragment current-line">
+              Sometimes we may want to purposefully choose a different
+              distribution,
+            </p>
+            <p class="fragment current-line">
+              even if we can sample from \(f(x)\).
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Consider an example</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              S=(x_1+x_2+\cdots+x_n),
+              \qquad x_i\in\mathbb{R}
+              \]
+            </div>
+            <p class="fragment current-line">
+              attention output
+              \(=a_1v_1+a_2v_2+\cdots+a_nv_n,\quad v_i\in\mathbb{R}^d\)
+            </p>
+            <p class="fragment current-line emphasis">
+              goal is to sample and estimate \(S\)
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>A uniform estimator</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              S=n\,\mathbb{E}_p[x_i]
+              \]
+            </div>
+            <p class="fragment current-line">where</p>
+            <div class="eq fragment current-line">
+              \[
+              p(i)=\mathrm{Uniform}\{1,\ldots,n\}
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              \hat S
+              =
+              n\cdot\frac{1}{k}\sum_{j=1}^{k}x_{i_j}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>When is uniform sampling undesirable?</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              <strong>Q.</strong> What are the cases in which this is not
+              desirable sampling
+            </p>
+            <p class="fragment current-line"><strong>Example:</strong> values of \(x_i\)</p>
+            <div class="eq fragment current-line">
+              \[
+              \{10^6,\ 1,\ 1,\ 1,\ \ldots,\ 1\},
+              \qquad n=100
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \mathbb{E}(\hat S)=S
+              \qquad \text{it is still unbiased,}
+              \]
+            </div>
+            <p class="fragment current-line emphasis">but variance will be high?</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>What should be a good distribution?</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              <strong>Q.</strong> What should be a good distribution?
+            </p>
+            <p class="answer fragment current-line">
+              → A distribution that samples \(x_1\) with high probability
+              (very close to 1)
+            </p>
+            <p class="aside fragment current-line">
+              * This condition is actually the case in attention computation.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>The attention connection</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              o=\sum_i a_i\vec v_i,
+              \qquad \|v_i\|=\mathrm{Constant}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              a_i
+              =
+              \frac{e^{\langle q,k_i\rangle}}
+              {\sum_j e^{\langle q,k_j\rangle}}
+              \]
+            </div>
+            <p class="fragment current-line">
+              depending on dot products subsequent keys far from query \(q\)
+              get exponentially small!
+            </p>
+            <p class="fragment current-line emphasis">
+              → Random Sampling will not work!
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Formalise this idea</h3>
+          <div class="content">
+            <p class="fragment current-line">Formalise this idea in importance Sampling.</p>
+            <ul>
+              <li class="fragment current-line">\(X\): Random variable</li>
+              <li class="fragment current-line">\(w(x)\): function of interest</li>
+              <li class="fragment current-line">
+                \(\mathbb{E}[w(x)]\): Quantity of interest
+              </li>
+              <li class="fragment current-line">\(f(x)\): "true distribution"</li>
+              <li class="fragment current-line">\(g(x)\): proposed distribution.</li>
+            </ul>
+            <div class="eq fragment current-line">
+              \[
+              \mathbb{E}_f[w(x)]
+              =
+              \mathbb{E}_g\big[\;??\;\big]
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Change the distribution</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              \int w(x)f(x)\,dx
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \int \frac{w(x)f(x)}{g(x)}\cdot g(x)\,dx
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              =
+              \mathbb{E}_g\!\left[
+                \frac{w(x)f(x)}{g(x)}
+              \right]
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>The estimator</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Estimator (left-hand side labeled \(\hat\mu\)):
+            </p>
+            <div class="eq-box fragment current-line">
+              \[
+              \underbrace{\mathbb{E}_f[w(x)]}_{\hat\mu}
+              =
+              \frac{1}{n}\sum_{i=1}^{n}
+              \frac{w(x_i)f(x_i)}{g(x_i)},
+              \qquad x_i\sim g(x)
+              \]
+            </div>
+            <p class="q fragment current-line">
+              <strong>* Unbiased?</strong>
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Is it unbiased?</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              \mathbb{E}_g[\hat\mu]
+              =
+              \frac{1}{n}\sum_{i=1}^{n}
+              \mathbb{E}_g\!\left[
+                \frac{w(x_i)f(x_i)}{g(x_i)}
+              \right]
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \frac{1}{n}\cdot n\cdot\mathbb{E}_f[w(x)]
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \mathbb{E}_f[w(x)]
+              \]
+            </div>
+            <p class="answer fragment current-line">* Unbiased? Yes.</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Which proposal should we use?</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              So this works for any proposal \(g(x)\)
+            </p>
+            <p class="q fragment current-line">
+              What's a good \(g(x)\)?
+            </p>
+            <p class="answer fragment current-line">
+              → One with least variance!!
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \hat\mu
+              =
+              \frac{1}{n}\sum_{i=1}^{n}
+              \frac{w(x_i)f(x_i)}{g(x_i)}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Variance of the estimator</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Var}(\hat\mu)
+              =
+              \frac{1}{n^2}\cdot n\cdot
+              \mathrm{Var}_g\!\left(
+                \frac{w(x_i)f(x_i)}{g(x_i)}
+              \right)
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \frac{1}{n}\left[
+                \mathbb{E}_g\!\left(
+                  \frac{w^2(x)f^2(x)}{g^2(x)}
+                \right)-\mu^2
+              \right]
+              \]
+            </div>
+            <p class="q fragment current-line">
+              <strong>Problem:</strong> Which \(g\) minimises this?
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>The optimization problem</h3>
+          <div class="content very-compact">
+            <div class="eq fragment current-line">
+              \[
+              \underset{
+                \substack{
+                  g\\
+                  \int g(x)\,dx=1\\
+                  g(x)>0
+                }
+              }{\arg\min}
+              \;
+              \mathbb{E}_g\!\left[
+                \frac{w^2(x)f^2(x)}{g^2(x)}
+              \right]
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \int
+              \frac{w^2(x)f^2(x)}{g^2(x)}
+              \cdot g(x)\,dx
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \int\frac{w^2(x)f^2(x)}{g(x)}\,dx
+              \]
+            </div>
+            <p class="fragment current-line emphasis">
+              Choose a \(g(x)\) which minimises this.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>How do we proceed?</h3>
+          <div class="content compact">
+            <p class="fragment current-line">Simplicity Consider discrete case</p>
+            <div class="eq fragment current-line">
+              \[
+              \min_{g(x)}
+              \sum_i\frac{w^2(x_i)f^2(x_i)}{g(x_i)}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \sum_i g(x_i)=1,
+              \qquad g(x)>0
+              \]
+            </div>
+            <p class="fragment current-line">rewrite:</p>
+            <div class="eq fragment current-line">
+              \[
+              \sum_i
+              \frac{w^2(x_i)f^2(x_i)}
+              {\left(\sqrt{g(x_i)}\right)^2},
+              \qquad
+              \sum_i\left(\sqrt{g(x_i)}\right)^2=1
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>See a vector problem</h3>
+          <div class="content compact">
+            <p class="fragment current-line">If every "\(i\)" is a dimension</p>
+            <div class="eq fragment current-line">
+              \[
+              \min.\quad
+              \left\|
+                \frac{w(x_i)f(x_i)}{\sqrt{g(x_i)}}
+              \right\|_2^2
+              *
+              \left\|\sqrt g\right\|_2^2,
+              \qquad
+              \left\|\sqrt g\right\|_2^2=1
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \|a\|_2^2\,\|b\|_2^2\ge ?
+              \]
+            </div>
+            <p class="fragment current-line"><strong>Cauchy Schwartz</strong></p>
+            <div class="eq-box fragment current-line">
+              \[
+              \|a\|_2\,\|b\|_2\ge\langle a,b\rangle
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>The integral version</h3>
+          <div class="content very-compact">
+            <p class="fragment current-line">There is a integral version of this</p>
+            <div class="eq fragment current-line">
+              \[
+              \int\left(
+                \frac{|w(x)|f(x)}{\sqrt{g(x)}}
+              \right)^2dx
+              \cdot
+              \int\left(\sqrt{g(x)}\right)^2dx
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \ge
+              \left(\int|w(x)|\cdot f(x)\,dx\right)^2
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \mathbb{E}_f\!\left[|w(x)|\right]
+              \]
+            </div>
+            <p class="aside fragment current-line">minimum value</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>When is the bound tight?</h3>
+          <div class="content">
+            <p class="q fragment current-line">is Cauchy Schwartz tight?</p>
+            <p class="answer fragment current-line">Yes!</p>
+            <p class="q fragment current-line">When is minimum achieved?</p>
+            <div class="eq fragment current-line">
+              \[
+              \sqrt{g(x)}
+              \propto
+              \frac{|w(x)|f(x)}{\sqrt{g(x)}}
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              g(x)\propto |w(x)|f(x)
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>The best proposal distribution</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              g(x)
+              =
+              \frac{|w(x)|f(x)}
+              {\int|w(x)|f(x)\,dx}
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              g(x)
+              =
+              \frac{|w(x)|f(x)}
+              {\mathbb{E}_f[|w(x)|]}
+              \]
+            </div>
+            <p class="answer fragment current-line">
+              This is the best proposal distribution.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Does it make sense?</h3>
+          <div class="content">
+            <p class="q fragment current-line"><strong>Does it make sense?</strong></p>
+            <p class="fragment current-line">
+              \(|w(x)\cdot f(x)|\) is exactly the "contribution"
+            </p>
+            <p class="fragment current-line">
+              of \(i\)th term to the expectation.
+            </p>
+            <p class="q fragment current-line">
+              \(w(x)>0\ \forall x\), then what is the variance?
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>What happens when \(w(x)>0\)?</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              g(x)
+              =
+              \frac{w(x)f(x)}{\mathbb{E}_f(w(x))}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Var}(\hat\mu)
+              =
+              \frac{1}{n}\left[
+                \int\frac{w^2f^2}{g^2}\,g\,dx
+                -
+                \mathbb{E}_f(w(x))^2
+              \right]
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \frac{1}{n}\left[
+                \mathbb{E}_f(w(x))^2
+                -
+                \mathbb{E}_f(w(x))^2
+              \right]
+              \]
+            </div>
+            <div class="eq-box fragment current-line">\[=0\ !!\]</div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Something Wrong?</h3>
+          <div class="content">
+            <p class="q fragment current-line">Something Wrong?</p>
+            <p class="answer fragment current-line">
+              No. \(g(x)\) needs you to know \(\mathbb{E}_f(w(x))\)!
+            </p>
+            <p class="fragment current-line">
+              In practice, we will be trying to cheaply get a proposal \(g(x)\)
+            </p>
+            <p class="fragment current-line">
+              that is close to \(f(x)|w(x)|\).
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Attention example</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              o=\sum_{i=1}^{n}a_iv_i
+              \]
+            </div>
+            <p class="q fragment current-line">How should we sample terms?</p>
+            <p class="fragment current-line">Best distribution \(=\)</p>
+            <div class="eq fragment current-line">
+              \[
+              g(x)=[g(1),\ldots,g(n)]
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              g(i)\propto a_i\|v_i\|_2
+              \qquad [\text{Exercise}]
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>But can we compute it cheaply?</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              \(a_i\) computation will need entire KV Cache reading.
+            </p>
+            <p class="q fragment current-line">
+              → What is a good \(g(x)\)?
+            </p>
+            <p class="fragment current-line">
+              <strong>[Think]</strong> that is cheaply computable
+            </p>
+            <p class="fragment current-line">
+              we will answer this question partially in the Seminar
+            </p>
+            <p class="fragment current-line">
+              and hopefully in some future class.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+        plugins: [RevealNotes],
+      });
+    </script>
+  </body>
+</html>
