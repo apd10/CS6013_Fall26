@@ -1,0 +1,33 @@
+Timestamp,Alias,Compression Target,Are you submitting this model for Track 2? ,"Track_1
+Score","Track_2
+Score",Remarks
+8/15/2026 0:00:18,Kakashi,40%,No,0,0,"Github Repo not shared with TA.
+HuggingFace Repo doesn't exist."
+8/15/2026 0:00:41,Porco,10%,No,0,0,Qwen3-4B-Instruct-2507
+8/15/2026 0:18:50,Tanjiro,40%,No,0,0,convert from hf checkpoint.py and dequantize to bf16.py is missing
+8/21/2026 12:46:33,Genya,40%,Yes,6.4,6.4,
+8/21/2026 12:47:39,Genya,20%,Yes,6.4,6.4,
+8/21/2026 19:12:32,Haku,40%,No,0,0,Qwen3-4B-Instruct-2507
+8/21/2026 19:14:11,Haku,40%,No,0,0,Qwen3-4B-Instruct-2507
+8/21/2026 19:45:59,Jiraiya,20%,No,0,0,HuggingFace Repo doesn't exist.
+8/21/2026 20:36:17,Light,40%,No,0,0,Doesn't contain dequantize_to_bf16.py and convert from hf checkpoint.py
+8/21/2026 21:07:00,Yoriichi,40%,Yes,0,0,HuggingFace Repo doesn't exist.
+8/21/2026 22:07:33,Howl,40%,No,0,0,Qwen3-4B-Instruct-2507
+8/21/2026 22:13:38,Haku,20%,No,0,0,Qwen3-4B-Instruct-2507
+8/21/2026 22:53:49,Howl,20%,No,0,0,Qwen3-4B-Instruct-2507
+8/21/2026 22:53:57,Asbel,10%,Yes,0,0,Github Repo not shared with TA.
+8/21/2026 22:54:30,Howl,20%,No,0,0,Qwen3-4B-Instruct-2507
+8/21/2026 23:10:00,Minato,40%,Yes,0,0,dequantize_to_bf16.py and convert from hf checkpoint.py are missing
+8/21/2026 23:24:54,Akaza,10%,No,0,0,"1. Qwen3-4B-Instruct-2507
+2. The functions in both the code are not called."
+8/21/2026 23:28:12,Ashitaka,40%,No,0,0,Qwen3_5TextConfig' object has no attribute 'vision_config' when loaded with Qwen3_5ForCausalLM
+8/21/2026 23:28:38,Akaza,20%,No,0,0,"1. Qwen3-4B-Instruct-2507
+2. The functions in both the code are not called."
+8/21/2026 23:31:12,Akaza,40%,No,0,0,"1. Qwen3-4B-Instruct-2507
+2. The functions in both the code are not called."
+8/21/2026 23:41:50,Kiba,40%,No,0,0,Failed to clone the checkpoint folder.
+8/21/2026 23:43:14,L,40%,No,0,0,dequantize to bf16.py and convert from hf checkpoint.py is missing.
+8/21/2026 23:45:14,Light,20%,No,0,0,Doesn't contain dequantize_to_bf16.py and convert from hf checkpoint.py
+8/21/2026 23:46:39,Yoriichi,20%,Yes,0,0,HuggingFace Repo doesn't exist
+8/21/2026 23:49:05,Ashitaka,20%,No,0,0,Qwen3_5TextConfig' object has no attribute 'vision_config' when loaded with Qwen3_5ForCausalLM
+8/21/2026 23:57:44,Gaara,40%,No,0,0,Qwen3-4B-Instruct-2507

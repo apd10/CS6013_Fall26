@@ -1,0 +1,43 @@
+Timestamp,Alias,Roll no.,Compression Target,Are you submitting this model for Track 2? ,"Track_1
+Score","Track_2
+Score",Remarks
+8/12/2026 13:16:55,Sosuke,25M2573,40%,No,0,0,"dequantize code contains functions, but never called."
+8/13/2026 19:55:27,Asbel,23B1266,10%,Yes,0,0,Github not shared with TA.
+8/13/2026 20:41:37,Light,25M2163,20%,No,0,0,"Same code is uploaded for every week
+Did not follow naming template for decompression
+Did not share the exact folder structure for Github"
+8/13/2026 22:43:04,Naruto,24B0060,20%,Yes,0,0,Qwen3-4B-Instruct-2507
+8/14/2026 15:06:33,Seiji,23B1225,10%,Yes,0,0,"dequantize code contains functions, but never called."
+8/14/2026 17:45:04,Baron,22B3921,40%,No,0,0,"dequantize code contains functions, but never called."
+8/14/2026 19:36:14,Yoriichi,24b1094,40%,Yes,0,0,Qwen3-4B-Instruct-2507
+8/14/2026 19:36:30,Ryuk,25M2161,40%,No,0,0,Qwen3-4B-Instruct-2507
+8/14/2026 19:41:23,Genya,25M2111,40%,Yes,5.3772889,5.3772889,
+8/14/2026 19:42:12,Genya,25M2111,20%,Yes,5.3772889,5.3772889,
+8/14/2026 20:05:04,Muzan,25M2153,40%,No,0,0,"Did not follow the Github folder structure
+submitted:   25M2153/Track1_40/Submission01
+actual:          25M2153/Week01/Track1_40/Submission01"
+8/14/2026 20:07:10,Jiraiya,24b1051,40%,No,0,0,HuggingFace link doesn't exist
+8/14/2026 20:37:18,Seita,23b1034,40%,Yes,0,0,Qwen/Qwen3-4B-Instruct-2507
+8/14/2026 21:01:21,Giyu,24M1529,20%,Yes,0,0,Qwen3-4B-Instruct-2507
+8/14/2026 21:21:25,Akaza,25m0820,10%,No,0,0,submitted sample submission code
+8/14/2026 21:22:29,Akaza,25m0820,20%,No,0,0,submitted sample submission code
+8/14/2026 21:23:53,Akaza,25m0820,40%,No,0,0,submitted sample submission code
+8/14/2026 21:30:41,Kiba,24b1064,40%,No,0,0,Failed to decompress. Bug in code??
+8/14/2026 21:36:05,Minato,24b0978,20%,Yes,0,0,dequantize code is not in the format mentioned.
+8/14/2026 21:47:14,Haku,22B1256,40%,No,0,0,Qwen3-4B-Instruct-2507
+8/14/2026 21:47:15,Howl,22B1029,40%,No,0,0,Qwen3-4B-Instruct-2507
+8/14/2026 22:05:05,Light,25M2163,10%,No,0,0,Doesn't contain dequantize_to_bf16.py and convert from hf checkpoint.py
+8/14/2026 22:10:07,Douma,25m0831,40%,No,0,0,Qwen3-4B-Instruct-2507
+8/14/2026 22:24:10,L,26D0362,40%,No,0,0,Doesn't contain dequantize_to_bf16.py
+8/14/2026 22:37:15,Zenitsu,24b1814,20%,No,0,0,"Code contains functions, but never called."
+8/14/2026 22:58:43,Ren,22b3931,10%,No,0,0,Qwen3-4B-Instruct-2507
+8/14/2026 23:01:00,Ashitaka,23B0059,40%,No,0,0,The format of the checkpoint is unknown.
+8/14/2026 23:16:03,Ashitaka,23B0059,20%,No,0,0,The format of the checkpoint is unknown.
+8/14/2026 23:34:50,Inosuke,25M2119,40%,No,0,0,The format of the checkpoint is unknown.
+8/14/2026 23:36:38,Sasuke,24B0065,10%,No,0,0,"Github not shared with TA.
+HuggingFace link doesn't exist"
+8/14/2026 23:57:16,Neji,24b0926,40%,No,0,0,"dequantize code contains functions, but never called."
+8/14/2026 23:57:58,Porco,23b0932,10%,No,0,0,"Did not follow the Github folder structure
+submitted:   23B0932/Week01/Submission01
+actual:          23B0932/Week01/Track1_10/Submission01"
+8/14/2026 23:58:48,Gaara,24B0908,40%,No,0,0,HuggingFace repo is private

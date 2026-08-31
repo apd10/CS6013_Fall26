@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project leaderboard — Efficient AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="leaderboard.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <p class="eyebrow"><a href="../index.html">Course website</a></p>
+        <h1>Project leaderboard</h1>
+        <p class="lede">
+          Cumulative best Track 1 score for each alias, by compression target.
+          Week <em>N</em> includes every graded submission from weeks 1 through
+          <em>N</em>.
+        </p>
+      </header>
+
+      <main>
+        <div id="week-tabs" class="week-tabs"></div>
+        <p id="week-note" class="week-note"></p>
+        <p id="status" class="status">Loading weekly results…</p>
+        <div id="scatter" class="scatter-wrap"></div>
+        <div id="boards" class="boards"></div>
+        <section class="zero-summary">
+          <h2>Did you get a 0? Heres what may have happened:</h2>
+          <ul>
+            <li>
+              Compressed the wrong model?
+              <span class="warn">Qwen3-4B-Instruct-2507</span> model
+              instead of <span class="warn" style="color: green;">Qwen-3.5-4B</span> model.
+         
+            </li>
+            <li>
+The functions are not correctly named or the code is not working. Prescribed folder structure is not followed.
+            </li>
+            <li>HuggingFace repo or link does not exist.</li>
+            <li>GitHub repo was not shared with the TAs.</li>
+            <li>Checkpoint format is unknown.</li>
+            <li>Submitted the sample submission code.</li>
+            <li>
+              Checkpoint failed to load
+            </li>
+            <li>HuggingFace repo is private.</li>
+            <li>Same code was uploaded every week.</li>
+          </ul>
+        </section>
+        <section class="zero-summary">
+          <h2>How to communicate with the TAs:</h2>
+          <ul>
+            <li>
+             Use Moodle forums for general questions. Most of the queries can be answered by other course takers
+             </li>
+             <li>
+              Use Comment feature on your assignment for specific questions that you cannot ask in public forum.
+             </li>
+          </ul>
+
+        </section>
+      </main>
+
+      <footer>
+        <p>Efficient AI · Aditya Desai</p>
+      </footer>
+    </div>
+    <script src="leaderboard.js"></script>
+  </body>
+</html>

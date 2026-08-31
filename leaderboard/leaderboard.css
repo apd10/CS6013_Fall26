@@ -1,0 +1,227 @@
+.hero .eyebrow a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.hero .eyebrow a:hover {
+  text-decoration: underline;
+}
+
+.week-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.75rem 0 1rem;
+}
+
+.week-tab {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.week-tab:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.week-tab.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.week-note,
+.status {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+.scatter-wrap {
+  margin: 0 0 1.75rem;
+  padding: 0.85rem 0.6rem 0.4rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+}
+
+.scatter-wrap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.scatter-wrap .axis {
+  stroke: var(--line);
+  stroke-width: 1.25;
+}
+
+.scatter-wrap .grid {
+  stroke: rgba(201, 214, 229, 0.85);
+  stroke-width: 1;
+}
+
+.scatter-wrap .tick-label,
+.scatter-wrap .axis-title {
+  fill: var(--muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+.scatter-wrap .axis-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.scatter-wrap .dot {
+  fill: var(--accent);
+  fill-opacity: 0.55;
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+.scatter-wrap .dot.top {
+  fill: #b45309;
+  fill-opacity: 1;
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.scatter-wrap .top-label {
+  fill: var(--ink);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.scatter-wrap .top-score {
+  fill: var(--muted);
+  font-family: var(--font-body);
+  font-size: 11px;
+}
+
+.boards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.board h3 {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+
+.board .table-wrap {
+  max-height: min(70vh, 44rem);
+}
+
+.board table {
+  font-size: 0.92rem;
+}
+
+.board thead th {
+  text-transform: uppercase;
+}
+
+.board tbody td:nth-child(1),
+.board tbody td:nth-child(2),
+.board tbody td:nth-child(3) {
+  width: auto;
+  min-width: 0;
+  font-weight: inherit;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.board tbody td:nth-child(1) {
+  width: 4.25rem;
+}
+
+.board tbody td:nth-child(2) {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.board tbody td:nth-child(3) {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+.medal {
+  display: inline-flex;
+  min-width: 1.65rem;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.medal.gold {
+  color: #b45309;
+}
+
+.medal.silver {
+  color: #4b5563;
+}
+
+.medal.bronze {
+  color: #9a3412;
+}
+
+.empty {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.zero-summary {
+  margin: 2.5rem 0 0;
+  padding: 1.35rem 1.4rem 1.2rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+}
+
+.zero-summary h2 {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.zero-summary ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.zero-summary li {
+  margin: 0.4rem 0;
+  color: var(--ink-soft);
+}
+
+.zero-summary .warn {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.zero-summary code {
+  font-family: ui-monospace, "IBM Plex Mono", monospace;
+  font-size: 0.92em;
+}
+
+@media (max-width: 900px) {
+  .boards {
+    grid-template-columns: 1fr;
+  }
+}
