@@ -129,6 +129,7 @@ async function loadWeeks() {
   const weeks = [];
 
   for (let n = 1; n <= CONFIG.maxWeeks; n++) {
+    if (n === 3) continue;
     const url = CONFIG.csvUrl(n);
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) break;
