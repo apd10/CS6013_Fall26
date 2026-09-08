@@ -1,0 +1,1785 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Quantization Basics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        box-sizing: border-box;
+        background: transparent;
+        padding: 0 8%;
+      }
+
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h3 {
+        display: inline-block;
+        margin: 0 0 0.45em;
+        padding-bottom: 0.1em;
+        border-bottom: 2px solid var(--accent);
+        font-size: 1.15em;
+      }
+
+      .reveal h4 {
+        margin: 0.15em 0 0.5em;
+        color: var(--accent-deep);
+        font-size: 0.95em;
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+      }
+
+      .reveal small,
+      .reveal .cite {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+        font-size: 0.82em;
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.55);
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal .content {
+        width: 92%;
+        margin: 0 auto;
+        font-size: 0.76em;
+        line-height: 1.35;
+        text-align: left;
+      }
+
+      .reveal .content p {
+        margin: 0.42em 0;
+      }
+
+      .reveal .content ul,
+      .reveal .content ol {
+        margin: 0.35em 0;
+        padding-left: 1.3em;
+      }
+
+      .reveal .content li {
+        margin: 0.25em 0;
+      }
+
+      .reveal .compact {
+        font-size: 0.66em;
+      }
+
+      .reveal .very-compact {
+        font-size: 0.57em;
+      }
+
+      .reveal .eq {
+        margin: 0.38em auto;
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .eq mjx-container {
+        margin: 0.2em 0 !important;
+      }
+
+      .reveal .eq-box {
+        width: fit-content;
+        max-width: 94%;
+        margin: 0.5em auto;
+        padding: 0.24em 0.68em;
+        border: 2px solid var(--accent);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .q {
+        margin: 0.45em 0;
+        padding: 0.38em 0.65em;
+        border-left: 4px solid var(--accent);
+        border-radius: 0 6px 6px 0;
+        background: rgba(14, 165, 233, 0.1);
+        color: var(--ink-soft);
+      }
+
+      .reveal .answer {
+        color: var(--accent-deep);
+        font-weight: 600;
+      }
+
+      .reveal a {
+        color: var(--accent-deep);
+        text-decoration-color: var(--accent);
+      }
+
+      .reveal .emphasis {
+        color: var(--accent-deep);
+        font-size: 1.05em;
+        font-weight: 700;
+      }
+
+      .reveal .aside {
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.8em;
+      }
+
+      .reveal .stem {
+        display: block;
+        margin: 0.2em auto;
+        max-width: 92%;
+        max-height: 28vh;
+        width: 100%;
+        height: auto;
+      }
+
+      .reveal .stem-pair {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6em;
+        margin: 0.3em 0;
+      }
+
+      .reveal .stem-pair .stem {
+        max-width: 42%;
+        max-height: 24vh;
+      }
+
+      .reveal .stem-pair .arrow {
+        font-size: 1.6em;
+        color: var(--accent-deep);
+        font-weight: 700;
+      }
+
+      .reveal .map-labels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4em;
+        text-align: center;
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+
+      .reveal .remark {
+        margin: 0.5em 0;
+        padding: 0.45em 0.7em;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.55);
+        color: var(--ink-soft);
+      }
+
+      .reveal .remark .label {
+        display: block;
+        margin-bottom: 0.25em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78em;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent-deep);
+        font-weight: 600;
+      }
+
+      .reveal .exercise {
+        margin: 0.5em 0;
+        padding: 0.5em 0.75em;
+        border: 1.5px dashed var(--accent);
+        border-radius: 8px;
+        background: rgba(14, 165, 233, 0.08);
+        color: var(--ink-soft);
+      }
+
+      .reveal .exercise .label {
+        display: block;
+        margin-bottom: 0.3em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78em;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent-deep);
+        font-weight: 600;
+      }
+
+      .reveal .hint {
+        margin-top: 0.55em;
+        padding-top: 0.45em;
+        border-top: 1px solid rgba(14, 165, 233, 0.25);
+        color: var(--muted);
+        font-size: 0.95em;
+      }
+
+      .reveal .hint strong {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85em;
+        font-weight: 600;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .reveal .fig {
+        display: block;
+        margin: 0.35em auto;
+        max-width: 92%;
+        max-height: 42vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+      }
+
+      .reveal .slides section.image-slide::before {
+        display: none;
+      }
+
+      .reveal .fig-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0.8em;
+        margin-top: 0.4em;
+        flex-wrap: nowrap;
+      }
+
+      .reveal .fig-row .fig {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: 48%;
+        max-height: 52vh;
+        width: 100%;
+      }
+
+      .reveal .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1.15fr;
+        gap: 0.8em;
+        align-items: start;
+      }
+
+      .reveal .two-col .fig {
+        max-width: 100%;
+        max-height: 36vh;
+      }
+
+      .reveal .fig-crop-top {
+        display: block;
+        overflow: hidden;
+        margin: 0.35em auto;
+        max-width: 80%;
+        height: 24vh;
+        border-radius: 6px;
+      }
+
+      .reveal .fig-crop-top img {
+        display: block;
+        width: 80%;
+        height: auto;
+        object-fit: cover;
+        object-position: top center;
+      }
+
+      .reveal .caption {
+        margin: 0.35em 0 0;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82em;
+        color: var(--muted);
+        line-height: 1.4;
+        text-align: left;
+      }
+
+      .reveal .bit-layout {
+        display: grid;
+        grid-template-columns: 4.2rem 1fr 1.4fr;
+        gap: 0.35rem;
+        margin: 0.75em auto;
+        max-width: 26em;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.9em;
+      }
+
+      .reveal .bit-layout div {
+        border: 1.5px solid var(--accent);
+        border-radius: 6px;
+        padding: 0.45rem 0.35rem;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--ink);
+      }
+
+      .reveal .bit-layout .lbl {
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.82em;
+        padding: 0.15rem;
+        white-space: nowrap;
+      }
+
+      .reveal table.compare {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92em;
+        margin: 0.5em 0;
+        background: rgba(255, 255, 255, 0.55);
+      }
+
+      .reveal table.compare th,
+      .reveal table.compare td {
+        border: 1px solid var(--line);
+        padding: 0.4em 0.55em;
+        text-align: left;
+        vertical-align: top;
+        color: var(--ink-soft);
+      }
+
+      .reveal table.compare th {
+        background: rgba(14, 165, 233, 0.12);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .reveal code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.9em;
+        background: rgba(14, 165, 233, 0.1);
+        padding: 0.08em 0.3em;
+        border-radius: 4px;
+      }
+
+      .reveal .fragment.current-line.current-fragment {
+        color: var(--accent-deep);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <!-- Title -->
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Quantization Basics</p>
+          <p><small>Aditya Desai</small></p>
+        </section>
+
+        <!-- ========== 1. What is quantization? ========== -->
+        <section>
+          <h3>What is quantization?</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Quantization maps a continuous (or large) set of values to a
+              smaller discrete set.
+            </p>
+            <p class="fragment current-line">
+              There are two maps to keep track of:
+            </p>
+            <ul>
+              <li class="fragment current-line">
+                The <strong>quantization map</strong> sends a real value to a
+                code:
+                \[
+                Q: X \rightarrow \{0,\dots,|Y|-1\}
+                \]
+              </li>
+              <li class="fragment current-line">
+                The <strong>dequantization map</strong> reconstructs an
+                approximate real value from that code:
+                \[
+                Q^{-1}: \{0,\dots,|Y|-1\} \rightarrow \mathbb{R}
+                \]
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3>Reconstruction error</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              If the only goal is to store and recover data, then a natural
+              metric is reconstruction error.
+            </p>
+            <p class="fragment current-line">
+              For values drawn from a distribution $P$, this is the mean squared
+              error:
+            </p>
+            <div class="eq-box fragment current-line">
+              \[
+              \mathrm{Quantization\ error}
+              =
+              \mathbb{E}_{x\sim P}
+              \bigl[
+                \| x - Q^{-1}(Q(x)) \|_2^2
+              \bigr].
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>When reconstruction is not enough</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              <strong>Q.</strong> Should we always care about reconstruction
+              loss?
+            </p>
+            <p class="answer fragment current-line">
+              <strong>A.</strong> No — it depends on how the quantized data is
+              used.
+            </p>
+            <p class="answer fragment current-line">
+              For example, if we quantize weights $W$, we may care more about the
+              downstream loss or about inner products than about
+              $\|W-\hat W\|_2$.
+            </p>
+            <p class="fragment current-line">
+              This distinction is important in ML: a quantizer that looks good
+              by reconstruction error may not be the one that preserves model
+              quality.
+            </p>
+          </div>
+        </section>
+
+        <!-- ========== 2. Number formats ========== -->
+        <section>
+          <h3>How computers represent numbers</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Computers already quantize numbers: a dtype determines which
+              values are representable.
+            </p>
+            <p class="fragment current-line">
+              Before designing our own low-bit maps, recall the two basic
+              families of number formats.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Integer formats</h3>
+          <div class="content">
+            <h4 class="fragment current-line">(A) Integer formats</h4>
+            <p class="fragment current-line">
+              Example: signed <code>INT32</code>.
+            </p>
+            <ul>
+              <li class="fragment current-line">Max: $2^{31}-1$</li>
+              <li class="fragment current-line">Min: $-2^{31}$</li>
+              <li class="fragment current-line">
+                Positive numbers stored as usual; negatives as two’s complement
+              </li>
+              <li class="fragment current-line">
+                Unlike sign-magnitude integer encodings, two’s complement has a
+                single zero (no separate $\pm0$)
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3>Floating-point formats</h3>
+          <div class="content">
+            <h4 class="fragment current-line">(B) Floating-point formats</h4>
+            <p class="fragment current-line">
+              Formats such as FP16, FP32, FP64 use a sign / exponent / mantissa
+              layout (“$1+e+m$ bits”):
+            </p>
+            <div class="bit-layout fragment current-line">
+              <div>S</div>
+              <div>E</div>
+              <div>M</div>
+              <div class="lbl">sign<br />1 bit</div>
+              <div class="lbl">exponent<br />$e$ bits</div>
+              <div class="lbl">mantissa<br />$m$ bits</div>
+            </div>
+            <p class="fragment current-line">What does the bit string represent?</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Normal numbers</h3>
+          <div class="content">
+            <h4 class="fragment current-line">
+              Normal numbers ($E \neq 0$, not all-ones)
+            </h4>
+            <div class="eq-box fragment current-line">
+              \[
+              \begin{gathered}
+              V
+              =
+              (-1)^{s}
+              \times
+              2^{n(E)-\mathrm{bias}}
+              \times
+              \bigl(1 + n(0.M)\bigr),
+              \\[0.25em]
+              \mathrm{bias} = 2^{e-1}-1.
+              \end{gathered}
+              \]
+            </div>
+            <p class="cite fragment current-line">
+              Here $n(E)$ is the integer encoded by the exponent field, and
+              $n(0.M)$ is the fractional value of the mantissa bits.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Subnormals, zero, and specials</h3>
+          <div class="content">
+            <h4 class="fragment current-line">Subnormals and zero ($E = 0$)</h4>
+            <div class="eq fragment current-line">
+              \[
+              V
+              =
+              (-1)^{s}
+              \times
+              2^{1-\mathrm{bias}}
+              \times
+              n(0.M).
+              \]
+            </div>
+            <h4 class="fragment current-line">Special numbers ($E$ all ones)</h4>
+            <ul>
+              <li class="fragment current-line">
+                $M = 0$ $\rightarrow$ $\pm\infty$
+              </li>
+              <li class="fragment current-line">
+                $M \neq 0$ $\rightarrow$ NaN
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3>FP16 encoding cases</h3>
+          <div class="content">
+            <img
+              class="fig fragment current-line"
+              src="../assets/fp16_2.png"
+              alt="FP16 bit layout and encoding cases"
+            />
+            <p class="caption fragment current-line">
+              FP16 encoding cases (normals, subnormals, specials).
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Common ML dtypes</h3>
+          <div class="content">
+            <img
+              class="fig fragment current-line"
+              src="../assets/dtypes.png"
+              alt="Precision and range of common dtypes"
+            />
+      
+            <p class="caption fragment current-line">
+              Common ML dtypes (FP32, BF16, FP16, INT8, …) trade
+              <strong>precision</strong> (spacing between representable points)
+              against <strong>range</strong> (max − min representable value).
+            </p>
+          </div>
+        </section>
+
+        <!-- ========== 3. Quantization in ML ========== -->
+        <section>
+          <h3>Quantization in ML</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              FP32 and FP16 are the common “go-to” formats, but efficient ML
+              often pushes further toward smaller bit widths:
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{FP16,\ FP32}
+              \;\longrightarrow\;
+              \mathrm{FP8,\ INT8,\ INT4,\ \dots}
+              \]
+            </div>
+            <img
+              class="fig fragment current-line"
+              src="../assets/fp8.png"
+              alt="FP8 format overview"
+            />
+          </div>
+        </section>
+
+        <section>
+          <h3>What we quantize</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              The objects we quantize are usually tensors or matrices: weights,
+              activations, KV cache entries, and similar model states / optimizer states.
+            </p>
+            <img
+              class="fig fragment current-line"
+              src="../assets/matrix.png"
+              alt="Example matrix of floating-point values"
+            />
+          </div>
+        </section>
+
+        <section>
+          <h3>Dynamic vs. static quantization</h3>
+          <div class="content">
+            <ul>
+              <li class="fragment current-line">
+                <strong>Dynamic quantization.</strong> Treat the current matrix
+                $M$ as the target data and fit $Q$ just for that tensor. If $M$
+                is an activation batch, the map must be recomputed when the data
+                changes.
+              </li>
+              <li class="fragment current-line">
+                <strong>Static quantization.</strong> Treat $M$ as a sample from
+                a target distribution; compute $Q$ once (e.g. from calibration
+                data) and reuse it.
+              </li>
+            </ul>
+            <p class="fragment current-line">
+              Either way, once we have a tensor or a calibration distribution,
+              the core design question is how to place a small number of integer
+              codes on the real line.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Designing $Q$</h3>
+          <div class="content compact">
+            <p class="q fragment current-line">
+              <strong>Q.</strong> Given a set of values, how do we design $Q$?
+            </p>
+            <div class="fig-crop-top fragment current-line">
+              <img
+                src="../assets/linear.png"
+                alt="Example set of floating-point values"
+              />
+            </div>
+            <p class="fragment current-line">
+              Target of quantization: <strong>signed</strong>
+              $b$-bit integer codes: there are $2^b$ representable values, with
+              range
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              q \in \bigl\{-2^{b-1},\ldots,2^{b-1}-1\bigr\}
+              \]
+            </div>
+            <p class="fragment current-line">
+              (e.g. $b=8$ gives $-128,\ldots,127$). How we place those levels on
+              the real line <em>really depends on the data</em>.
+            </p>
+            <p class="fragment current-line">
+              Simplest function that can map $\{-2^{b-1},\ldots,2^{b-1}-1 \}$ to $[-r_{\max}, r_{\max}]$ is a linear function.
+            </p>
+          </div>
+        </section>
+
+        <!-- ========== 4. Linear and affine ========== -->
+        <section>
+          <h3>Linear and affine quantization</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              The simplest answer is to use a uniformly spaced grid.
+              <img
+              class="fig fragment current-line"
+              src="../assets/linear.png"
+              alt="Symmetric linear quantization diagram"
+            />  
+            </p>
+            <p class="fragment current-line">
+              Linear quantization: real value $r$ is mapped to integer code $q$ using the scale $\lambda$: $r = \lambda q$.
+            </p>
+            </div>
+          </section>
+        
+
+        <section>
+          <h3>Symmetric linear map</h3>
+          <div class="content">
+            <p class="fragment current-line">
+                \[
+                Q(r) = \left[ \frac{r}{\lambda} \right]_Q
+                \]
+                \[
+                Q^{-1}(q) = \lambda q
+                \]
+            </p>
+            <p class="fragment current-line">
+              Choose $\lambda$ so the largest magnitude maps to the largest
+              positive code.
+            </p>
+            <div class="eq-box fragment current-line" style="overflow-x: auto;">
+              <div style="white-space: nowrap;">
+                \[
+                r_{\max} = \max_i |x_i|,\quad
+                q_{\max} = 2^{b-1}-1,\quad
+                \lambda = \frac{r_{\max}}{q_{\max}}.
+                \]
+              </div>
+              Why use $q_{\max}=2^{b-1}-1$? : For symmetry.
+            </div>
+
+          </div>
+        </section>
+        
+        <section>
+          <h3>Why use linear quantization?</h3>
+          <div class="content">
+            <ul>
+              <li class="fragment current-line">
+                Simple, and only need to store one parameter: the scale $\lambda$.
+              </li>
+              <li class="fragment current-line">
+                Many elementary operations can be done in quantized space
+                (especially useful for inner products, which are ubiquitous in
+                ML)
+                <div class="eq fragment current-line">
+                  \[
+                  Q(Q^{-1}(q_1) + Q^{-1}(q_2)) =  q_1 + q_2
+                  \]
+                </div>
+              </li>
+            </ul>
+        </div>
+      </section>
+
+        <section>
+          <h3>When $r=\lambda q$ is inefficient</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              <strong>Q.</strong> When is a pure scale map bad?
+            </p>
+            <p class="fragment current-line">
+              When the distribution is <strong>shifted / asymmetric</strong>: a
+              zero-centered integer grid wastes codes on an empty region of the
+              real line.
+            </p>
+            <img
+              class="fig fragment current-line"
+              src="../assets/linear.png"
+              alt="Symmetric linear quantization diagram"
+            />
+          </div>
+        </section>
+        <section>
+          <h3>Affine (asymmetric) quantization</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              To move the grid left or right, introduce a zero-point $z_q$ as
+              well as a scale:
+            </p>
+            <img
+              class="fig fragment current-line"
+              src="../assets/affine_linear.png"
+              alt="Affine (asymmetric) quantization diagram"
+            />
+            <div class="eq-box fragment current-line">
+              \[
+              r = \lambda(q - z_q).
+              \]
+            </div>
+
+          </div>
+        </section>
+
+
+        <section>
+          <h3>Affine (asymmetric) quantization</h3>
+          <div class="content">
+            <ul>
+              <li class="fragment current-line">
+                Map data extremes to code endpoints:
+                <ul>
+                  <li>$r_{\max} \mapsto q_{\max}$</li>
+                  <li>$r_{\min} \mapsto q_{\min}$</li>
+                  <li>$q_{\min} = -2^{b-1}$, $q_{\max} = 2^{b-1}-1$</li>
+                </ul>
+              </li>
+              <li class="fragment current-line">
+                Solve:
+                <div class="eq">
+                  \[
+                  r_{\max}=\lambda(q_{\max}-z_q), \qquad
+                  r_{\min}=\lambda(q_{\min}-z_q)
+                  \]
+                </div>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3>Fitting $\lambda$ and $z_q$</h3>
+          <div class="content">
+            <div class="eq-box fragment current-line">
+              \[
+              \lambda
+              =
+              \frac{r_{\max}-r_{\min}}{q_{\max}-q_{\min}},
+              \qquad
+              z_q
+              =
+              q_{\max} - \frac{r_{\max}}{\lambda}.
+              \]
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== 5. Outliers ========== -->
+        <section>
+          <h3>Other failure modes?</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              <strong>Q.</strong> When can linear quantization still fail?
+            </p>
+            <p class="fragment current-line">
+              <strong>Outliers.</strong> A few extreme values stretch the scale,
+              so most of the mass gets too few effective bits.
+            </p>
+            <img
+              class="fig fragment current-line"
+              src="../assets/clip1.png"
+              alt="Outliers stretching the quantization range"
+            />
+            <p class="caption fragment current-line">
+              Outliers consume dynamic range that the bulk of the data needs.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Clipping</h3>
+          <div class="content">
+            <div class="fig-row fragment current-line">
+              <img
+                class="fig"
+                src="../assets/clip2.png"
+                alt="Clipping outliers before quantization"
+              />
+              <img
+                class="fig"
+                src="../assets/clip3.png"
+                alt="Effect of clipping on effective bit usage"
+              />
+            </div>
+            <ul>
+              <li class="fragment current-line">Clip extreme values before fitting the quantization scale.</li>
+              <li class="fragment current-line">Useful if outliers are noise or unimportant. (example: gradient tensors)</li>
+              <li class="fragment current-line">Tradeoff: higher precision for typical values, but clipped values are distorted.</li>
+            </ul>
+          </div>
+        </section>
+
+        
+
+        <!-- ========== Rotation ========== -->
+        <section>
+          <h3>6. What if outliers are important?</h3>
+          <div class="content">
+            <svg
+              class="stem fragment current-line"
+              viewBox="0 0 360 160"
+              role="img"
+              aria-label="Stem plot with one large outlier"
+            >
+              <text x="180" y="16" text-anchor="middle" fill="#0369a1" font-size="11" font-family="IBM Plex Mono, monospace">absolute magnitude</text>
+              <line x1="28" y1="28" x2="28" y2="118" stroke="#0369a1" stroke-width="1.5" />
+              <line x1="28" y1="118" x2="340" y2="118" stroke="#0369a1" stroke-width="1.5" />
+              <g stroke="#071a33" stroke-width="2.5" fill="#0ea5e9">
+                <line x1="58" y1="118" x2="58" y2="98" /><circle cx="58" cy="98" r="3.2" />
+                <line x1="90" y1="118" x2="90" y2="92" /><circle cx="90" cy="92" r="3.2" />
+                <line x1="122" y1="118" x2="122" y2="102" /><circle cx="122" cy="102" r="3.2" />
+                <line x1="154" y1="118" x2="154" y2="96" /><circle cx="154" cy="96" r="3.2" />
+                <line x1="186" y1="118" x2="186" y2="36" /><circle cx="186" cy="36" r="3.6" fill="#0369a1" />
+                <line x1="218" y1="118" x2="218" y2="100" /><circle cx="218" cy="100" r="3.2" />
+                <line x1="250" y1="118" x2="250" y2="94" /><circle cx="250" cy="94" r="3.2" />
+                <line x1="282" y1="118" x2="282" y2="104" /><circle cx="282" cy="104" r="3.2" />
+                <line x1="314" y1="118" x2="314" y2="99" /><circle cx="314" cy="99" r="3.2" />
+              </g>
+              <text x="184" y="148" text-anchor="middle" fill="#3d5570" font-size="11" font-family="IBM Plex Mono, monospace">weight identifiers</text>
+            </svg>
+            <p class="fragment current-line">
+              E.g. Activation tensors are being quantised.
+            </p>
+            <p class="fragment current-line">
+              One approach: Separately store a sparse mask.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Rotate the vector</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Alternatively "Rotate the Vector" to redistribute the energy
+            </p>
+            <div class="stem-pair fragment current-line">
+              <svg
+                class="stem"
+                viewBox="0 0 220 150"
+                role="img"
+                aria-label="Vector x with one tall stick"
+              >
+                <text x="110" y="14" text-anchor="middle" fill="#0369a1" font-size="10" font-family="IBM Plex Mono, monospace">|·|</text>
+                <line x1="18" y1="22" x2="18" y2="112" stroke="#0369a1" stroke-width="1.4" />
+                <line x1="18" y1="112" x2="206" y2="112" stroke="#0369a1" stroke-width="1.4" />
+                <g stroke="#071a33" stroke-width="2.2" fill="#0ea5e9">
+                  <line x1="40" y1="112" x2="40" y2="96" /><circle cx="40" cy="96" r="2.8" />
+                  <line x1="68" y1="112" x2="68" y2="92" /><circle cx="68" cy="92" r="2.8" />
+                  <line x1="96" y1="112" x2="96" y2="100" /><circle cx="96" cy="100" r="2.8" />
+                  <line x1="124" y1="112" x2="124" y2="32" /><circle cx="124" cy="32" r="3.2" fill="#0369a1" />
+                  <line x1="152" y1="112" x2="152" y2="98" /><circle cx="152" cy="98" r="2.8" />
+                  <line x1="180" y1="112" x2="180" y2="94" /><circle cx="180" cy="94" r="2.8" />
+                </g>
+                <text x="112" y="138" text-anchor="middle" fill="#071a33" font-size="16" font-family="Space Grotesk, sans-serif">x</text>
+              </svg>
+              <div class="arrow">\(\rightarrow\)</div>
+              <svg
+                class="stem"
+                viewBox="0 0 220 150"
+                role="img"
+                aria-label="Vector Rx with even sticks"
+              >
+                <text x="110" y="14" text-anchor="middle" fill="#0369a1" font-size="10" font-family="IBM Plex Mono, monospace">|·|</text>
+                <line x1="18" y1="22" x2="18" y2="112" stroke="#0369a1" stroke-width="1.4" />
+                <line x1="18" y1="112" x2="206" y2="112" stroke="#0369a1" stroke-width="1.4" />
+                <g stroke="#071a33" stroke-width="2.2" fill="#0ea5e9">
+                  <line x1="40" y1="112" x2="40" y2="62" /><circle cx="40" cy="62" r="2.8" />
+                  <line x1="68" y1="112" x2="68" y2="68" /><circle cx="68" cy="68" r="2.8" />
+                  <line x1="96" y1="112" x2="96" y2="58" /><circle cx="96" cy="58" r="2.8" />
+                  <line x1="124" y1="112" x2="124" y2="64" /><circle cx="124" cy="64" r="2.8" />
+                  <line x1="152" y1="112" x2="152" y2="70" /><circle cx="152" cy="70" r="2.8" />
+                  <line x1="180" y1="112" x2="180" y2="60" /><circle cx="180" cy="60" r="2.8" />
+                </g>
+                <text x="112" y="138" text-anchor="middle" fill="#071a33" font-size="16" font-family="Space Grotesk, sans-serif">Rx</text>
+              </svg>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Quantisation after rotation</h3>
+          <div class="content">
+            <div class="eq-box fragment current-line">
+              \[
+              Q(\vec{x}) \rightarrow Q(R\vec{x})
+              \]
+            </div>
+            <div class="map-labels fragment current-line">
+              <div>Quantisation of vector</div>
+              <div>Element wise quantisation.</div>
+            </div>
+            <p class="fragment current-line">
+              * we can use linear quantisation for \(Q\).
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>How do we choose a rotation matrix</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              If \(\vec{x}\) was fixed / unknown?
+            </p>
+            <ul>
+              <li class="fragment current-line">
+                e.g: [fixed] weight matrix
+              </li>
+              <li class="fragment current-line">
+                e.g: [unknown] Activation matrix
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3>If \(\vec{x}\) was fixed</h3>
+          <div class="content">
+            <p class="fragment current-line">Say, \(\vec{x}\) was fixed.</p>
+            <p class="fragment current-line">
+              A. Determine \(R\) which is optimal.
+            </p>
+            <p class="fragment current-line">
+              \(\Rightarrow\) But now you have to store \(R\) or
+              \(R^{-1}\in\mathbb{R}^{d\times d}\)
+            </p>
+            <p class="fragment current-line">
+              \(R\): needs to be structured to reduce the memory footprint.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Can a fixed \(R\) be good?</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              A given structured matrix may or may not work for a specific
+              \(\vec{x}\).
+            </p>
+            <p class="small fragment current-line">
+              Side Note: In fact for any chosen \(R\), there is a \(\vec{x}\) for which
+              \(R\vec{x}\) is catastrophic w.r.t quantisation!!
+            </p>
+            <p class="q fragment current-line">\(\rightarrow\) Example?</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>What should we do?</h3>
+          <div class="content">
+            <p class="answer fragment current-line">[Idea] Randomisation</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Random and structured</h3>
+          <div class="content">
+            <h4 class="fragment current-line">Random</h4>
+            <p class="fragment current-line">
+              So that with high probability, \(Rx\) is not adversarial.
+            </p>
+            <h4 class="fragment current-line">Structured</h4>
+            <p class="fragment current-line">It can be stored efficiently.</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Hadamard</h3>
+          <div class="content compact">
+            <h4 class="fragment current-line">
+              Example of commonly used transforms
+            </h4>
+            <p class="fragment current-line">Randomised Hadamard</p>
+            <p class="fragment current-line">Let \(n=2^k\).</p>
+            <div class="eq fragment current-line">
+              \[
+              H_2
+              =
+              \begin{pmatrix}
+              1 & 1 \\
+              1 & -1
+              \end{pmatrix}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              H_n
+              =
+              H_{2^k}
+              =
+              \begin{pmatrix}
+              H_{2^{k-1}} & H_{2^{k-1}} \\
+              H_{2^{k-1}} & -H_{2^{k-1}}
+              \end{pmatrix}
+              \]
+            </div>
+            
+            <div class="eq fragment current-line">
+              \[
+              \bar{H_n}
+              =
+              \frac{1}{\sqrt{n}}H_{n}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Randomized Hadamard</h3>
+          <div class="content">
+            <div class="eq-box fragment current-line">
+              \[
+              R = \mathrm{Diag}(\vec{s})\cdot \bar{H_n}
+              \]
+            </div>
+            <p class="fragment current-line">
+              \(\vec{s}\): Random sign vector
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              s_i \sim \{\pm 1\}
+              \quad\text{with equal probability.}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>why hadamard</h3>
+          <div class="content">
+            <p class="fragment current-line">Computational Complexity of transforming nxn matrix</p>
+            <div class="eq fragment current-line">
+              \[
+              O(n^3)\rightarrow O(n^2\log n)
+              \]
+            </div>
+            <p class="fragment current-line">
+              Note that this is additional computation that we are introducing.
+            </p>
+
+            <p class="fragment current-line">
+              'HadaCore': Kernel for Hadamard transform.
+              <a href="https://pytorch.org/blog/hadacore/" target="_blank"
+                >https://pytorch.org/blog/hadacore/</a
+              >
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Memory Cost</h3>
+          <div class="content">
+            <p class="emphasis fragment current-line">1 sign bit per element.</p>
+            <p class="cite fragment current-line">
+              * Note: we can avoid this \(O(n)\) memory by using Universal Hash
+              functions. (More on that later)
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Analysing effect of Hadamard on outliers</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              R
+              =
+              \frac{1}{\sqrt{n}} Diag(\vec{s}) H_{n}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              Given \(x\), let
+              \[
+              y = Rx
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>A coordinate of \(y = Rx\)</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              Given \(x\), what is the probability that some coordinate of
+              \(Rx\) is greater than \(M\).
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              P(y_i \gt M) = ?
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>\(y=Rx\)</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              y = Rx
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              y_i = \sum_j r_{ij}\, x_j = \sum_j \frac{1}{\sqrt{n}} s_j h_{ij} x_j
+              \]
+              where $h_{ij} \in \{\pm 1\}$
+            </div>
+
+            <div class="eq fragment current-line">
+              \[
+              E(y_i) = ?
+              \]
+            </div>
+            
+            <div class="eq fragment current-line">
+              \[
+              E(y_i) = 0
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Var}(y_i) = ?
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Var}(y_i) = \sum_j x_j^2 \frac
+              {1}{n} \frac
+              {1}{4} = \frac{1}{4} \|x\|_2^2
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Tail bound: Hoeffding</h3>
+          <div class="content compact">
+            <p class="q fragment current-line">
+              Which tail bound do we use?
+            </p>
+            <p class="fragment current-line">
+              Each term in \(y_i\) is bounded, so Hoeffding applies.
+              Let \(X_1,\ldots,X_n\) be independent with
+              \(X_j \in [a_j,b_j]\) almost surely, and
+              \(S=\sum_j X_j\). For \(t&gt;0\),
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Pr}\big(S - \mathbb{E}[S] \ge t\big)
+              \le
+              \exp\!\left(
+                -\frac{2t^2}{\sum_j (b_j-a_j)^2}
+              \right)
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              \mathrm{Pr}\big(|S - \mathbb{E}[S]| \ge t\big)
+              \le
+              2\exp\!\left(
+                -\frac{2t^2}{\sum_j (b_j-a_j)^2}
+              \right)
+              \]
+            </div>
+            <p class="cite fragment current-line">
+              Exercise: Derive the Chernoff bound for the same sum.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Hoeffding applied to \(y_i\)</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              y_i
+              =
+              \sum_j X_j,
+              \qquad
+              X_j
+              =
+              \frac{1}{\sqrt{n}} s_j h_{ij} x_j
+              \]
+            </div>
+            <p class="fragment current-line">
+              Random signs \(s_j h_{ij}\in\{\pm 1\}\), so
+              \(X_j \in [a_j,b_j]\) with
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              a_j = -\frac{|x_j|}{\sqrt{n}},
+              \qquad
+              b_j = \frac{|x_j|}{\sqrt{n}},
+              \qquad
+              (b_j-a_j)^2 = \frac{4 x_j^2}{n}
+              \]
+            </div>
+            <p class="fragment current-line">
+              \(\mathbb{E}[y_i]=0\). Plug \(t=M\) into two-sided Hoeffding:
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Pr}(|y_i| \gt M)
+              \le
+              2\exp\!\left(
+                -\frac{2M^2}{\sum_j (b_j-a_j)^2}
+              \right)
+              =
+              2\exp\!\left(
+                -\frac{2M^2}{\sum_j 4 x_j^2 / n}
+              \right)
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              \mathrm{Pr}(|y_i| \gt M)
+              \le
+              2\exp\!\left(
+                -\frac{n M^2}{2\|x\|_2^2}
+              \right)
+              \]
+            </div>
+          </div>
+        </section>
+        <!-- ========== 6. Codebooks ========== -->
+        <section>
+          <h3>7. Another failure mode - multimodal distributions</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              <strong>Q.</strong> Where else does linear quantization fail?
+            </p>
+            <p class="fragment current-line">
+              Multimodal distributions. A uniform grid spends codes evenly
+              across an interval, but the data may live in separated clusters
+              with empty space between them.
+            </p>
+            <img
+              class="fig fragment current-line"
+              src="../assets/non-linear-quantization-fixed.png"
+              alt="Linear grid failing on a multimodal distribution"
+            />
+            <p class="caption fragment current-line">
+              Linear levels miss multimodal structure.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Codebook / Clustering</h3>
+          <div class="content">
+            <ul>
+              <li class="q fragment current-line"><strong>Q.</strong> What can we do?</li>
+              <li class="fragment current-line">
+                <strong>Idea:</strong> Learn a set of centroids $\{c_i\}$. (K-means, etc.)
+              </li>
+              <li class="fragment current-line">
+                Store each value as the index of its nearest centroid (codebook assignment).
+              </li>
+              <li class="fragment current-line">
+                <strong>Pros:</strong> Flexible, data-adaptive quantization that fits skewed or multimodal distributions.
+              </li>
+              <li class="fragment current-line">
+                <strong>Cons:</strong> Dequantization requires a table lookup; arithmetic needs dequantizing values first.
+              </li>
+              <li class="fragment current-line">
+                <strong>Tradeoff:</strong> Gains flexibility, loses some hardware simplicity of linear quantization.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3>Weight clustering</h3>
+          <div class="content">
+            <img
+              class="fig fragment current-line"
+              src="../assets/weight_clustering.png"
+              alt="Weight clustering into codebook indices and centroids"
+            />
+            <p class="caption fragment current-line">
+              Weight clustering: float weights mapped to low-bit cluster indices
+              plus centroids.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Linear vs. codebook</h3>
+          <div class="content very-compact">
+            <table class="compare">
+              <thead>
+                <tr class="fragment current-line">
+                  <th>Aspect</th>
+                  <th>Linear quantization</th>
+                  <th>Codebook (non-linear)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="fragment current-line">
+                  <td>Mapping</td>
+                  <td>Affine: $q=\mathrm{round}(x/s)+z$</td>
+                  <td>Lookup: $q=\arg\min_i |x-c_i|$</td>
+                </tr>
+                <tr class="fragment current-line">
+                  <td>Reconstruction</td>
+                  <td>$x\approx s(q-z)$</td>
+                  <td>$x\approx c_q$</td>
+                </tr>
+                <tr class="fragment current-line">
+                  <td>Best for</td>
+                  <td>Roughly uniform / unimodal mass</td>
+                  <td>Skewed or multimodal mass</td>
+                </tr>
+                <tr class="fragment current-line">
+                  <td>Hardware</td>
+                  <td>Excellent (integer ops)</td>
+                  <td>Moderate / poor</td>
+                </tr>
+                <tr class="fragment current-line">
+                  <td>Compute</td>
+                  <td>Often stays in quantized space</td>
+                  <td>Usually needs dequantization</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ========== 7. Inner products ========== -->
+        <section>
+          <h3>8. Linear quantization: effect on inner products</h3>
+          <div class="content compact">
+            <p class="fragment current-line">
+              Reconstruction error is only a proxy — quantized values are used
+              in downstream computation. The simplest case: an inner product.
+            </p>
+            <ul>
+              <li class="fragment current-line">$w$ — quantized weights</li>
+              <li class="fragment current-line">$x$ — input / activation vector</li>
+              <li class="fragment current-line">$\Delta$ — quantization error on $w$</li>
+            </ul>
+            <div class="eq fragment current-line">
+              \[
+              \hat{w} = w + \Delta.
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>The quantized inner product</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              <strong>Q.</strong>
+              What is $\langle \hat{w},\, x\rangle$, and how well does it
+              approximate $\langle w,\, x\rangle$?
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Deterministic rounding to nearest</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Assume a grid of precision $\delta$ (spacing between representable
+              values). Round-to-nearest guarantees
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              |\Delta_i| \le \frac{\delta}{2}
+              \qquad\text{for all } i.
+              \]
+            </div>
+            <p class="fragment current-line">The quantized inner product expands as</p>
+            <div class="eq fragment current-line">
+              \[
+              \langle x,\, \hat{w}\rangle
+              = \sum_i x_i\,(w_i + \Delta_i)
+              = \langle x,\, w\rangle
+                + \sum_i x_i\,\Delta_i.
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Worst case (nearest)</h3>
+          <div class="content compact">
+            <p class="fragment current-line">
+              If the signs align, every term $x_i\Delta_i$ can push in the same
+              direction.
+            </p>
+            <p class="fragment current-line">
+              For example, take $x_i \ge 0$ and $\Delta_i=\delta/2$ for all $i$.
+              Then
+            </p>
+            <div class="eq-box fragment current-line">
+              \[
+              \bigl|\langle x,\, \hat{w}\rangle
+                    - \langle x,\, w\rangle\bigr|
+              = \frac{\delta}{2}\sum_i |x_i|
+              = \frac{\delta}{2}\,\|x\|_1.
+              \]
+            </div>
+            <p class="fragment current-line">
+              Squaring gives a worst-case squared error of order
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{MSE}_{\text{nearest}}^{\text{(worst)}}
+              = \frac{\delta^2}{4}\,\|x\|_1^2.
+              \]
+            </div>
+            <p class="cite fragment current-line">
+              Round-to-nearest minimizes per-coordinate error, but the
+              <em>inner-product</em> error can still accumulate coherently
+              across coordinates.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Stochastic rounding</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Suppose $w_i$ lies between consecutive grid points
+              $a \lt w_i \lt b$ with $b-a=\delta$. Stochastic rounding sets
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \hat{w}_i =
+              \begin{cases}
+                a & \text{with probability }
+                    \dfrac{b - w_i}{b - a}, \\[0.6em]
+                b & \text{with probability }
+                    \dfrac{w_i - a}{b - a}.
+              \end{cases}
+              \]
+            </div>
+            <p class="fragment current-line">
+              Equivalently, $\hat{w}=w+\Delta$ with a random per-coordinate
+              error $\Delta_i$.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Unbiasedness</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              \mathbb{E}[\Delta_i] = 0
+              \quad\Rightarrow\quad
+              \mathbb{E}[\hat{w}] = w.
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \langle x,\, \hat{w}\rangle
+              = \langle x,\, w\rangle
+                + \sum_i x_i\,\Delta_i,
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              \mathbb{E}\!\bigl[\langle x,\, \hat{w}\rangle\bigr]
+              = \langle x,\, w\rangle.
+              \]
+            </div>
+            <p class="cite fragment current-line">
+              The quantized inner product is unbiased.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Variance / MSE</h3>
+          <div class="content compact">
+            <p class="fragment current-line">
+              Assuming independent rounding noise across coordinates,
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Var}\!\bigl(\langle x,\, \hat{w}\rangle\bigr)
+              = \sum_i x_i^2\,\mathrm{Var}(\Delta_i).
+              \]
+            </div>
+            <p class="fragment current-line">
+              With fractional part $\alpha_i=(w_i-a)/\delta \in [0,1]$,
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Var}(\Delta_i)
+              = \alpha_i(1-\alpha_i)\,\delta^2
+              \le \frac{\delta^2}{4}.
+              \]
+            </div>
+            <p class="fragment current-line">Therefore</p>
+            <div class="eq-box fragment current-line">
+              \[
+              \mathrm{MSE}_{\text{stochastic}}
+              = \mathrm{Var}\!\bigl(\langle x,\, \hat{w}\rangle\bigr)
+              \le \frac{\delta^2}{4}\sum_i x_i^2
+              = \frac{\delta^2}{4}\,\|x\|_2^2.
+              \]
+            </div>
+            <p class="fragment current-line">
+              The bound can be smaller still, depending on the actual fractional
+              parts $\{\alpha_i\}$ and on $x$.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Nearest vs. stochastic</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              \underbrace{\frac{\delta^2}{4}\,\|x\|_1^2}_
+                {\text{worst-case nearest}}
+              \qquad\text{vs.}\qquad
+              \underbrace{\frac{\delta^2}{4}\,\|x\|_2^2}_
+                {\text{MSE stochastic}}.
+              \]
+            </div>
+            <p class="fragment current-line">
+              Since $\|x\|_2 \le \|x\|_1 \le \sqrt{d}\,\|x\|_2$, the $\ell_1$
+              worst case can be up to a factor $d$ larger in squared error than
+              the stochastic $\ell_2$ MSE, especially for dense $x$.
+            </p>
+            <div class="remark fragment current-line">
+              <span class="label">Takeaway</span>
+              Round-to-nearest is optimal per coordinate, but for the
+              <em>inner product</em> the errors can add coherently. Stochastic
+              rounding keeps the estimate unbiased and replaces an
+              $\ell_1$-scale worst case with an $\ell_2$-scale MSE.
+            </div>
+          </div>
+        </section>
+        <section>
+          <h3>9. Granularity of Quantization</h3>
+          <div class="content compact">
+            <p>
+              To define a quantization scheme, we need to decide which weights to group together for quantization. This choice determines the <strong>granularity</strong> of quantization.
+            </p>
+            <ul>
+              <li><b>Entire model:</b> Apply the same quantization parameters (e.g., scale and zero point) to all weights in the model.</li>
+              <li><b>Entire layer:</b> Quantize all weights within a layer together.</li>
+              <li><b>Attention heads:</b> Apply separate quantization to each attention head.</li>
+              <li><b>Single tensor:</b> Quantize individual tensors (matrices or vectors) separately.</li>
+              <li><b>Parts of a tensor:</b> Further divide tensors (e.g., by rows, channels, or blocks) and quantize the pieces independently.</li>
+            </ul>
+            <p>
+              Finer granularity (quantizing smaller groups separately) can improve accuracy by adapting quantization to the distribution of each group, but may require storing more quantization parameters.
+            </p>
+          </div>
+        </section>
+        <section
+          class="image-slide"
+          data-background-image="../assets/granularity_in_tensor.png"
+          data-background-size="contain"
+          data-background-color="#ffffff"
+        ></section>
+        <section
+          class="image-slide"
+          data-background-image="../assets/granularity_tradeoff.png"
+          data-background-size="contain"
+          data-background-color="#ffffff"
+        ></section>
+        <section>
+          <h3>Hardware supported quantization</h3>
+        </section>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+        plugins: [RevealNotes],
+      });
+    </script>
+  </body>
+</html>

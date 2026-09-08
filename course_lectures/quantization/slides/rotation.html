@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Efficient AI — Rotation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #071a33;
+        --ink-soft: #152a45;
+        --muted: #3d5570;
+        --accent: #0ea5e9;
+        --accent-deep: #0369a1;
+        --line: rgba(14, 165, 233, 0.35);
+      }
+
+      .reveal,
+      .reveal .slide-background,
+      .reveal .slide-background-content {
+        background-color: transparent;
+        background-image: url("../../assets/slide-background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .reveal {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      }
+
+      .reveal .slides section {
+        box-sizing: border-box;
+        background: transparent;
+        padding: 0 8%;
+      }
+
+      .reveal .slides section::before {
+        content: "";
+        position: absolute;
+        inset: 6% 5%;
+        pointer-events: none;
+        z-index: -1;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 28px 28px;
+        opacity: 0.18;
+        mask-image: radial-gradient(
+          ellipse 70% 65% at 50% 45%,
+          #000 35%,
+          transparent 75%
+        );
+      }
+
+      .reveal h1,
+      .reveal h2,
+      .reveal h3 {
+        color: var(--ink);
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .reveal h1 {
+        font-size: 2.4em;
+      }
+
+      .reveal h3 {
+        display: inline-block;
+        margin: 0 0 0.45em;
+        padding-bottom: 0.1em;
+        border-bottom: 2px solid var(--accent);
+        font-size: 1.15em;
+      }
+
+      .reveal h4 {
+        margin: 0.15em 0 0.5em;
+        color: var(--accent-deep);
+        font-size: 0.95em;
+        text-transform: none;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-weight: 700;
+      }
+
+      .reveal h1 + p {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.7em;
+        letter-spacing: 0.04em;
+        color: var(--accent-deep);
+        text-transform: uppercase;
+      }
+
+      .reveal p,
+      .reveal li {
+        color: var(--ink-soft);
+      }
+
+      .reveal strong {
+        color: var(--ink);
+      }
+
+      .reveal small,
+      .reveal .cite {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        color: var(--muted);
+        font-size: 0.82em;
+      }
+
+      .reveal a {
+        color: var(--accent-deep);
+        text-decoration-color: var(--accent);
+      }
+
+      .reveal .controls,
+      .reveal .progress {
+        color: var(--accent);
+      }
+
+      .reveal .progress span {
+        background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+      }
+
+      .reveal .slide-number {
+        padding: 0.15em 0.45em;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.55);
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      .reveal .content {
+        width: 92%;
+        margin: 0 auto;
+        font-size: 0.76em;
+        line-height: 1.35;
+        text-align: left;
+      }
+
+      .reveal .content p {
+        margin: 0.42em 0;
+      }
+
+      .reveal .content ul,
+      .reveal .content ol {
+        margin: 0.35em 0;
+        padding-left: 1.3em;
+      }
+
+      .reveal .content li {
+        margin: 0.25em 0;
+      }
+
+      .reveal .compact {
+        font-size: 0.66em;
+      }
+
+      .reveal .eq {
+        margin: 0.38em auto;
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .eq mjx-container {
+        margin: 0.2em 0 !important;
+      }
+
+      .reveal .eq-box {
+        width: fit-content;
+        max-width: 94%;
+        margin: 0.5em auto;
+        padding: 0.24em 0.68em;
+        border: 2px solid var(--accent);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--ink);
+        text-align: center;
+      }
+
+      .reveal .q {
+        margin: 0.45em 0;
+        padding: 0.38em 0.65em;
+        border-left: 4px solid var(--accent);
+        border-radius: 0 6px 6px 0;
+        background: rgba(14, 165, 233, 0.1);
+        color: var(--ink-soft);
+      }
+
+      .reveal .answer {
+        color: var(--accent-deep);
+        font-weight: 600;
+      }
+
+      .reveal .emphasis {
+        color: var(--accent-deep);
+        font-size: 1.05em;
+        font-weight: 700;
+      }
+
+      .reveal .aside {
+        color: var(--muted);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.8em;
+      }
+
+      .reveal .fragment.current-line.current-fragment {
+        color: var(--accent-deep);
+      }
+
+      .reveal .stem {
+        display: block;
+        margin: 0.2em auto;
+        max-width: 92%;
+        max-height: 28vh;
+        width: 100%;
+        height: auto;
+      }
+
+      .reveal .stem-pair {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6em;
+        margin: 0.3em 0;
+      }
+
+      .reveal .stem-pair .stem {
+        max-width: 42%;
+        max-height: 24vh;
+      }
+
+      .reveal .stem-pair .arrow {
+        font-size: 1.6em;
+        color: var(--accent-deep);
+        font-weight: 700;
+      }
+
+      .reveal .map-labels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4em;
+        text-align: center;
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Rotation</p>
+          <p><small>Aditya Desai</small></p>
+        </section>
+
+        <section>
+          <h3>What if outliers are important?</h3>
+          <div class="content">
+            <svg
+              class="stem fragment current-line"
+              viewBox="0 0 360 160"
+              role="img"
+              aria-label="Stem plot with one large outlier"
+            >
+              <text x="180" y="16" text-anchor="middle" fill="#0369a1" font-size="11" font-family="IBM Plex Mono, monospace">absolute magnitude</text>
+              <line x1="28" y1="28" x2="28" y2="118" stroke="#0369a1" stroke-width="1.5" />
+              <line x1="28" y1="118" x2="340" y2="118" stroke="#0369a1" stroke-width="1.5" />
+              <g stroke="#071a33" stroke-width="2.5" fill="#0ea5e9">
+                <line x1="58" y1="118" x2="58" y2="98" /><circle cx="58" cy="98" r="3.2" />
+                <line x1="90" y1="118" x2="90" y2="92" /><circle cx="90" cy="92" r="3.2" />
+                <line x1="122" y1="118" x2="122" y2="102" /><circle cx="122" cy="102" r="3.2" />
+                <line x1="154" y1="118" x2="154" y2="96" /><circle cx="154" cy="96" r="3.2" />
+                <line x1="186" y1="118" x2="186" y2="36" /><circle cx="186" cy="36" r="3.6" fill="#0369a1" />
+                <line x1="218" y1="118" x2="218" y2="100" /><circle cx="218" cy="100" r="3.2" />
+                <line x1="250" y1="118" x2="250" y2="94" /><circle cx="250" cy="94" r="3.2" />
+                <line x1="282" y1="118" x2="282" y2="104" /><circle cx="282" cy="104" r="3.2" />
+                <line x1="314" y1="118" x2="314" y2="99" /><circle cx="314" cy="99" r="3.2" />
+              </g>
+              <text x="184" y="148" text-anchor="middle" fill="#3d5570" font-size="11" font-family="IBM Plex Mono, monospace">weight identifiers</text>
+            </svg>
+            <p class="fragment current-line">
+              E.g. Activation tensors are being quantised.
+            </p>
+            <p class="fragment current-line">
+              One approach: Separately store a sparse mask.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Rotate the vector</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Alternatively "Rotate the Vector" to redistribute the energy
+            </p>
+            <div class="stem-pair fragment current-line">
+              <svg
+                class="stem"
+                viewBox="0 0 220 150"
+                role="img"
+                aria-label="Vector x with one tall stick"
+              >
+                <text x="110" y="14" text-anchor="middle" fill="#0369a1" font-size="10" font-family="IBM Plex Mono, monospace">|·|</text>
+                <line x1="18" y1="22" x2="18" y2="112" stroke="#0369a1" stroke-width="1.4" />
+                <line x1="18" y1="112" x2="206" y2="112" stroke="#0369a1" stroke-width="1.4" />
+                <g stroke="#071a33" stroke-width="2.2" fill="#0ea5e9">
+                  <line x1="40" y1="112" x2="40" y2="96" /><circle cx="40" cy="96" r="2.8" />
+                  <line x1="68" y1="112" x2="68" y2="92" /><circle cx="68" cy="92" r="2.8" />
+                  <line x1="96" y1="112" x2="96" y2="100" /><circle cx="96" cy="100" r="2.8" />
+                  <line x1="124" y1="112" x2="124" y2="32" /><circle cx="124" cy="32" r="3.2" fill="#0369a1" />
+                  <line x1="152" y1="112" x2="152" y2="98" /><circle cx="152" cy="98" r="2.8" />
+                  <line x1="180" y1="112" x2="180" y2="94" /><circle cx="180" cy="94" r="2.8" />
+                </g>
+                <text x="112" y="138" text-anchor="middle" fill="#071a33" font-size="16" font-family="Space Grotesk, sans-serif">x</text>
+              </svg>
+              <div class="arrow">\(\rightarrow\)</div>
+              <svg
+                class="stem"
+                viewBox="0 0 220 150"
+                role="img"
+                aria-label="Vector Rx with even sticks"
+              >
+                <text x="110" y="14" text-anchor="middle" fill="#0369a1" font-size="10" font-family="IBM Plex Mono, monospace">|·|</text>
+                <line x1="18" y1="22" x2="18" y2="112" stroke="#0369a1" stroke-width="1.4" />
+                <line x1="18" y1="112" x2="206" y2="112" stroke="#0369a1" stroke-width="1.4" />
+                <g stroke="#071a33" stroke-width="2.2" fill="#0ea5e9">
+                  <line x1="40" y1="112" x2="40" y2="62" /><circle cx="40" cy="62" r="2.8" />
+                  <line x1="68" y1="112" x2="68" y2="68" /><circle cx="68" cy="68" r="2.8" />
+                  <line x1="96" y1="112" x2="96" y2="58" /><circle cx="96" cy="58" r="2.8" />
+                  <line x1="124" y1="112" x2="124" y2="64" /><circle cx="124" cy="64" r="2.8" />
+                  <line x1="152" y1="112" x2="152" y2="70" /><circle cx="152" cy="70" r="2.8" />
+                  <line x1="180" y1="112" x2="180" y2="60" /><circle cx="180" cy="60" r="2.8" />
+                </g>
+                <text x="112" y="138" text-anchor="middle" fill="#071a33" font-size="16" font-family="Space Grotesk, sans-serif">Rx</text>
+              </svg>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Quantisation after rotation</h3>
+          <div class="content">
+            <div class="eq-box fragment current-line">
+              \[
+              Q(\vec{x}) \rightarrow Q(R\vec{x})
+              \]
+            </div>
+            <div class="map-labels fragment current-line">
+              <div>Quantisation of vector</div>
+              <div>Element wise quantisation.</div>
+            </div>
+            <p class="fragment current-line">
+              * we can use linear quantisation for \(Q\).
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>How do we choose a rotation matrix</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              If \(\vec{x}\) was fixed / unknown?
+            </p>
+            <ul>
+              <li class="fragment current-line">
+                e.g: [fixed] weight matrix
+              </li>
+              <li class="fragment current-line">
+                e.g: [unknown] Activation matrix
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3>If \(\vec{x}\) was fixed</h3>
+          <div class="content">
+            <p class="fragment current-line">Say, \(\vec{x}\) was fixed.</p>
+            <p class="fragment current-line">
+              A. Determine \(R\) which is optimal.
+            </p>
+            <p class="fragment current-line">
+              \(\Rightarrow\) But now you have to store \(R\) or
+              \(R^{-1}\in\mathbb{R}^{d\times d}\)
+            </p>
+            <p class="fragment current-line">
+              \(R\): needs to be structured to reduce the memory footprint.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Can a fixed \(R\) be good?</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              A given structured matrix may or may not work for a specific
+              \(\vec{x}\).
+            </p>
+            <p class="emphasis fragment current-line">
+              In fact for any chosen \(R\), there is a \(\vec{x}\) for which
+              \(R\vec{x}\) is catastrophic w.r.t quantisation!!
+            </p>
+            <p class="q fragment current-line">\(\rightarrow\) Example?</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>What should we do?</h3>
+          <div class="content">
+            <p class="answer fragment current-line">[Idea] Randomisation</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Random and structured</h3>
+          <div class="content">
+            <h4 class="fragment current-line">Random</h4>
+            <p class="fragment current-line">
+              So that with high probability, \(Rx\) is not adversarial.
+            </p>
+            <h4 class="fragment current-line">Structured</h4>
+            <p class="fragment current-line">It can be stored efficiently.</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Hadamard</h3>
+          <div class="content compact">
+            <h4 class="fragment current-line">
+              Example of commonly used transforms
+            </h4>
+            <p class="fragment current-line">Randomised Hadamard</p>
+            <p class="fragment current-line">Let \(n=2^k\).</p>
+            <div class="eq fragment current-line">
+              \[
+              H_2
+              =
+              \begin{pmatrix}
+              1 & 1 \\
+              1 & -1
+              \end{pmatrix}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              H_n
+              =
+              H_{2^k}
+              =
+              \begin{pmatrix}
+              H_{2^{k-1}} & H_{2^{k-1}} \\
+              H_{2^{k-1}} & -H_{2^{k-1}}
+              \end{pmatrix}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Randomized Hadamard</h3>
+          <div class="content">
+            <div class="eq-box fragment current-line">
+              \[
+              R = \mathrm{Diag}(\vec{s})\cdot H_n
+              \]
+            </div>
+            <p class="fragment current-line">
+              \(\vec{s}\): Random sign vector
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              s_i \sim \{\pm 1\}
+              \quad\text{with equal probability.}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>why hadamard</h3>
+          <div class="content">
+            <p class="fragment current-line">Computational Complexity of transforming nxn matrix</p>
+            <div class="eq fragment current-line">
+              \[
+              O(n^3)\rightarrow O(n^2\log n)
+              \]
+            </div>
+            <p class="fragment current-line">
+              Note that this is additional computation that we are introducing.
+            </p>
+
+            <p class="fragment current-line">
+              'HadaCore': Kernel for Hadamard transform.
+              <a href="https://pytorch.org/blog/hadacore/" target="_blank"
+                >https://pytorch.org/blog/hadacore/</a
+              >
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Memory Cost</h3>
+          <div class="content">
+            <p class="emphasis fragment current-line">1 sign bit per element.</p>
+            <p class="cite fragment current-line">
+              * Note: we can avoid this \(O(n)\) memory by using Universal Hash
+              functions. (More on that later)
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Analysing effect of Rotations on outliers</h3>
+          <div class="content compact">
+            <p class="fragment current-line">For simplicity Consider</p>
+            <div class="eq fragment current-line">
+              \[
+              R
+              =
+              \begin{bmatrix}
+              \vdots \\
+              \cdots & N\!\left(0,\tfrac{1}{\sqrt{n}}\right) & \cdots \\
+              \vdots
+              \end{bmatrix}
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              R_{ij}\ \overset{\mathrm{iid}}{\sim}\ N\!\left(0,\tfrac{1}{\sqrt{n}}\right)
+              \]
+            </div>
+            <p class="cite fragment current-line">
+              \(N(\mu,\sigma)\) uses standard deviation \(\sigma\) (not
+              variance).
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Almost orthogonal</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Random Gaussian Matrix is almost orthogonal
+            </p>
+            <div class="eq-box fragment current-line">
+              \[
+              \|Rx\|_2 = (1\pm\epsilon)\,\|x\|_2
+              \]
+            </div>
+            <p class="cite fragment current-line">with high probability</p>
+          </div>
+        </section>
+
+        <section>
+          <h3>A coordinate of \(Rx\)</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              Given \(x\), what is the probability that some coordinate of
+              \(Rx\) is greater than \(M\).
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              P((Rx)_i \gt M) = ?
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>\(y=Rx\)</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              y = Rx
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              y_i = \sum_j r_{ij}\, x_j
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              E(y_i) = 0
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Var}(y_i) = \sum_j x_j^2 \cdot \mathrm{Var}(r_{ij})
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Variance of \(y_i\)</h3>
+          <div class="content">
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Var}(y_i) = \|x\|_2^2 \cdot \frac{1}{n}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \mathrm{Var}(y_i) \propto \frac{1}{n}
+              \]
+            </div>
+            <p class="fragment current-line">
+              \(y_i =\) Sum of Gaussian Variables
+            </p>
+            <div class="eq-box fragment current-line">
+              \[
+              y_i \overset{\mathrm{i.i.d.}}{\sim} N\!\left(0,\ \frac{\|x\|_2}{\sqrt{n}}\right)
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Tail bound</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Let \(\sigma = \|x\|_2/\sqrt{n}\) and let \(\Phi\) be the CDF of
+              the standard normal. Then
+            </p>
+            <div class="eq-box fragment current-line">
+              \[
+              \mathrm{Pr}(|y_i| \gt M)
+              =
+              2\bigl(1-\Phi(M/\sigma)\bigr).
+              \]
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        backgroundTransition: "none",
+        plugins: [RevealNotes],
+      });
+    </script>
+  </body>
+</html>

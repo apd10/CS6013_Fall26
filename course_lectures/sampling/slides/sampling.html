@@ -61,6 +61,7 @@
       }
 
       .reveal .slides section {
+        box-sizing: border-box;
         background: transparent;
         padding: 0 8%;
       }
@@ -1823,7 +1824,7 @@
           </div>
         </section>
 
-        <section>
+        <!-- <section>
           <h3>Weighted Reservoir Sampling</h3>
           <div class="content compact">
             <p class="fragment current-line">
@@ -2013,7 +2014,479 @@
               <strong>[Exercise]</strong>
             </p>
           </div>
+        </section> -->
+
+        <section>
+          <h1>Efficient AI</h1>
+          <p>Weighted Reservoir Sampling</p>
+          <p><small>Aditya Desai</small></p>
         </section>
+
+        <section>
+          <h3>Problem setup</h3>
+          <div class="content compact">
+            <h4 class="fragment current-line">Problem setup:</h4>
+            <p class="fragment current-line">Stream</p>
+            <div class="eq fragment current-line">
+              \[
+              \{(x_1,w_1),(x_2,w_2),\ldots\}
+              \]
+            </div>
+            <p class="fragment current-line">
+              At time \(t\gt k\), \(k\) sample size.
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \Pr(x_i\text{ in Sample})\propto w_i
+              \]
+            </div>
+            <ul class="aside fragment current-line">
+              <li>
+                Different interpretations:
+              </li>
+              <li>
+                Do we want to maintain the sample <strong>with</strong> or <strong>without replacement</strong>?
+              </li>
+              <li>
+                Do we want to achieve <strong>marginal probabilities proportional to the weights</strong> in the final sample?
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3>WRS without "Replacement"</h3>
+          <div class="content compact">
+            <p class="fragment current-line">
+              <strong>WRS without "Replacement"</strong>
+              \([P\text{-}WRS\text{-}w/o]\)
+            </p>
+            <p class="fragment current-line">
+              Maintain a sample \(k\). s.t at each point in time \(t\gt k\),
+              the probabilities of inclusion match the following procedure
+            </p>
+            <p class="fragment current-line">
+              "If you construct \(k\) sample iteratively the probability that
+              \(i\) is sampled at step \(t\) is \(\propto w_i\)"
+            </p>
+            <p class="emphasis fragment current-line">
+              Note that under this the marginal probabilities of \(x_i\) in
+              \(k\)-sample is <strong>NOT</strong> proportional to \(w_i\)
+            </p>
+            <p class="fragment current-line">
+              eg. \(\{w_1,w_2,w_3\}\), \(k=2\)
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Marginals are not \(\propto w_i\)</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              \Pr(w_i\text{ in sample})
+              =
+              \frac{w_i}{w_i+w_j+w_k}
+              \left[
+              1
+              +
+              \frac{w_j}{w_i+w_k}
+              +
+              \frac{w_k}{w_i+w_j}
+              \right]
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              \text{Thus }\Pr(w_i\text{ in sample})\not\propto w_i
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>A random key algorithm</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              How do we design a random key algorithm?
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              r_i=U[0,1]
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              X_i=\mathcal{F}(r_i)
+              \]
+            </div>
+            <p class="fragment current-line">
+              Sort \(X_i\) and pick top-\(k\).
+            </p>
+            <p class="fragment current-line">so that</p>
+            <div class="eq-box fragment current-line">
+              \[
+              \Pr(X_i\text{ in Sample})=\text{P-WRS-w/o}(i)
+              \]
+            </div>
+            <p class="q fragment current-line">
+              How should we pick \(\mathcal{F}\)??
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h4>[Intuition <span style="color: red;"> Not a Proof </span>] How to pick \(\mathcal{F}\)</h4>
+          <div class="content compact">
+            <p class="fragment current-line">
+              Simplicity: let us only look at \(k=1\)
+            </p>
+            <p class="fragment current-line">
+              I want probability that \(i\) lies at right most to be
+              \(\propto w_i\)
+            </p>
+            <p class="q fragment current-line">
+              What should density of \(X\) look like??
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Density at 1</h3>
+          <div class="content compact">
+            <svg
+              class="fig fragment current-line"
+              viewBox="0 0 420 190"
+              width="360"
+              aria-hidden="true"
+            >
+              <line
+                x1="48"
+                y1="158"
+                x2="390"
+                y2="158"
+                stroke="#071a33"
+                stroke-width="2.5"
+              />
+              <line
+                x1="48"
+                y1="158"
+                x2="48"
+                y2="18"
+                stroke="#071a33"
+                stroke-width="2.5"
+              />
+              <text
+                x="40"
+                y="176"
+                font-size="14"
+                fill="#0369a1"
+                font-family="IBM Plex Mono, monospace"
+              >
+                0
+              </text>
+              <text
+                x="312"
+                y="176"
+                font-size="14"
+                fill="#0369a1"
+                font-family="IBM Plex Mono, monospace"
+              >
+                1
+              </text>
+              <line
+                x1="328"
+                y1="22"
+                x2="328"
+                y2="158"
+                stroke="#071a33"
+                stroke-width="2"
+              />
+              <line
+                x1="292"
+                y1="22"
+                x2="292"
+                y2="158"
+                stroke="#071a33"
+                stroke-width="1.5"
+                stroke-dasharray="4 4"
+              />
+              <text
+                x="298"
+                y="176"
+                font-size="16"
+                fill="#0369a1"
+                font-family="Space Grotesk, sans-serif"
+              >
+                Δ
+              </text>
+              <path
+                d="M48 158 C 140 150, 230 70, 328 38"
+                fill="none"
+                stroke="#071a33"
+                stroke-width="2.5"
+              />
+              <path
+                d="M48 158 C 140 152, 230 100, 328 78"
+                fill="none"
+                stroke="#0369a1"
+                stroke-width="2.5"
+              />
+              <path
+                d="M48 158 C 150 154, 240 128, 328 118"
+                fill="none"
+                stroke="#0ea5e9"
+                stroke-width="2.5"
+              />
+              <circle cx="328" cy="38" r="3.5" fill="#071a33" />
+              <circle cx="328" cy="78" r="3.5" fill="#0369a1" />
+              <circle cx="328" cy="118" r="3.5" fill="#0ea5e9" />
+              <text
+                x="338"
+                y="42"
+                font-size="16"
+                fill="#071a33"
+                font-family="IBM Plex Mono, monospace"
+              >
+                x1
+              </text>
+              <text
+                x="338"
+                y="82"
+                font-size="16"
+                fill="#0369a1"
+                font-family="IBM Plex Mono, monospace"
+              >
+                x2
+              </text>
+              <text
+                x="338"
+                y="122"
+                font-size="16"
+                fill="#0ea5e9"
+                font-family="IBM Plex Mono, monospace"
+              >
+                x3
+              </text>
+            </svg>
+            <p class="fragment current-line">
+              If \(w_1\gt w_2\gt w_3\) then \(\leftarrow\)
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              \Pr(x_i\text{ lies in }\Delta)\propto w_i
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              f(X_i)=f_i(x)\propto w_i
+              \quad\text{at }1
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              f_i(x)=w\cdot g(x)
+              \quad\text{where }g(1)=1
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Do we know such \(g(x)\)?</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              f_i(x)=w\cdot g(x)
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \int f_i(x)=1
+              \implies
+              \int_{0}^{1} g(x)=\frac{1}{w}
+              \]
+            </div>
+            <p class="q fragment current-line">do we know such \(g(x)\)?</p>
+            <div class="eq fragment current-line">
+              \[
+              g(x)=[\;\cdots\;]
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>A candidate \(g\)</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              g(x)=x^{w-1}
+              \qquad (g(1)=1)
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              f_i(x)=w_i\cdot x^{w_i-1}
+              \]
+            </div>
+            <p class="fragment current-line">Then density should be such that</p>
+            <div class="eq fragment current-line">
+              \[
+              f_i(x)=w_i\cdot x^{w_i-1}
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              F_i(x)=x^{w_i}
+              =\int_{0}^{x} w_i\cdot u^{w_i-1}\,du
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>The key map</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              F(X_i = \mathcal{F}(r_i) \le x) = x^{w_i}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              F(r_i \lt \mathcal{F}^{-1}(x)) = x^{w_j}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \mathcal{F}^{-1}(x) = x^{w_j}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              \mathcal{F}(x) = x^{1/w_j}
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              X_i = \mathcal{F}(r_i) = r_i^{1/w_j}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>A potential proposal</h3>
+          <div class="content">
+            <p class="fragment current-line">
+              Thus "Potentially" \(\mathcal{F}(r_i)=r_i^{1/w_i}\) can work.
+            </p>
+            <p class="emphasis fragment current-line">
+              → We have not proved anything yet. We have just come up with "a
+              potential" proposal that "might" work.
+            </p>
+            <p class="fragment current-line">
+              <strong>Proof:</strong> Full proof is out of scope. But we can
+              prove a lemma.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h3>Lemma</h3>
+          <div class="content compact">
+            <p class="fragment current-line"><strong>lemma:</strong></p>
+            <p class="fragment current-line">
+              If \(r_1\) and \(r_2\) are \(U[0,1]\),
+            </p>
+            <div class="eq fragment current-line">
+              \[
+              x_1=r_1^{1/w_1},\qquad x_2=r_2^{1/w_2}
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              w_i\gt 0
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              \Pr(x_1\le x_2)=\frac{w_2}{w_1+w_2}
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Proof</h3>
+          <div class="content compact">
+            <p class="fragment current-line"><strong>Proof:</strong></p>
+            <div class="eq fragment current-line">
+              \[
+              \Pr(X_1\le X_2)
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \Pr\!\left(r_1^{1/w_1}\lt r_2^{1/w_2}\right)
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \Pr\!\left(r_1\lt r_2^{w_1/w_2}\right)
+              \]
+            </div>
+          </div>
+        </section>
+        <section>
+          <h3>Proof (contd.)</h3>
+          <div class="content compact">
+            <div class="eq fragment current-line">
+              \[
+              =
+              \int_{r_2=0}^{1}
+              \int_{r_1=0}^{r_2^{w_1/w_2}}
+              \,dr_1\,dr_2
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \int_{0}^{1}
+              r_2^{w_1/w_2}\,dr_2
+              \]
+            </div>
+            <div class="eq fragment current-line">
+              \[
+              =
+              \left.
+              \frac{r_2^{w_1/w_2+1}}{\frac{w_1}{w_2}+1}
+              \right|_{0}^{1}
+              \]
+            </div>
+            <div class="eq-box fragment current-line">
+              \[
+              =
+              \frac{w_2}{w_1+w_2}
+              \qquad\square
+              \]
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Exercise</h3>
+          <div class="content">
+            <p class="q fragment current-line">
+              Can you extend "non-random-key" algo to WRS.
+              <strong>[Exercise]</strong>
+            </p>
+          </div>
+        </section>
+
       </div>
     </div>
 
