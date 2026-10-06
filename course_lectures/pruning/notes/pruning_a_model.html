@@ -486,6 +486,15 @@
       </p>
 
       <h2>Solving for $\lambda$ and $\delta w$</h2>
+      <div class="remark">
+        <span class="label">Assumption</span>
+        For the derivation below, assume that the Hessian is positive definite,
+        $H \succ 0$, and hence invertible. In practice, neural-network Hessians
+        may be singular or indefinite, so one commonly uses a damped
+        approximation $H + \gamma I \succ 0$. Without invertibility, the
+        corresponding derivation requires a suitable pseudoinverse and
+        additional care with the constraint.
+      </div>
       <p>
         The $i$-th entry of $\delta w$ is known ($\delta w_i = -w_i$). From
         $H\,\delta w + \lambda e_i = 0$,
@@ -501,9 +510,9 @@
       </p>
       <div class="eq">
         \[
-          -w_i = \lambda\, [H^{-1}]_{ii}
+          -w_i = -\lambda\, [H^{-1}]_{ii}
           \qquad\Longrightarrow\qquad
-          \lambda = \frac{-w_i}{[H^{-1}]_{ii}} .
+          \lambda = \frac{w_i}{[H^{-1}]_{ii}} .
         \]
       </div>
 
@@ -514,11 +523,11 @@
           =
           -\lambda\, H^{-1} e_i
           =
-          \frac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i .
+          -\frac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i .
         \]
       </div>
       <p>
-        The prefactor $\tfrac{w_i}{[H^{-1}]_{ii}}$ is a
+        The prefactor $-\tfrac{w_i}{[H^{-1}]_{ii}}$ is a
         <strong>scalar</strong>; $\delta w$ is proportional to the
         <strong>$i$-th column</strong> of $H^{-1}$.
       </p>
@@ -535,7 +544,7 @@
           \tfrac{1}{2}\, \delta w^\top H\, \delta w .
         \]
       </div>
-      <p>Substitute $\delta w = \tfrac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i$:</p>
+      <p>Substitute $\delta w = -\tfrac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i$:</p>
       <div class="eq">
         \[
           = \tfrac{1}{2}
@@ -563,7 +572,7 @@
           \qquad
           \delta w
           =
-          \frac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i .
+          -\frac{w_i}{[H^{-1}]_{ii}}\, H^{-1} e_i .
         \]
       </div>
 
