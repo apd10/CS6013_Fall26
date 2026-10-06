@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quantization, Part II — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      h4 {
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.35rem;
+        color: var(--accent);
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .toc {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+      }
+
+      .toc .label,
+      .algo .label,
+      .card .tag {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .toc .label {
+        margin-bottom: 0.4rem;
+      }
+
+      .toc ol {
+        margin: 0;
+      }
+
+      .toc a {
+        color: var(--ink);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .algo {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1rem 1.15rem;
+        margin: 1rem 0;
+      }
+
+      .algo .label {
+        margin-bottom: 0.5rem;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+      }
+
+      .card .tag {
+        color: var(--muted);
+      }
+
+      .compare {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+        margin: 1rem 0;
+        background: var(--card);
+      }
+
+      .compare th,
+      .compare td {
+        border: 1px solid var(--line);
+        padding: 0.55rem 0.7rem;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .compare th {
+        background: var(--accent-soft);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
+      .pipeline {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1.15rem 0;
+      }
+
+      .pipeline .step {
+        min-width: 7.5rem;
+        flex: 1 1 7.5rem;
+        padding: 0.7rem 0.75rem;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        text-align: center;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.4;
+      }
+
+      .pipeline .arrow {
+        display: flex;
+        align-items: center;
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 1.2rem;
+      }
+
+      .scale-diagram {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0.75rem;
+        align-items: center;
+        margin: 1.15rem 0;
+        padding: 1rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .scale-diagram .block {
+        padding: 0.85rem;
+        border: 1.5px solid var(--accent);
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .scale-diagram .times {
+        color: var(--muted);
+        font-size: 1.3rem;
+      }
+
+      .format-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.45rem;
+        margin: 0.75rem 0;
+      }
+
+      .format-strip div {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 0.65rem 0.4rem;
+        text-align: center;
+        background: #fff;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.8rem;
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      code {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.88em;
+        background: rgba(11, 110, 79, 0.08);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+
+      @media (max-width: 600px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+
+        .scale-diagram {
+          grid-template-columns: 1fr;
+        }
+
+        .scale-diagram .times {
+          text-align: center;
+        }
+
+        .format-strip {
+          grid-template-columns: 1fr;
+        }
+
+        .pipeline .arrow {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        Automatically generated from handwritten notes —
+        <a href="quantization_second_part.pdf">quantization_second_part.pdf</a>
+      </p>
+
+      <header>
+        <p class="meta">Efficient AI · Quantization notes</p>
+        <h1>Quantization, Part II</h1>
+        <p>
+          Applying quantization to neural networks: PTQ and QAT, second-order
+          weight quantization, activation-aware scaling, fake quantization,
+          and hardware-supported low-precision formats.
+        </p>
+      </header>
+
+      <div class="toc">
+        <div class="label">Roadmap</div>
+        <ol>
+          <li><a href="#paradigms">PTQ, QAT, and what gets quantized</a></li>
+          <li><a href="#gptq">GPTQ and second-order compensation</a></li>
+          <li><a href="#awq">Activation-aware Weight Quantization</a></li>
+          <li><a href="#smoothquant">SmoothQuant</a></li>
+          <li><a href="#qat">Quantization-aware training</a></li>
+          <li><a href="#hardware">Hardware-supported formats</a></li>
+        </ol>
+      </div>
+
+      <!-- ========== 1 ========== -->
+      <h2 id="paradigms">1. Quantization paradigms</h2>
+
+      <p>
+        The previous notes developed the basic mechanics of quantization. We
+        now ask how those ideas are applied to LLMs and other neural networks.
+        There are two broad workflows.
+      </p>
+
+      <div class="split">
+        <div class="card">
+          <div class="tag">PTQ</div>
+          <h3>Post-training quantization</h3>
+          <p>
+            Start with a trained model and quantize it without retraining or
+            fine-tuning.
+          </p>
+        </div>
+        <div class="card">
+          <div class="tag">QAT</div>
+          <h3>Quantization-aware training</h3>
+          <p>
+            Simulate quantization during training so the model can adapt to
+            the errors introduced by low precision.
+          </p>
+        </div>
+      </div>
+
+      <h3>What gets quantized?</h3>
+
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>Scheme</th>
+            <th>Examples</th>
+            <th>What happens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Weight-only</strong></td>
+            <td>W8, W4</td>
+            <td>
+              Weights are stored at low precision; activations remain in a
+              floating-point format.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Weight + activation</strong></td>
+            <td>W8A8, W4A4</td>
+            <td>
+              Both operands of a matrix multiplication use low precision.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        In a weight-only kernel, low-bit weights may be dequantized inside the
+        kernel and combined with BF16/FP16 activations. For an integer
+        weight-and-activation kernel, the data path is different:
+      </p>
+
+      <div class="pipeline" aria-label="Integer quantized matrix multiplication pipeline">
+        <div class="step">INT8 weights<br />+<br />INT8 activations</div>
+        <div class="arrow">→</div>
+        <div class="step">integer multiply<br />and accumulate</div>
+        <div class="arrow">→</div>
+        <div class="step">INT32<br />accumulator</div>
+        <div class="arrow">→</div>
+        <div class="step">rescale and<br />requantize / convert</div>
+      </div>
+
+      <div class="remark">
+        <span class="label">Accumulator versus activation</span>
+        The INT32 value is an accumulator, not yet the final output activation.
+        A kernel may requantize it to INT8, convert it to FP16/BF16, or retain a
+        wider intermediate depending on the following operation.
+      </div>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="gptq">2. GPTQ: second-order weight quantization</h2>
+
+      <p>
+        GPTQ applies ideas related to Optimal Brain Surgeon to post-training
+        weight quantization. Instead of rounding every weight independently,
+        it quantizes one coordinate and adjusts the remaining coordinates to
+        compensate for the induced error.
+      </p>
+
+      <h3>From the ideal problem to a local objective</h3>
+
+      <p>Let:</p>
+      <ul>
+        <li>$X$ be representative calibration data,</li>
+        <li>$W$ be the weights of one layer, and</li>
+        <li>$\mathcal Q$ be the set of matrices on the quantization grid.</li>
+      </ul>
+
+      <p>The ideal discrete problem is</p>
+      <div class="eq">
+        \[
+        \min_{\widehat W\in\mathcal Q}\mathcal L(X,\widehat W).
+        \]
+      </div>
+
+      <p>
+        Searching the complete grid is intractable, and repeatedly evaluating
+        the full model is expensive. GPTQ therefore uses a local
+        layer-reconstruction objective:
+      </p>
+
+      <div class="eq-box">
+        \[
+        \mathcal L(X,\widehat W)
+        =
+        \frac12\left\|X\widehat W-XW\right\|_F^2.
+        \]
+      </div>
+
+      <p>
+        For
+        $X\in\mathbb R^{n\times d_{\mathrm{in}}}$ and
+        $W\in\mathbb R^{d_{\mathrm{in}}\times d_{\mathrm{out}}}$,
+        this separates over output dimensions—that is, over columns of $W$:
+      </p>
+
+      <div class="eq">
+        \[
+        \mathcal L(X,\widehat W)
+        =
+        \sum_j
+        \frac12
+        \left\|
+          X\widehat w_{:,j}-Xw_{:,j}
+        \right\|_2^2.
+        \]
+      </div>
+
+      <p>The input-side Hessian is, up to an optional factor of two,</p>
+      <div class="eq">
+        \[
+        H=X^\top X.
+        \]
+      </div>
+
+      <h3>Saliency and compensation</h3>
+
+      <p>
+        Define the perturbation using the convention
+        $\delta W=\widehat W-W$. If coordinate $i$ is fixed to its quantized
+        value, then
+      </p>
+      <div class="eq">
+        \[
+        \delta w_i=\operatorname{Quant}(w_i)-w_i.
+        \]
+      </div>
+
+      <p>
+        Under the local quadratic model, the minimum loss increase caused by
+        fixing this coordinate is
+      </p>
+      <div class="eq-box">
+        \[
+        S_i
+        =
+        \frac{\delta w_i^2}{2[H^{-1}]_{ii}},
+        \qquad
+        \delta w
+        =
+        \frac{\delta w_i}{[H^{-1}]_{ii}}H^{-1}e_i.
+        \]
+      </div>
+
+      <p>
+        $S_i$ is the coordinate’s <strong>saliency</strong>. It measures the
+        smallest quadratic loss increase after optimally compensating with all
+        other coordinates. A greedy method prefers coordinates with lower
+        saliency.
+      </p>
+
+      <div class="remark">
+        <span class="label">Sign convention</span>
+        If quantization error is instead defined as
+        $w_i-\operatorname{Quant}(w_i)$, the compensating update is written
+        with a minus sign. The mathematics is unchanged as long as the
+        convention is used consistently.
+      </div>
+
+      <h3>How the cost is reduced</h3>
+
+      <p>
+        Factoring a dense $d\times d$ Hessian costs $O(d^3)$. Repeating that
+        factorization after each of $d$ decisions would lead to an
+        $O(d^4)$ procedure. GPTQ avoids this naive cost through several
+        distinct optimizations:
+      </p>
+
+      <div class="algo">
+        <div class="label">Efficient second-order quantization</div>
+        <ol>
+          <li>
+            Factor the input-side Hessian once and share it across output
+            columns.
+          </li>
+          <li>
+            Use rank-one exclusion/inverse updates rather than refactorizing
+            after every coordinate.
+          </li>
+          <li>
+            Process coordinates in a predetermined order instead of running an
+            expensive global greedy search.
+          </li>
+          <li>
+            Batch corrections into matrix operations through lazy updates.
+          </li>
+        </ol>
+      </div>
+
+      <p>
+        Across the coordinates, the factorization and inverse-update work is
+        $O(d^3)$. SparseGPT adapts related second-order machinery to pruning;
+        GPTQ uses it to quantize weights.
+      </p>
+
+      <!-- ========== 3 ========== -->
+      <h2 id="awq">3. Activation-aware Weight Quantization</h2>
+
+      <p>
+        GPTQ compensates after a weight is moved to a fixed grid. AWQ takes a
+        complementary view: activation statistics reveal which weight
+        channels are sensitive, and an exact rescaling can protect those
+        channels before quantization.
+      </p>
+
+      <h3>Why activations reveal sensitive weights</h3>
+
+      <p>
+        Consider a diagonal approximation to the local quadratic loss. For a
+        perturbation $\delta w_i$,
+      </p>
+      <div class="eq-box">
+        \[
+        S_i
+        \approx
+        \frac12H_{ii}\delta w_i^2.
+        \]
+      </div>
+
+      <p>
+        For squared layer-reconstruction error,
+        $H_{ii}\propto\|X_{:,i}\|_2^2$. Hence
+      </p>
+      <div class="eq">
+        \[
+        S_i
+        \propto
+        \delta w_i^2H_{ii}
+        \propto
+        \delta w_i^2\|X_{:,i}\|_2^2.
+        \]
+      </div>
+
+      <div class="q">
+        <strong>Key observation.</strong>
+        A weight error on an input channel with large activations has a larger
+        effect on the layer output. Activation magnitude is therefore a useful
+        heuristic for identifying salient weight channels.
+      </div>
+
+      <h3>Protecting salient channels without mixed precision</h3>
+
+      <p>
+        One option is to keep salient channels at higher precision. That
+        creates an irregular mixed-precision matrix and is difficult to
+        execute efficiently with standard GEMM kernels. AWQ instead preserves
+        a uniform bit width and rescales channels.
+      </p>
+
+      <p>For a positive scale vector $s$, rewrite the exact product as</p>
+      <div class="eq-box">
+        \[
+        XW
+        =
+        \left(X\operatorname{diag}(s)^{-1}\right)
+        \left(\operatorname{diag}(s)W\right).
+        \]
+      </div>
+
+      <div class="scale-diagram" aria-label="Activation-aware channel scaling">
+        <div class="block">
+          Activations<br />
+          $X_{:,i}\rightarrow X_{:,i}/s_i$
+        </div>
+        <div class="times">×</div>
+        <div class="block">
+          Weights<br />
+          $W_{i,:}\rightarrow s_iW_{i,:}$
+        </div>
+      </div>
+
+      <p>
+        Before quantization this transformation is lossless. The benefit comes
+        from changing how quantization error is distributed.
+      </p>
+
+      <h3>When does scaling help?</h3>
+
+      <p>
+        Consider a scalar contribution $xw$. Scale $w$ to $sw$, quantize it,
+        and compensate by multiplying with $x/s$.
+      </p>
+
+      <div class="split">
+        <div class="card">
+          <div class="tag">Scale changes the step</div>
+          <p>If $\Delta'=s\Delta$, then</p>
+          <div class="eq">
+            \[
+            \frac{x}{s}
+            \left(sw\pm\frac{\Delta'}2\right)
+            =
+            xw\pm\frac{x\Delta}{2}.
+            \]
+          </div>
+          <p><strong>No reduction</strong> in output error.</p>
+        </div>
+        <div class="card">
+          <div class="tag">Scale leaves the step fixed</div>
+          <p>If other values set the range and $\Delta'=\Delta$, then</p>
+          <div class="eq">
+            \[
+            \frac{x}{s}
+            \left(sw\pm\frac{\Delta}{2}\right)
+            =
+            xw\pm\frac{x\Delta}{2s}.
+            \]
+          </div>
+          <p>Error is reduced by a factor of <strong>$s$</strong>.</p>
+        </div>
+      </div>
+
+      <p>The scale can be selected through layer reconstruction:</p>
+      <div class="eq">
+        \[
+        s^\star
+        =
+        \arg\min_s
+        \left\|
+          XW
+          -
+          X\operatorname{diag}(s)^{-1}
+          Q\!\left(\operatorname{diag}(s)W\right)
+        \right\|_F^2.
+        \]
+      </div>
+
+      <p>At lecture level, AWQ parameterizes the scales as</p>
+      <div class="eq-box">
+        \[
+        s_i=s_{X,i}^{\alpha},
+        \qquad
+        s_{X,i}
+        =
+        \operatorname{mean}\left(|X_{:,i}|\right),
+        \]
+      </div>
+      <p>and searches over the migration parameter $\alpha$.</p>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="smoothquant">4. SmoothQuant</h2>
+
+      <p>
+        AWQ uses activation statistics to improve weight-only quantization.
+        SmoothQuant targets weight-and-activation quantization, where activation
+        outliers are often the main difficulty.
+      </p>
+
+      <p>
+        Per-channel activation quantization along the inner dimension would
+        isolate those outliers, but that granularity does not map efficiently
+        to standard matrix-multiplication kernels. SmoothQuant instead moves
+        part of the dynamic range from activations into weights:
+      </p>
+
+      <div class="eq-box">
+        \[
+        XW
+        =
+        \left(X\operatorname{diag}(s)^{-1}\right)
+        \left(\operatorname{diag}(s)W\right).
+        \]
+      </div>
+
+      <p>A commonly used channel scale has the form</p>
+      <div class="eq">
+        \[
+        s_j
+        =
+        \frac{
+          \left(\max|X_{:,j}|\right)^\alpha
+        }{
+          \left(\max|W_{j,:}|\right)^{1-\alpha}
+        },
+        \]
+      </div>
+      <p>
+        where $\alpha$ controls the <strong>migration strength</strong>:
+        larger $\alpha$ moves more quantization difficulty from activations to
+        weights.
+      </p>
+
+      <p>Conceptually, we would like to choose</p>
+      <div class="eq">
+        \[
+        \alpha^\star
+        =
+        \arg\min_\alpha
+        \left\|
+          XW
+          -
+          Q\!\left(X\operatorname{diag}(s)^{-1}\right)
+          Q\!\left(\operatorname{diag}(s)W\right)
+        \right\|_F^2.
+        \]
+      </div>
+
+      <div class="remark">
+        <span class="label">Calibration in practice</span>
+        The expression above explains the trade-off. SmoothQuant usually
+        treats $\alpha$ as a calibration hyperparameter and tunes it
+        empirically rather than solving this exact optimization independently
+        for every layer.
+      </div>
+
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Main signal</th>
+            <th>Main intervention</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>GPTQ</strong></td>
+            <td>Second-order curvature</td>
+            <td>Compensate other weights after quantizing a coordinate</td>
+          </tr>
+          <tr>
+            <td><strong>AWQ</strong></td>
+            <td>Activation magnitude</td>
+            <td>Protect salient weight channels through scaling</td>
+          </tr>
+          <tr>
+            <td><strong>SmoothQuant</strong></td>
+            <td>Activation and weight ranges</td>
+            <td>Move dynamic range from activations into weights</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ========== 5 ========== -->
+      <h2 id="qat">5. Quantization-aware training</h2>
+
+      <p>
+        PTQ leaves the trained weights fixed, so any quality loss must be
+        controlled entirely through calibration and the quantization method.
+        QAT lets the model adapt while seeing simulated quantization noise.
+      </p>
+
+      <h3>Fake quantization</h3>
+
+      <p>
+        Insert fake-quantization operators wherever weights or activations will
+        be quantized:
+      </p>
+      <div class="eq-box">
+        \[
+        \widehat X=Q^{-1}(Q(X)),
+        \qquad
+        \widehat W=Q^{-1}(Q(W)).
+        \]
+      </div>
+
+      <p>
+        $Q$ maps a floating-point value to a quantized code, while $Q^{-1}$
+        dequantizes that code back to a representable floating-point value.
+        The surrounding computation graph therefore remains floating-point,
+        but its forward values lie on the intended quantization grid.
+      </p>
+
+      <div class="pipeline" aria-label="Fake quantization during training">
+        <div class="step">full-precision<br />master value</div>
+        <div class="arrow">→</div>
+        <div class="step">$Q$<br />quantize</div>
+        <div class="arrow">→</div>
+        <div class="step">$Q^{-1}$<br />dequantize</div>
+        <div class="arrow">→</div>
+        <div class="step">fake-quantized<br />forward value</div>
+      </div>
+
+      <ul>
+        <li>
+          <strong>Forward pass:</strong> compute using fake-quantized weights
+          and activations.
+        </li>
+        <li>
+          <strong>Backward pass:</strong> compute updates for full-precision
+          master weights.
+        </li>
+      </ul>
+
+      <h3>The straight-through estimator</h3>
+
+      <p>
+        Rounding creates a staircase function whose true derivative is zero
+        almost everywhere and undefined at thresholds. QAT replaces that
+        derivative with a useful surrogate. For a clipped fake quantizer, a
+        common STE is
+      </p>
+
+      <div class="eq-box">
+        \[
+        y=Q(x),
+        \qquad
+        \frac{\partial\widehat y}{\partial x}
+        \approx
+        \begin{cases}
+          1, & x\text{ is inside the representable range},\\
+          0, & x\text{ is outside the representable range}.
+        \end{cases}
+        \]
+      </div>
+
+      <p>
+        Ignoring clipping gives the simpler identity STE, which treats the
+        derivative as $1$ everywhere.
+      </p>
+
+      <!-- ========== 6 ========== -->
+      <h2 id="hardware">6. Hardware-supported formats</h2>
+
+      <p>
+        A low-precision representation is useful only when the hardware can
+        consume it efficiently. Modern accelerators support several floating
+        and microscaled formats.
+      </p>
+
+      <h3>Conventional floating point and FP8</h3>
+
+      <div class="format-strip">
+        <div>FP32<br />full precision</div>
+        <div>FP16<br />half precision</div>
+        <div>BF16<br />half precision</div>
+      </div>
+
+      <p>Two common FP8 encodings are:</p>
+      <div class="split">
+        <div class="card">
+          <div class="tag">FP8 E4M3</div>
+          <p>Four exponent bits and three explicit mantissa bits.</p>
+        </div>
+        <div class="card">
+          <div class="tag">FP8 E5M2</div>
+          <p>Five exponent bits and two explicit mantissa bits.</p>
+        </div>
+      </div>
+
+      <div class="remark">
+        <span class="label">Format versus scaling recipe</span>
+        E4M3 and E5M2 define individual FP8 values. A scaled-FP8 recipe
+        additionally attaches scales per tensor, channel, or block. A
+        tensor-level FP32 scale is one possible recipe; it is not intrinsically
+        part of the bare FP8 encoding.
+      </div>
+
+      <h3>MXFP8 and NVFP4</h3>
+
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>Format</th>
+            <th>Data</th>
+            <th>Scale granularity</th>
+            <th>Scale format</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>MXFP8</strong></td>
+            <td>FP8 values</td>
+            <td>One shared scale per group of 32 values</td>
+            <td>E8M0</td>
+          </tr>
+          <tr>
+            <td><strong>NVFP4</strong></td>
+            <td>FP4 E2M1 values</td>
+            <td>One shared scale per group of 16 values</td>
+            <td>FP8 E4M3, plus a tensor-level FP32 scale</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>What does hardware support mean?</h3>
+
+      <p>
+        Hardware support means that the accelerator exposes primitives which
+        understand both the low-precision tensors and their scale metadata,
+        conceptually:
+      </p>
+      <div class="eq-box">
+        \[
+        \operatorname{MM}
+        \left(
+          \text{tensor}_1,
+          \text{tensor}_2,
+          \text{scale}_1,
+          \text{scale}_2
+        \right).
+        \]
+      </div>
+
+      <p>
+        Fusing scale handling into the low-precision matrix-multiplication
+        primitive minimizes or absorbs most conversion and scaling overhead.
+        It does not mean that scale metadata and scale arithmetic have
+        literally zero cost.
+      </p>
+
+      <h3>Tiling and training</h3>
+
+      <p>
+        Scale layout matters during training. A forward linear layer uses
+        $W$, while backpropagation also requires products involving $W^\top$:
+      </p>
+      <div class="eq">
+        \[
+        y=Wx,
+        \qquad
+        \nabla_x\mathcal L=W^\top\nabla_y\mathcal L.
+        \]
+      </div>
+
+      <p>
+        A one-dimensional scale layout optimized for $W$ may become awkward
+        after transposition. Two-dimensional scale tiles can be more symmetric
+        with respect to transposition and are therefore useful in training.
+        Exact tile shapes and transpose support remain hardware- and
+        implementation-specific.
+      </p>
+
+      <div class="q">
+        <strong>Takeaway.</strong>
+        Quantization quality is only one part of the design. A useful scheme
+        must also choose scale granularity, data layout, and number formats that
+        map to efficient hardware primitives in both the forward and backward
+        passes.
+      </div>
+
+      <p class="next">
+        Previous:
+        <a href="quantization_basics.html">Quantization basics</a>.
+        Source:
+        <a href="quantization_second_part.pdf">handwritten lecture notes</a>.
+      </p>
+    </div>
+  </body>
+</html>
