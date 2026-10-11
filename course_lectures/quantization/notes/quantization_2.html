@@ -529,7 +529,7 @@
         \[
         \mathcal L(X,\widehat W)
         =
-        \frac12\left\|X\widehat W-XW\right\|_F^2.
+        \frac12\left\|X\widehat W-XW\right\|_2^2.
         \]
       </div>
 
@@ -762,12 +762,12 @@
         s^\star
         =
         \arg\min_s
-        \left\|
+        \left\lVert
           XW
           -
           X\operatorname{diag}(s)^{-1}
           Q\!\left(\operatorname{diag}(s)W\right)
-        \right\|_F^2.
+        \right\rVert_2^2.
         \]
       </div>
 
@@ -829,16 +829,16 @@
       <p>Conceptually, we would like to choose</p>
       <div class="eq">
         \[
-        \alpha^\star
-        =
-        \arg\min_\alpha
-        \left\|
-          XW
-          -
-          Q\!\left(X\operatorname{diag}(s)^{-1}\right)
-          Q\!\left(\operatorname{diag}(s)W\right)
-        \right\|_F^2.
-        \]
+          \alpha^\star
+          =
+          \arg\min_\alpha
+          \left\lVert
+            XW
+            - 
+            Q\!\left(X\operatorname{diag}(s)^{-1}\right)
+            Q\!\left(\operatorname{diag}(s)W\right)
+          \right\rVert_2^2.
+          \]
       </div>
 
       <div class="remark">
