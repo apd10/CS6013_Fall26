@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JLTs, Subspace Embeddings, and CountSketch — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+        --neg: #b4472f;
+        --neg-soft: #fbece8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a,
+      .next a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      header .byline {
+        margin-top: 0.6rem;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .toc {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+      }
+
+      .toc .label,
+      .thm .label,
+      .card .tag {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .toc .label {
+        margin-bottom: 0.4rem;
+      }
+
+      .toc ol {
+        margin: 0;
+      }
+
+      .toc a {
+        color: var(--ink);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .thm {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--accent);
+        border-radius: 0 10px 10px 0;
+        padding: 0.9rem 1.1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .thm .label {
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .thm .label em {
+        font-style: normal;
+        color: var(--muted);
+        text-transform: none;
+        letter-spacing: 0;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .split3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+        overflow-x: auto;
+      }
+
+      .card .tag {
+        color: var(--muted);
+      }
+
+      .card h3 {
+        margin-top: 0.25rem;
+        font-size: 1rem;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+
+      .compare {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+        background: var(--card);
+      }
+
+      .compare th,
+      .compare td {
+        border: 1px solid var(--line);
+        padding: 0.55rem 0.7rem;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .compare th {
+        background: var(--accent-soft);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
+      /* CountSketch matrix illustration */
+      .sketch-figure {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1.15rem 0;
+        overflow-x: auto;
+      }
+
+      .sketch-grid {
+        display: grid;
+        grid-template-columns: auto repeat(5, 2.6rem);
+        gap: 0.3rem;
+        justify-content: center;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+      }
+
+      .sketch-grid .hdr {
+        color: var(--muted);
+        font-size: 0.72rem;
+        text-align: center;
+        align-self: end;
+        line-height: 1.3;
+      }
+
+      .sketch-grid .rlabel {
+        color: var(--muted);
+        font-size: 0.72rem;
+        padding-right: 0.5rem;
+        align-self: center;
+        text-align: right;
+      }
+
+      .sketch-grid .cell {
+        height: 2.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        color: #b8c2cf;
+      }
+
+      .sketch-grid .cell.pos {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .sketch-grid .cell.neg {
+        background: var(--neg-soft);
+        border-color: var(--neg);
+        color: var(--neg);
+        font-weight: 600;
+      }
+
+      .sketch-caption {
+        margin: 0.85rem 0 0;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      @media (max-width: 600px) {
+        .split3 {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        This html page is created by scribe. If you find any mistakes, please feel free to drop a <a href="mailto:amit.t@iitb.ac.in"> mail here. </a> 
+      </p>
+
+      <header>
+        <p class="meta">Efficient AI · Sketching notes </p>
+        <h1>JLTs, Subspace Embeddings, and CountSketch</h1>
+        <p>
+          Random linear maps that preserve inner products, how they yield
+          $\ell_2$-subspace embeddings, how sparse such maps can be, and the
+          CountSketch matrix, which uses just one non-zero per column.
+        </p>
+      </header>
+
+      <div class="toc">
+        <div class="label">Roadmap</div>
+        <ol>
+          <li><a href="#jlt">Johnson–Lindenstrauss transforms</a></li>
+          <li><a href="#subspace">$\ell_2$-subspace embeddings</a></li>
+          <li><a href="#jlt-to-subspace">From JLTs to subspace embeddings</a></li>
+          <li><a href="#countsketch">The CountSketch matrix</a></li>
+        </ol>
+      </div>
+
+      <!-- ========== 1 ========== -->
+      <h2 id="jlt">1. Johnson–Lindenstrauss transform (JLT)</h2>
+
+      <div class="thm">
+        <span class="label">Definition <em>— $\mathrm{JLT}(\varepsilon,\delta,f)$</em></span>
+        A random matrix $S\in\mathbb R^{r\times n}$ is a
+        <strong>Johnson–Lindenstrauss transform</strong> with parameters
+        $\varepsilon,\delta,f$ if, for any $f$-element subset
+        $V\subset\mathbb R^n$, with probability at least $1-\delta$,
+        <div class="eq">
+          \[
+          \forall\, v_1,v_2\in V:\qquad
+          \bigl|\langle Sv_1,Sv_2\rangle-\langle v_1,v_2\rangle\bigr|
+          \;\le\;
+          \varepsilon\,\|v_1\|_2\,\|v_2\|_2 .
+          \]
+        </div>
+        That is, <em>inner products are preserved up to $\varepsilon$</em>.
+      </div>
+
+      <div class="remark">
+        <span class="label">Norm preservation</span>
+        Taking $v_1=v_2=v$ gives the familiar norm-preservation statement
+        $\|Sv\|_2^2=(1\pm\varepsilon)\|v\|_2^2$.
+      </div>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="subspace">2. $\ell_2$-subspace embedding of a column space</h2>
+
+      <div class="thm">
+        <span class="label">Definition <em>— $\ell_2$-subspace embedding</em></span>
+        Let $A\in\mathbb R^{n\times d}$. A matrix $S\in\mathbb R^{r\times n}$ is
+        a $(1\pm\varepsilon)$ <strong>$\ell_2$-subspace embedding</strong> for
+        the column space of $A$ if
+        <div class="eq">
+          \[
+          \forall\, x\in\mathbb R^d:\qquad
+          \|SAx\|_2=(1\pm\varepsilon)\,\|Ax\|_2 .
+          \]
+        </div>
+      </div>
+
+      <p>
+        A JLT preserves a <em>finite</em> set of points. A subspace embedding
+        has to preserve <em>every</em> vector $Ax$ in a $d$-dimensional
+        subspace, which is an infinite set.
+      </p>
+
+      <!-- ========== 3 ========== -->
+      <h2 id="jlt-to-subspace">3. JLTs give $\ell_2$-subspace embeddings</h2>
+
+      <div class="thm">
+        <span class="label">Theorem</span>
+        A $\mathrm{JLT}(\varepsilon,\delta,f=5^d)$ is an $\ell_2$-subspace
+        embedding for the column space of any fixed $n\times d$ matrix $A$,
+        i.e. for a $d$-dimensional subspace of $\mathbb R^n$.
+      </div>
+
+      <div class="remark">
+        <span class="label">Where $5^d$ comes from</span>
+        The $5^d$ is the size of a net on the unit sphere of the
+        $d$-dimensional column space. Applying the JLT to every point of the
+        net and extending to the whole subspace gives the embedding. Woodruff
+        uses a $\tfrac12$-net of size
+        $(1+4/\gamma)^d\big|_{\gamma=1/2}=9^d$ (Lemma&nbsp;5 and
+        Theorem&nbsp;6). The constant in the base does not matter, because
+        $\log f=\Theta(d)$ in either case.
+      </div>
+
+      <h3>Constructions of $S\in\mathbb R^{r\times n}$</h3>
+
+      <div class="split3">
+        <div class="card">
+          <div class="tag">Gaussian</div>
+          <div class="eq">
+            \[
+            S=\tfrac{1}{\sqrt r}\,R
+            \]
+          </div>
+          <p>$R_{ij}\overset{\text{i.i.d.}}{\sim}\mathcal N(0,1)$</p>
+        </div>
+        <div class="card">
+          <div class="tag">Random signs</div>
+          <div class="eq">
+            \[
+            S=\tfrac{1}{\sqrt r}\,R
+            \]
+          </div>
+          <p>$R_{ij}=\pm1$, each w.p. $\tfrac12$</p>
+        </div>
+        <div class="card">
+          <div class="tag">Sparse · Achlioptas</div>
+          <div class="eq">
+            \[
+            S=\sqrt{\tfrac{3}{r}}\,R
+            \]
+          </div>
+          <p>
+            $R_{ij}=0$ w.p. $\tfrac23$,<br />
+            $+1$ w.p. $\tfrac16$, $-1$ w.p. $\tfrac16$
+          </p>
+        </div>
+      </div>
+
+      <p>In each case $S$ is $r\times n$ with</p>
+      <div class="eq-box">
+        \[
+        r=\Theta\!\left(\frac{\log(f/\delta)}{\varepsilon^2}\right),
+        \qquad f=5^d,
+        \qquad\text{so}\qquad
+        r=\Theta\!\left(\frac{d+\log(1/\delta)}{\varepsilon^2}\right).
+        \]
+      </div>
+
+      <h3>Sparsity (non-zeros per column)</h3>
+
+      <p>
+        Computing $SA$ costs time proportional to the number of non-zeros in
+        $S$ that touch $A$, so we want each column of $S$ to be as sparse as
+        possible. How sparse can a JLT be?
+      </p>
+
+      <div class="thm">
+        <span class="label">Upper bound <em>— Kane–Nelson</em></span>
+        There is a construction with
+        <div class="eq">
+          \[
+          s=O\!\left(\frac1\varepsilon\log\frac{f}{\delta}\right)
+          \]
+        </div>
+        non-zero entries per column.
+      </div>
+
+      <div class="thm">
+        <span class="label">Lower bound <em>— Nelson–Nguyen</em></span>
+        Any JLT needs at least this many non-zeros per column:
+        <div class="eq">
+          \[
+          s=\Omega\!\left(
+            \frac{\frac1\varepsilon\log\!\left(\frac f\delta\right)}
+                 {\log\!\left(\frac1\varepsilon\right)}
+          \right),
+          \qquad f=5^d.
+          \]
+        </div>
+      </div>
+
+      <div class="q">
+        <strong>Consequence.</strong>
+        A JLT-based subspace embedding needs about $d/\varepsilon$ non-zeros
+        per column (up to the $\log(1/\varepsilon)$ factor). CountSketch gets
+        around this lower bound: it is not a JLT for arbitrary sets of $5^d$
+        points, only for points lying in one $d$-dimensional subspace.
+      </div>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="countsketch">4. The CountSketch matrix</h2>
+
+      <p>
+        Write $[k]:=\{0,1,\dots,k-1\}$. Choose two random functions:
+      </p>
+      <div class="eq">
+        \[
+        h:[n]\to[r],
+        \qquad\qquad
+        g:[n]\to\{-1,+1\}.
+        \]
+      </div>
+
+      <p>
+        The matrix $S\in\mathbb R^{r\times n}$ has <strong>exactly one non-zero
+        entry per column</strong>. Column $i$ has the entry $g(i)=\pm1$ in row
+        $h(i)$, and zeros everywhere else:
+      </p>
+      <div class="eq-box">
+        \[
+        S_{h(i),\,i}=g(i),
+        \qquad
+        S_{j,\,i}=0\ \text{ for } j\ne h(i).
+        \]
+      </div>
+
+      <div class="sketch-figure" aria-label="Example CountSketch matrix with r = 4 and n = 5">
+        <div class="sketch-grid">
+          <div></div>
+          <div class="hdr">col 0</div>
+          <div class="hdr">col 1</div>
+          <div class="hdr">col 2</div>
+          <div class="hdr">col 3</div>
+          <div class="hdr">col 4</div>
+
+          <div class="rlabel">row 0</div>
+          <div class="cell">0</div>
+          <div class="cell">0</div>
+          <div class="cell neg">−1</div>
+          <div class="cell pos">+1</div>
+          <div class="cell">0</div>
+
+          <div class="rlabel">row 1</div>
+          <div class="cell pos">+1</div>
+          <div class="cell">0</div>
+          <div class="cell">0</div>
+          <div class="cell">0</div>
+          <div class="cell">0</div>
+
+          <div class="rlabel">row 2</div>
+          <div class="cell">0</div>
+          <div class="cell">0</div>
+          <div class="cell">0</div>
+          <div class="cell">0</div>
+          <div class="cell pos">+1</div>
+
+          <div class="rlabel">row 3</div>
+          <div class="cell">0</div>
+          <div class="cell neg">−1</div>
+          <div class="cell">0</div>
+          <div class="cell">0</div>
+          <div class="cell">0</div>
+        </div>
+        <p class="sketch-caption">
+          Example with $r=4$, $n=5$ (Woodruff p.&nbsp;17). Here
+          $h=(1,3,0,0,2)$ and $g=(+1,-1,-1,+1,+1)$: column $i$'s single
+          entry sits in row $h(i)$ with sign $g(i)$.
+        </p>
+      </div>
+
+      <p>
+        Because each column has one non-zero, $SA$ can be computed in
+        $O(\mathrm{nnz}(A))$ time. Each row of $A$ is multiplied by $\pm1$ and
+        added into one of the $r$ output rows.
+      </p>
+
+      <div class="thm">
+        <span class="label">Theorem <em>— CountSketch is a subspace embedding</em></span>
+        CountSketch with
+        <div class="eq">
+          \[
+          r=O\!\left(\frac{d^2}{\varepsilon^2}\log\!\left(\frac{d}{\varepsilon\delta}\right)\right)
+          \]
+        </div>
+        rows is a $(1\pm\varepsilon)$ $\ell_2$-subspace embedding for any fixed
+        $A\in\mathbb R^{n\times d}$ with probability at least $1-\delta$.
+      </div>
+
+      <div class="thm">
+        <span class="label">Theorem <em>— Limited independence suffices</em></span>
+        If $h$ is <strong>2-wise independent</strong> and $g$ is
+        <strong>4-wise independent</strong>, then
+        <div class="eq">
+          \[
+          r=O\!\left(\frac{d^2}{\delta\,\varepsilon^2}\right)
+          \]
+        </div>
+        rows suffice.
+      </div>
+
+      <div class="remark">
+        <span class="label">Proof pointer</span>
+        This is Woodruff's Theorem&nbsp;9. The proof is a second-moment
+        calculation, Theorem&nbsp;14, which uses exactly these independence
+        assumptions on $h$ and $g$.
+      </div>
+
+      <h3>Summary</h3>
+
+      <div class="table-wrap">
+        <table class="compare">
+          <thead>
+            <tr>
+              <th>Sketch</th>
+              <th>Non-zeros per column</th>
+              <th>Rows $r$ for a subspace embedding</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Gaussian / random signs</strong></td>
+              <td>$r$ (dense)</td>
+              <td>$\Theta\!\left(\frac{d+\log(1/\delta)}{\varepsilon^2}\right)$</td>
+            </tr>
+            <tr>
+              <td><strong>Achlioptas</strong></td>
+              <td>$\approx r/3$ in expectation</td>
+              <td>$\Theta\!\left(\frac{d+\log(1/\delta)}{\varepsilon^2}\right)$</td>
+            </tr>
+            <tr>
+              <td><strong>Sparsest JLT</strong></td>
+              <td>$\approx d/\varepsilon$ (tight up to $\log(1/\varepsilon)$)</td>
+              <td>$\Theta\!\left(\frac{d+\log(1/\delta)}{\varepsilon^2}\right)$</td>
+            </tr>
+            <tr>
+              <td><strong>CountSketch</strong></td>
+              <td>$1$</td>
+              <td>$O\!\left(\frac{d^2}{\delta\varepsilon^2}\right)$</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="q">
+        <strong>Takeaway.</strong>
+        CountSketch gives up a polynomial factor in the number of rows
+        ($d^2$ instead of $d$) in return for the cheapest possible
+        application cost: one non-zero per column, so $SA$ takes
+        $O(\mathrm{nnz}(A))$ time.
+      </div>
+
+      <p class="next">
+        Reference:
+        <a href="https://arxiv.org/abs/1411.4357" target="_blank" rel="noopener noreferrer"
+          >Woodruff, Sketching as a Tool for Numerical Linear Algebra</a
+        >, Section&nbsp;2.1.
+      </p>
+    </div>
+  </body>
+</html>
