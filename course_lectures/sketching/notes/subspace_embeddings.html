@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>JLTs, Subspace Embeddings, and CountSketch — Notes</title>
+    <title>JL Lemma, Subspace Embeddings, and CountSketch — Notes</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -130,6 +130,31 @@
         margin: 1.5rem 0 0.5rem;
       }
 
+      h4 {
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.35rem;
+        color: var(--accent);
+      }
+
+      .part {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 3rem 0 0.5rem;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .part::after {
+        content: "";
+        flex: 1;
+        border-top: 1px solid var(--line);
+      }
+
       p {
         margin: 0.65rem 0;
       }
@@ -232,6 +257,7 @@
 
       .eq {
         overflow-x: auto;
+        overflow-y: hidden;
         margin: 1rem 0;
         padding: 0.35rem 0;
       }
@@ -384,10 +410,11 @@
       </p>
 
       <header>
-        <p class="meta">Efficient AI · Sketching notes </p>
-        <h1>JLTs, Subspace Embeddings, and CountSketch</h1>
+        <p class="meta">Efficient AI · Lecture notes </p>
+        <h1>JL Lemma, Subspace Embeddings, and CountSketch</h1>
         <p>
-          Random linear maps that preserve inner products, how they yield
+          Random projections that preserve distances, how they speed up
+          least-squares regression, how a net argument turns them into
           $\ell_2$-subspace embeddings, how sparse such maps can be, and the
           CountSketch matrix, which uses just one non-zero per column.
         </p>
@@ -396,28 +423,231 @@
       <div class="toc">
         <div class="label">Roadmap</div>
         <ol>
-          <li><a href="#jlt">Johnson–Lindenstrauss transforms</a></li>
-          <li><a href="#subspace">$\ell_2$-subspace embeddings</a></li>
+          <li><a href="#jl-lemma">The Johnson–Lindenstrauss lemma</a></li>
+          <li><a href="#regression">Application to linear regression</a></li>
+          <li><a href="#jlt">JL transforms</a></li>
+          <li><a href="#subspace">$\ell_2$-subspace embeddings and nets</a></li>
           <li><a href="#jlt-to-subspace">From JLTs to subspace embeddings</a></li>
           <li><a href="#countsketch">The CountSketch matrix</a></li>
         </ol>
       </div>
 
+      
       <!-- ========== 1 ========== -->
-      <h2 id="jlt">1. Johnson–Lindenstrauss transform (JLT)</h2>
+      <h2 id="jl-lemma">1. The Johnson–Lindenstrauss lemma (existence)</h2>
+
+      <div class="thm">
+        <span class="label">Lemma <em>— JL lemma</em></span>
+        Given $n$ points $\{x_1,\dots,x_n\}\subset\mathbb R^d$ and
+        $0&lt;\varepsilon&lt;1$, there exists a linear map $f(x)=Ax$ with
+        $A\in\mathbb R^{r\times d}$ such that for all $i\ne j$
+        <div class="eq">
+          \[
+          (1-\varepsilon)
+          \;\le\;
+          \frac{\|f(x_i)-f(x_j)\|_2^2}{\|x_i-x_j\|_2^2}
+          \;\le\;
+          (1+\varepsilon),
+          \qquad\text{provided}\quad
+          r\;\ge\;\frac{c\log n}{\varepsilon^2}
+          \]
+        </div>
+        for an absolute constant $c$.
+      </div>
+
+      <p>
+        Here $A$ is a random map that reduces the dimension from $d$ to
+        $r$. Note that $r$ depends only on the number of points $n$, not on
+        the original dimension $d$.
+      </p>
+
+      <h3>Proof</h3>
+
+      <h4>Construction</h4>
+      <p>Pick each entry independently:</p>
+      <div class="eq">
+        \[
+        A_{kl}=\frac{1}{\sqrt r}\,g_{kl},
+        \qquad
+        g_{kl}\overset{\text{i.i.d.}}{\sim}\mathcal N(0,1).
+        \]
+      </div>
+
+      <h4>One pair</h4>
+      <p>
+        Fix a pair and let $u=u_{ij}=x_i-x_j$. For each coordinate
+        $k\in[r]$ of $Au$,
+      </p>
+      <div class="eq">
+        \[
+        (Au)_k
+        =
+        \frac{1}{\sqrt r}\sum_l g_{kl}\,u_l
+        =
+        \frac{\|u\|_2}{\sqrt r}\;
+        \underbrace{\mathcal N(0,1)}_{y_k},
+        \]
+      </div>
+      <p>
+        because a sum of independent Gaussians is Gaussian:
+        $\sum_l g_{kl}u_l\sim\mathcal N(0,\|u\|_2^2)$. The $y_k$ are
+        independent, since different rows of $A$ are independent. Therefore
+      </p>
+      <div class="eq-box">
+        \[
+        \|Au\|_2^2
+        =
+        \sum_k (Au)_k^2
+        =
+        \frac{\|u\|_2^2}{r}\sum_{k=1}^{r}y_k^2 .
+        \]
+      </div>
+      <p>
+        So $\|Au\|_2^2/\|u\|_2^2$ is a $\chi^2_r$ random variable divided by
+        $r$, and its mean is exactly $1$.
+      </p>
+
+      <h4>Concentration</h4>
+      <p>For $0&lt;\varepsilon&lt;1$,</p>
+      <div class="eq">
+        \[
+        \Pr\!\left(
+          \left|\frac{\sum_k y_k^2-r}{r}\right|&gt;\varepsilon
+        \right)
+        \;\le\;
+        2\,e^{-r\varepsilon^2/4}.
+        \]
+      </div>
+      <p>Equivalently,</p>
+      <div class="eq">
+        \[
+        \Pr\!\left(
+          \left|\frac{\|Au\|_2^2}{\|u\|_2^2}-1\right|&gt;\varepsilon
+        \right)
+        \;\le\;
+        2\,e^{-r\varepsilon^2/4}
+        \;&lt;\;\delta .
+        \]
+      </div>
+      <p>
+        This gives an $(\varepsilon,\delta)$ guarantee for one fixed pair. For
+        this, it suffices that
+      </p>
+      <div class="eq-box">
+        \[
+        -\frac{r\varepsilon^2}{4}&lt;\log\frac{\delta}{2}
+        \quad\Longleftrightarrow\quad
+        r&gt;\frac{4\log(2/\delta)}{\varepsilon^2}.
+        \]
+      </div>
+
+      <div class="remark">
+        <span class="label">On the constant</span>
+        The sharp $\chi^2$ tail bound is
+        $2\exp\!\bigl(-r(\varepsilon^2-\varepsilon^3)/4\bigr)$, so
+        $\varepsilon^2/4$ is its leading term. A clean bound valid for all
+        $0&lt;\varepsilon&lt;1$ is $2e^{-r\varepsilon^2/8}$. Either way, only
+        the absolute constant $c$ in the lemma changes.
+      </div>
+
+      <h4>All pairs (union bound)</h4>
+      <p>There are $\binom n2$ pairs, so</p>
+      <div class="eq">
+        \[
+        \Pr\!\left(
+          \exists\,i,j:\
+          \left|\frac{\|Au_{ij}\|_2^2}{\|u_{ij}\|_2^2}-1\right|&gt;\varepsilon
+        \right)
+        \;\le\;
+        2\binom n2\,e^{-r\varepsilon^2/4}
+        \;&lt;\;\delta,
+        \]
+      </div>
+      <p>which holds whenever</p>
+      <div class="eq-box">
+        \[
+        r\;&gt;\;\frac{4}{\varepsilon^2}\log\!\left(\frac{n(n-1)}{\delta}\right).
+        \]
+      </div>
+      <p>
+        For constant $\delta$ this is $r=O(\log n/\varepsilon^2)$. Since the
+        failure probability is below $1$, a good $A$ exists.
+      </p>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="regression">2. Application to linear regression</h2>
+
+      <p>
+        Let $A\in\mathbb R^{n\times d}$ with $n\gg d$, and $b\in\mathbb R^n$.
+        The least-squares solution is
+      </p>
+      <div class="eq">
+        \[
+        x^*=\arg\min_x\|Ax-b\|_2 .
+        \]
+      </div>
+
+      <div class="q">
+        <strong>Goal.</strong>
+        Find $x^+$ such that
+        $\|Ax^+-b\|_2\le(1+\varepsilon)\,\|Ax^*-b\|_2$.
+      </div>
+
+      <p>
+        <strong>Sketch and solve:</strong> let
+        $x^+=\arg\min_x\|SAx-Sb\|_2$, the solution of the smaller problem,
+        where $S$ has $r$ rows ($r$ is the reduced dimension). Then
+      </p>
+      <div class="eq-box">
+        \[
+        \|SAx^+-Sb\|_2
+        \;\le\;
+        \|SAx^*-Sb\|_2
+        \;=\;
+        (1\pm\varepsilon)\,\|Ax^*-b\|_2
+        \qquad\text{w.p. }\ge 1-\delta .
+        \]
+      </div>
+
+      <div class="remark">
+        <span class="label">Completing the argument</span>
+        If $S$ is a $(1\pm\varepsilon)$ $\ell_2$-subspace embedding
+        (Section&nbsp;4) for the column space of $[A,\ b]$, then $Ax-b$ lies in
+        that space for every $x$. So
+        <div class="eq">
+          \[
+          \begin{aligned}
+          \|Ax^+-b\|_2
+          &amp;\le \tfrac{1}{1-\varepsilon}\|SAx^+-Sb\|_2
+           \le \tfrac{1}{1-\varepsilon}\|SAx^*-Sb\|_2 \\
+          &amp;\le \tfrac{1+\varepsilon}{1-\varepsilon}\|Ax^*-b\|_2
+           = (1+O(\varepsilon))\,\|Ax^*-b\|_2 .
+          \end{aligned}
+          \]
+        </div>
+        A JL guarantee for the single point $Ax^*-b$ is not enough here,
+        because $x^+$ depends on $S$. That is why we need the whole subspace
+        (see Woodruff, Section&nbsp;1).
+      </div>
+
+      <!-- ========== 3 ========== -->
+      <h2 id="jlt">3. JL transforms</h2>
 
       <div class="thm">
         <span class="label">Definition <em>— $\mathrm{JLT}(\varepsilon,\delta,f)$</em></span>
-        A random matrix $S\in\mathbb R^{r\times n}$ is a
-        <strong>Johnson–Lindenstrauss transform</strong> with parameters
-        $\varepsilon,\delta,f$ if, for any $f$-element subset
-        $V\subset\mathbb R^n$, with probability at least $1-\delta$,
+        A random matrix $S\in\mathbb R^{r\times n}$, drawn from a distribution
+        $\Pi$, is a <strong>Johnson–Lindenstrauss transform</strong> with
+        parameters $\varepsilon,\delta,f$, where $f$ is the number of points,
+        if, for any subset $V\subset\mathbb R^n$ with $|V|=f$, with
+        probability at least $1-\delta$,
         <div class="eq">
           \[
-          \forall\, v_1,v_2\in V:\qquad
-          \bigl|\langle Sv_1,Sv_2\rangle-\langle v_1,v_2\rangle\bigr|
-          \;\le\;
-          \varepsilon\,\|v_1\|_2\,\|v_2\|_2 .
+          \forall\, v_i,v_j\in V:\qquad
+          \langle Sv_i,Sv_j\rangle
+          =
+          \langle v_i,v_j\rangle
+          \pm
+          \varepsilon\,\|v_i\|_2\,\|v_j\|_2 .
           \]
         </div>
         That is, <em>inner products are preserved up to $\varepsilon$</em>.
@@ -425,34 +655,107 @@
 
       <div class="remark">
         <span class="label">Norm preservation</span>
-        Taking $v_1=v_2=v$ gives the familiar norm-preservation statement
-        $\|Sv\|_2^2=(1\pm\varepsilon)\|v\|_2^2$.
+        Taking $v_i=v_j=v$ gives the familiar norm-preservation statement
+        $\|Sv\|_2^2=(1\pm\varepsilon)\|v\|_2^2$. The Gaussian construction
+        from Section&nbsp;1 is a JLT with
+        $r=O\!\left(\log(f/\delta)/\varepsilon^2\right)$.
       </div>
 
-      <!-- ========== 2 ========== -->
-      <h2 id="subspace">2. $\ell_2$-subspace embedding of a column space</h2>
+      <h3>From $n$ points to a whole subspace</h3>
+      <p>
+        The JL lemma preserves $n$ fixed points. If the data is a matrix
+        $A\in\mathbb R^{n\times d}$ with column space $\mathcal C(A)$, we
+        instead want to preserve every vector in $\mathcal C(A)$, which is
+        infinitely many points:
+      </p>
+      <div class="eq">
+        \[
+        \|SAx\|_2^2=(1\pm\varepsilon)\,\|Ax\|_2^2
+        \qquad\forall\,x\in\mathbb R^d .
+        \]
+      </div>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="subspace">4. $\ell_2$-subspace embeddings</h2>
 
       <div class="thm">
         <span class="label">Definition <em>— $\ell_2$-subspace embedding</em></span>
         Let $A\in\mathbb R^{n\times d}$. A matrix $S\in\mathbb R^{r\times n}$ is
         a $(1\pm\varepsilon)$ <strong>$\ell_2$-subspace embedding</strong> for
-        the column space of $A$ if
+        the column space $\mathcal C(A)$ if
         <div class="eq">
           \[
           \forall\, x\in\mathbb R^d:\qquad
-          \|SAx\|_2=(1\pm\varepsilon)\,\|Ax\|_2 .
+          \|SAx\|_2^2=(1\pm\varepsilon)\,\|Ax\|_2^2 .
           \]
         </div>
       </div>
 
       <p>
-        A JLT preserves a <em>finite</em> set of points. A subspace embedding
-        has to preserve <em>every</em> vector $Ax$ in a $d$-dimensional
-        subspace, which is an infinite set.
+        Whether the definition uses $\|\cdot\|_2$ or $\|\cdot\|_2^2$ only
+        changes $\varepsilon$ by a constant factor, since
+        $\sqrt{1\pm\varepsilon}=1\pm O(\varepsilon)$.
       </p>
 
-      <!-- ========== 3 ========== -->
-      <h2 id="jlt-to-subspace">3. JLTs give $\ell_2$-subspace embeddings</h2>
+      <h3>Reducing to a finite set: the net argument</h3>
+
+      <div class="thm">
+        <span class="label">Definition <em>— $\gamma$-net</em></span>
+        Let $\mathcal C$ be the set of unit vectors in $\mathcal C(A)$. A set
+        $N$ is a <strong>$\gamma$-net</strong> of $\mathcal C$ if
+        <div class="eq">
+          \[
+          \forall\, y\in\mathcal C\ \ \exists\, x\in N:\qquad
+          \|x-y\|_2&lt;\gamma .
+          \]
+        </div>
+      </div>
+
+      <div class="thm">
+        <span class="label">Fact <em>— size of a net</em></span>
+        There is a $\gamma$-net with
+        <div class="eq">
+          \[
+          |N|\;\le\;\left(1+\frac{2}{\gamma}\right)^d .
+          \]
+        </div>
+      </div>
+
+      <p>
+        Let $N\subset\mathcal C(A)$ be such a net. If $S$ preserves the inner
+        products of all pairs in the net,
+      </p>
+      <div class="eq">
+        \[
+        \forall\, w_i,w_j\in N:\qquad
+        \langle Sw_i,Sw_j\rangle
+        =
+        \langle w_i,w_j\rangle
+        \pm
+        \varepsilon\,\|w_i\|_2\,\|w_j\|_2 ,
+        \]
+      </div>
+      <p>
+        then the guarantee extends from the finite net to the whole subspace:
+      </p>
+      <div class="eq">
+        \[
+        \|SAx\|_2^2=(1\pm O(\varepsilon))\,\|Ax\|_2^2
+        \qquad\forall\,x\in\mathbb R^d .
+        \]
+      </div>
+
+      <div class="q">
+        <strong>Choosing $\gamma=\tfrac12$.</strong>
+        Then $|N|\le 5^d$, and applying a
+        $\mathrm{JLT}(\varepsilon,\delta,f=5^d)$ to $N$ gives
+        $\|SAx\|_2^2=(1\pm O(\varepsilon))\|Ax\|_2^2$ for all
+        $x\in\mathbb R^d$.
+      </div>
+
+
+      <!-- ========== 5 ========== -->
+      <h2 id="jlt-to-subspace">5. JLTs give $\ell_2$-subspace embeddings</h2>
 
       <div class="thm">
         <span class="label">Theorem</span>
@@ -463,13 +766,10 @@
 
       <div class="remark">
         <span class="label">Where $5^d$ comes from</span>
-        The $5^d$ is the size of a net on the unit sphere of the
-        $d$-dimensional column space. Applying the JLT to every point of the
-        net and extending to the whole subspace gives the embedding. Woodruff
-        uses a $\tfrac12$-net of size
-        $(1+4/\gamma)^d\big|_{\gamma=1/2}=9^d$ (Lemma&nbsp;5 and
-        Theorem&nbsp;6). The constant in the base does not matter, because
-        $\log f=\Theta(d)$ in either case.
+        The $5^d$ is the size of the $\tfrac12$-net from Section&nbsp;4.
+        Woodruff states the net bound as $(1+4/\gamma)^d$, which gives $9^d$
+        (Lemma&nbsp;5 and Theorem&nbsp;6). The constant in the base does not
+        matter, because $\log f=\Theta(d)$ in either case.
       </div>
 
       <h3>Constructions of $S\in\mathbb R^{r\times n}$</h3>
@@ -558,8 +858,8 @@
         points, only for points lying in one $d$-dimensional subspace.
       </div>
 
-      <!-- ========== 4 ========== -->
-      <h2 id="countsketch">4. The CountSketch matrix</h2>
+      <!-- ========== 6 ========== -->
+      <h2 id="countsketch">6. The CountSketch matrix</h2>
 
       <p>
         Write $[k]:=\{0,1,\dots,k-1\}$. Choose two random functions:
@@ -714,7 +1014,7 @@
         Reference:
         <a href="https://arxiv.org/abs/1411.4357" target="_blank" rel="noopener noreferrer"
           >Woodruff, Sketching as a Tool for Numerical Linear Algebra</a
-        >, Section&nbsp;2.1.
+        >, Sections&nbsp;1 and&nbsp;2.1, and Lemma&nbsp;18.
       </p>
     </div>
   </body>
