@@ -1,69 +1,70 @@
-Timestamp,Aliases,Roll No.,Compression Target ,Are you submitting this model for Track 2?,"""I hereby declare that this submission is my own work and I have not shared my code or artifacts with any other student. I understand that any violation of the honor code will result in a grade of 0 for the project.""",I have confirmed that locally this submission passes eval.sh run (with required changes to pyproject.toml for my system),"""I hereby declare that I have not used any AI tools in preparing the report for the project mid-term evaluation."" ",Track 1 Score,Track 2 Score,size_frac,Accuracy = ,size_frac
-10/5/2026 16:24:42,Gautam Mahale,24B0060,20%,No,Yes,Yes,Yes,44,0,19.764,0.44,0.19764
-10/5/2026 21:05:06,Sri Surya Varma Datla,24B0978,20%,Yes,Yes,Yes,Yes,40,40,19.4087,0.4,0.194087
-10/5/2026 21:20:30,Dhruv Savot,24B4238,20%,No,Yes,Yes,Yes,40,0,19.4325,0.4,0.194325
-10/5/2026 22:19:32,Kislay Aditya Oj,25M2111,20%,Yes,Yes,Yes,Yes,40,40,19.8255,0.4,0.198255
-10/5/2026 23:53:28,Advay Bapat,23B1225,20%,No,Yes,Yes,Yes,38,0,19.1997,0.38,0.191997
-10/5/2026 23:38:09,Apoorv Goyal,23B1266,20%,No,Yes,Yes,Yes,38,0,19.8019,0.38,0.198019
-10/5/2026 22:27:40,Rishit Aggarwal,24b1094,20%,Yes,Yes,Yes,Yes,34,34,19.9989,0.34,0.199989
-10/5/2026 23:57:53,Advay Bapat,23B1225,20%,Yes,Yes,Yes,Yes,34,34,19.5189,0.34,0.195189
-10/5/2026 21:18:43,Amit Tiwari,25M2163,20%,No,Yes,Yes,Yes,34,0,19.8999,0.34,0.198999
-10/5/2026 23:54:48,Ansh Savla,24B0746,20%,No,Yes,Yes,Yes,32,0,71.5499,0.32,0.715499
-9/28/2026 21:32:41,Mangesh Poojan,25M0831,20%,No,Yes,Yes,Yes,30,0,19.4526,0.3,0.194526
-10/5/2026 22:11:40,Prakhar Paliwal,24M1529,20%,Yes,Yes,Yes,Yes,30,30,19.1375,0.3,0.191375
-10/5/2026 15:41:40,Deeptanshu Malu,22B1256,20%,Yes,Yes,Yes,Yes,28,28,19.9946,0.28,0.199946
-10/5/2026 23:23:43,Rahul Chhabra,25m0820,20%,Yes,Yes,Yes,Yes,26,26,19.687,0.26,0.19687
-10/5/2026 22:29:02,Bhavesh Sanjay Gyanchandani,26D0362,20%,Yes,Yes,Yes,Yes,22,22,19.3931,0.22,0.193931
-10/5/2026 23:58:36,Siddharth,24b1064,20%,No,Yes,Yes,Yes,20,0,16.2971,0.2,0.162971
-10/5/2026 22:21:39,Ratan Kokal,23B0059,20%,Yes,Yes,Yes,Yes,18,18,19.8247,0.18,0.198247
-10/5/2026 15:43:57,Deevyanshu Malu,22B1029,20%,Yes,Yes,Yes,Yes,18,18,19.7978,0.18,0.197978
-10/5/2026 23:49:55,Rishi Raj Vishwakarma,25M2161,20%,No,Yes,Yes,Yes,2,0,18.9117,0.02,0.189117
-10/5/2026 18:35:33,Sumedh S S,23B1079,20%,Yes,Yes,Yes,Yes,2,2,19.9033,0.02,0.199033
-10/5/2026 23:40:00,Malay Kedia,23b1034,20%,Yes,Yes,Yes,Yes,2,2,19.9099,0.02,0.199099
-10/5/2026 23:14:19,Devansh Rathor,25M2153,20%,No,Yes,Yes,Yes,0,0,19.5639,0,0.195639
-10/5/2026 20:48:38,Mulagalapati Eswara Venkata Parthiv,24b1051,20%,Yes,Yes,Yes,Yes,0,0,19.7999,0,0.197999
-10/5/2026 23:31:31,Praveen,22b3931,20%,No,Yes,Yes,Yes,0,0,19.7255,0,0.197255
-10/5/2026 16:25:36,Gautam Mahale,24B0060,40%,No,Yes,Yes,Yes,50,0,39.7187,0.5,0.397187
-10/5/2026 22:20:10,Kislay Adtya Oj,25m2111,40%,Yes,Yes,Yes,Yes,48,48,36.6574,0.48,0.366574
-10/5/2026 22:12:30,Prakhar Paliwal,24M1529,40%,Yes,Yes,Yes,Yes,46,46,38.7978,0.46,0.387978
-10/5/2026 23:48:57,Baraneetharan,24b1814,40%,Yes,Yes,Yes,Yes,44,44,38.295,0.44,0.38295
-10/5/2026 20:02:46,Rishit Aggarwal,24b1094,40%,Yes,Yes,Yes,Yes,42,42,35.4744,0.42,0.354744
-10/5/2026 23:43:50,Siddharth  Nandipati,24b1064,40%,No,Yes,Yes,Yes,42,0,37.0533,0.42,0.370533
-10/5/2026 21:05:49,Sri Surya Varma Datla,24B0978,40%,Yes,Yes,Yes,Yes,42,42,39.879,0.42,0.39879
-10/5/2026 21:19:07,Dhruv Savot,24B4238,40%,Yes,Yes,Yes,Yes,42,42,38.3816,0.42,0.383816
-10/4/2026 14:04:35,Aadeshveer Singh,24b0926,40%,No,Yes,Yes,Yes,42,0,38.6038,0.42,0.386038
-10/5/2026 21:15:57,Amit Tiwari,25M2163,40%,No,Yes,Yes,Yes,42,0,37.9575,0.42,0.379575
-10/5/2026 20:46:08,Bhavesh Sanjay Gyanchandani,26D0362,40%,Yes,Yes,Yes,Yes,42,42,36.7422,0.42,0.367422
-10/5/2026 22:19:49,Ratan Kokal,23B0059,40%,Yes,Yes,Yes,Yes,40,40,37.7614,0.4,0.377614
-10/3/2026 1:23:54,Rudrapratap Chinhara,25M2573,40%,Yes,Yes,Yes,Yes,40,40,36.2485,0.4,0.362485
-10/5/2026 15:42:41,Deevyanshu Malu,22B1029,40%,No,Yes,Yes,Yes,38,0,37.332,0.38,0.37332
-10/5/2026 20:50:27,Parthiv MEV,24b1051,40%,Yes,Yes,Yes,Yes,38,38,36.886,0.38,0.36886
-10/5/2026 23:55:40,Ansh Savla,24B0746,40%,No,Yes,Yes,Yes,38,0,59.1449,0.38,0.591449
-10/5/2026 23:37:23,Apoorv Goyal,23B1266,40%,No,Yes,Yes,Yes,38,0,39.0448,0.38,0.390448
-10/5/2026 15:42:47,Deeptanshu Malu,22B1256,40%,Yes,Yes,Yes,Yes,38,38,39.9582,0.38,0.399582
-9/28/2026 21:29:50,Mangesh Poojan,25M0831,40%,No,Yes,Yes,Yes,36,0,39.2708,0.36,0.392708
-10/5/2026 22:56:02,Anurag Borkar,25M2119,40%,No,Yes,Yes,Yes,36,0,36.1869,0.36,0.361869
-10/5/2026 23:50:57,Apoorv Goyal,23B1266,40%,Yes,Yes,Yes,Yes,36,36,38.9618,0.36,0.389618
-10/5/2026 23:39:08,Malay Kedia,23b1034,40%,Yes,Yes,Yes,Yes,34,34,38.5907,0.34,0.385907
-10/5/2026 23:12:57,Advay Bapat,23B1225,40%,Yes,Yes,Yes,Yes,34,34,36.8131,0.34,0.368131
-10/5/2026 21:33:15,Devansh Rathor,25M2153,40%,No,Yes,Yes,Yes,32,0,38.6749,0.32,0.386749
-10/5/2026 23:29:56,Praveen,22b3931,40%,No,Yes,Yes,Yes,32,0,38.4321,0.32,0.384321
-10/5/2026 19:17:57,Raul Chhabra,25m0820,40%,Yes,Yes,Yes,Yes,30,30,39.2267,0.3,0.392267
-10/5/2026 23:47:50,Rishi Raj Vishwakarma,25M2161,40%,No,Yes,Yes,Yes,28,0,36.3018,0.28,0.363018
-10/5/2026 18:34:18,Sumedh S S,23B1079,40%,No,Yes,Yes,Yes,20,0,37.0579,0.2,0.370579
-10/5/2026 23:41:16,Vedant Saini,24B0979,40%,No,Yes,Yes,Yes,0,0,39.0361,0,0.390361
-10/5/2026 23:46:11,Praveen,22b3931,40%,Yes,Yes,Yes,Yes,0,0,32.6763,0,0.326763
-10/5/2026 21:03:49,Sri Surya Varma Datla ,24B0978,10%,Yes,Yes,Yes,Yes,16,16,9.9782,0.16,0.099782
-10/5/2026 20:02:13,Rishit Aggarwal,24b1094,10%,Yes,Yes,Yes,Yes,10,10,9.9757,0.1,0.099757
-10/5/2026 23:57:57,Siddharth N,24b1064,10%,No,Yes,Yes,Yes,8,0,8.6033,0.08,0.086033
-10/5/2026 22:10:39,Prakhar Paliwal,24M1529,10%,Yes,Yes,Yes,Yes,6,6,9.8203,0.06,0.098203
-10/5/2026 21:19:47,Amit Tiwari,25M2163,10%,No,Yes,Yes,Yes,4,0,9.9311,0.04,0.099311
-10/5/2026 21:22:33,Dhruv Savot,24B4238,10%,No,Yes,Yes,Yes,4,0,9.6921,0.04,0.096921
-10/5/2026 22:18:36,Kislay Aditya Oj,25M2111,10%,Yes,Yes,Yes,Yes,2,2,9.7962,0.02,0.097962
-10/5/2026 16:24:09,Gautam Mahale,24B0060,10%,No,Yes,Yes,Yes,0,0,9.8882,0,0.098882
-10/5/2026 20:51:24,Parthiv MEV,24b1051,10%,Yes,Yes,Yes,Yes,0,0,6.7856,0,0.067856
-10/5/2026 23:32:35,Praveen,22b3931,10%,No,Yes,Yes,Yes,0,0,9.3085,0,0.093085
-10/5/2026 20:44:14,Bhavesh Sanjay Gyanchandani,26D0362,10%,Yes,Yes,Yes,Yes,0,0,9.7703,0,0.097703
-10/5/2026 15:40:35,Deeptanshu Malu,22B1256,10%,Yes,Yes,Yes,Yes,0,0,9.9463,0,0.099463
-10/5/2026 15:44:48,Deevyanshu Malu,22B1029,10%,No,Yes,Yes,Yes,0,0,9.9001,0,0.099001
-10/5/2026 23:15:04,Devansh Rathor,25M2153,10%,No,Yes,Yes,Yes,0,0,9.5093,0,0.095093
+Timestamp,Alias,Roll No.,Compression Target,Are you submitting this model for Track 2?,"""I hereby declare that this submission is my own work and I have not shared my code or artifacts with any other student. I understand that any violation of the honor code will result in a grade of 0 for the project.""",I have confirmed that locally this submission passes eval.sh run (with required changes to pyproject.toml for my system),"""I hereby declare that I have not used any AI tools in preparing the report for the project mid-term evaluation."" ","Track_1
+Score",Track 2 Score,Compression Achieved
+10/5/2026 16:24:42,Gautam Mahale,24B0060,20%,No,Yes,Yes,Yes,44,0,19.764
+10/5/2026 21:05:06,Sri Surya Varma Datla,24B0978,20%,Yes,Yes,Yes,Yes,40,40,19.4087
+10/5/2026 21:20:30,Dhruv Savot,24B4238,20%,No,Yes,Yes,Yes,40,0,19.4325
+10/5/2026 22:19:32,Kislay Aditya Oj,25M2111,20%,Yes,Yes,Yes,Yes,40,40,19.8255
+10/5/2026 23:53:28,Advay Bapat,23B1225,20%,No,Yes,Yes,Yes,38,0,19.1997
+10/5/2026 23:38:09,Apoorv Goyal,23B1266,20%,No,Yes,Yes,Yes,38,0,19.8019
+10/5/2026 22:27:40,Rishit Aggarwal,24b1094,20%,Yes,Yes,Yes,Yes,34,34,19.9989
+10/5/2026 23:57:53,Advay Bapat,23B1225,20%,Yes,Yes,Yes,Yes,34,34,19.5189
+10/5/2026 21:18:43,Amit Tiwari,25M2163,20%,No,Yes,Yes,Yes,34,0,19.8999
+10/5/2026 23:54:48,Ansh Savla,24B0746,20%,No,Yes,Yes,Yes,32,0,71.5499
+9/28/2026 21:32:41,Mangesh Poojan,25M0831,20%,No,Yes,Yes,Yes,30,0,19.4526
+10/5/2026 22:11:40,Prakhar Paliwal,24M1529,20%,Yes,Yes,Yes,Yes,30,30,19.1375
+10/5/2026 15:41:40,Deeptanshu Malu,22B1256,20%,Yes,Yes,Yes,Yes,28,28,19.9946
+10/5/2026 23:23:43,Rahul Chhabra,25m0820,20%,Yes,Yes,Yes,Yes,26,26,19.687
+10/5/2026 22:29:02,Bhavesh Sanjay Gyanchandani,26D0362,20%,Yes,Yes,Yes,Yes,22,22,19.3931
+10/5/2026 23:58:36,Siddharth,24b1064,20%,No,Yes,Yes,Yes,20,0,16.2971
+10/5/2026 22:21:39,Ratan Kokal,23B0059,20%,Yes,Yes,Yes,Yes,18,18,19.8247
+10/5/2026 15:43:57,Deevyanshu Malu,22B1029,20%,Yes,Yes,Yes,Yes,18,18,19.7978
+10/5/2026 23:49:55,Rishi Raj Vishwakarma,25M2161,20%,No,Yes,Yes,Yes,2,0,18.9117
+10/5/2026 18:35:33,Sumedh S S,23B1079,20%,Yes,Yes,Yes,Yes,2,2,19.9033
+10/5/2026 23:40:00,Malay Kedia,23b1034,20%,Yes,Yes,Yes,Yes,2,2,19.9099
+10/5/2026 23:14:19,Devansh Rathor,25M2153,20%,No,Yes,Yes,Yes,0,0,19.5639
+10/5/2026 20:48:38,Mulagalapati Eswara Venkata Parthiv,24b1051,20%,Yes,Yes,Yes,Yes,0,0,19.7999
+10/5/2026 23:31:31,Praveen,22b3931,20%,No,Yes,Yes,Yes,0,0,19.7255
+10/5/2026 16:25:36,Gautam Mahale,24B0060,40%,No,Yes,Yes,Yes,50,0,39.7187
+10/5/2026 22:20:10,Kislay Adtya Oj,25m2111,40%,Yes,Yes,Yes,Yes,48,48,36.6574
+10/5/2026 22:12:30,Prakhar Paliwal,24M1529,40%,Yes,Yes,Yes,Yes,46,46,38.7978
+10/5/2026 23:48:57,Baraneetharan,24b1814,40%,Yes,Yes,Yes,Yes,44,44,38.295
+10/5/2026 20:02:46,Rishit Aggarwal,24b1094,40%,Yes,Yes,Yes,Yes,42,42,35.4744
+10/5/2026 23:43:50,Siddharth  Nandipati,24b1064,40%,No,Yes,Yes,Yes,42,0,37.0533
+10/5/2026 21:05:49,Sri Surya Varma Datla,24B0978,40%,Yes,Yes,Yes,Yes,42,42,39.879
+10/5/2026 21:19:07,Dhruv Savot,24B4238,40%,Yes,Yes,Yes,Yes,42,42,38.3816
+10/4/2026 14:04:35,Aadeshveer Singh,24b0926,40%,No,Yes,Yes,Yes,42,0,38.6038
+10/5/2026 21:15:57,Amit Tiwari,25M2163,40%,No,Yes,Yes,Yes,42,0,37.9575
+10/5/2026 20:46:08,Bhavesh Sanjay Gyanchandani,26D0362,40%,Yes,Yes,Yes,Yes,42,42,36.7422
+10/5/2026 22:19:49,Ratan Kokal,23B0059,40%,Yes,Yes,Yes,Yes,40,40,37.7614
+10/3/2026 1:23:54,Rudrapratap Chinhara,25M2573,40%,Yes,Yes,Yes,Yes,40,40,36.2485
+10/5/2026 15:42:41,Deevyanshu Malu,22B1029,40%,No,Yes,Yes,Yes,38,0,37.332
+10/5/2026 20:50:27,Parthiv MEV,24b1051,40%,Yes,Yes,Yes,Yes,38,38,36.886
+10/5/2026 23:55:40,Ansh Savla,24B0746,40%,No,Yes,Yes,Yes,38,0,59.1449
+10/5/2026 23:37:23,Apoorv Goyal,23B1266,40%,No,Yes,Yes,Yes,38,0,39.0448
+10/5/2026 15:42:47,Deeptanshu Malu,22B1256,40%,Yes,Yes,Yes,Yes,38,38,39.9582
+9/28/2026 21:29:50,Mangesh Poojan,25M0831,40%,No,Yes,Yes,Yes,36,0,39.2708
+10/5/2026 22:56:02,Anurag Borkar,25M2119,40%,No,Yes,Yes,Yes,36,0,36.1869
+10/5/2026 23:50:57,Apoorv Goyal,23B1266,40%,Yes,Yes,Yes,Yes,36,36,38.9618
+10/5/2026 23:39:08,Malay Kedia,23b1034,40%,Yes,Yes,Yes,Yes,34,34,38.5907
+10/5/2026 23:12:57,Advay Bapat,23B1225,40%,Yes,Yes,Yes,Yes,34,34,36.8131
+10/5/2026 21:33:15,Devansh Rathor,25M2153,40%,No,Yes,Yes,Yes,32,0,38.6749
+10/5/2026 23:29:56,Praveen,22b3931,40%,No,Yes,Yes,Yes,32,0,38.4321
+10/5/2026 19:17:57,Raul Chhabra,25m0820,40%,Yes,Yes,Yes,Yes,30,30,39.2267
+10/5/2026 23:47:50,Rishi Raj Vishwakarma,25M2161,40%,No,Yes,Yes,Yes,28,0,36.3018
+10/5/2026 18:34:18,Sumedh S S,23B1079,40%,No,Yes,Yes,Yes,20,0,37.0579
+10/5/2026 23:41:16,Vedant Saini,24B0979,40%,No,Yes,Yes,Yes,0,0,39.0361
+10/5/2026 23:46:11,Praveen,22b3931,40%,Yes,Yes,Yes,Yes,0,0,32.6763
+10/5/2026 21:03:49,Sri Surya Varma Datla ,24B0978,10%,Yes,Yes,Yes,Yes,16,16,9.9782
+10/5/2026 20:02:13,Rishit Aggarwal,24b1094,10%,Yes,Yes,Yes,Yes,10,10,9.9757
+10/5/2026 23:57:57,Siddharth N,24b1064,10%,No,Yes,Yes,Yes,8,0,8.6033
+10/5/2026 22:10:39,Prakhar Paliwal,24M1529,10%,Yes,Yes,Yes,Yes,6,6,9.8203
+10/5/2026 21:19:47,Amit Tiwari,25M2163,10%,No,Yes,Yes,Yes,4,0,9.9311
+10/5/2026 21:22:33,Dhruv Savot,24B4238,10%,No,Yes,Yes,Yes,4,0,9.6921
+10/5/2026 22:18:36,Kislay Aditya Oj,25M2111,10%,Yes,Yes,Yes,Yes,2,2,9.7962
+10/5/2026 16:24:09,Gautam Mahale,24B0060,10%,No,Yes,Yes,Yes,0,0,9.8882
+10/5/2026 20:51:24,Parthiv MEV,24b1051,10%,Yes,Yes,Yes,Yes,0,0,6.7856
+10/5/2026 23:32:35,Praveen,22b3931,10%,No,Yes,Yes,Yes,0,0,9.3085
+10/5/2026 20:44:14,Bhavesh Sanjay Gyanchandani,26D0362,10%,Yes,Yes,Yes,Yes,0,0,9.7703
+10/5/2026 15:40:35,Deeptanshu Malu,22B1256,10%,Yes,Yes,Yes,Yes,0,0,9.9463
+10/5/2026 15:44:48,Deevyanshu Malu,22B1029,10%,No,Yes,Yes,Yes,0,0,9.9001
+10/5/2026 23:15:04,Devansh Rathor,25M2153,10%,No,Yes,Yes,Yes,0,0,9.5093
