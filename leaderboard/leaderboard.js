@@ -797,9 +797,6 @@ function renderLeaderboard(records) {
     `;
     boards.appendChild(section);
   }
-
-  document.getElementById("note").textContent =
-    `Best Mid-Sem Track 1 score (out of ${CONFIG.scoreMax}) per alias · ${records.length} graded submissions.`;
 }
 
 async function main() {
