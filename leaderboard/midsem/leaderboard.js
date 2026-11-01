@@ -408,7 +408,7 @@
  * Extra columns (Roll no., Track_2, Remarks, …) are ignored.
  */
 const CONFIG = {
-  csvUrl: "assets/cs6013ProjectGrading - MidSem.csv",
+  csvUrl: "../assets/cs6013ProjectGrading - MidSem.csv",
   targets: ["10%", "20%", "40%"],
   scoreHeader: "track_1 score",
   scoreMax: 100,

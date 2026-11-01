@@ -8,7 +8,7 @@
  * Extra columns (Roll no., Track_2, Remarks, …) are ignored.
  */
 const CONFIG = {
-  csvUrl: (week) => `assets/cs6013ProjectGrading - Week${week}(Anon).csv`,
+  csvUrl: (week) => `../assets/cs6013ProjectGrading - Week${week}(Anon).csv`,
   maxWeeks: 24,
   targets: ["10%", "20%", "40%"],
   scoreHeader: "track_1 score",
