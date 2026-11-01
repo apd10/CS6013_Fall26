@@ -7,14 +7,14 @@
   text-decoration: underline;
 }
 
-.week-tabs {
+/* .week-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin: 1.75rem 0 1rem;
-}
+} */
 
-.week-tab {
+/* .week-tab {
   appearance: none;
   border: 1px solid var(--line);
   background: var(--surface);
@@ -25,23 +25,33 @@
   padding: 0.45rem 0.95rem;
   border-radius: 999px;
   cursor: pointer;
-}
+} */
 
-.week-tab:hover {
+/* .week-tab:hover {
   border-color: var(--accent);
   color: var(--ink);
-}
+} */
 
-.week-tab.is-active {
+/* .week-tab.is-active {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
-}
+} */
 
-.week-note,
+/* .week-note,
 .status {
   margin: 0 0 1.25rem;
   color: var(--muted);
+} */
+
+.note,
+.status {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+.note {
+  margin-top: 1.75rem;
 }
 
 .scatter-wrap {
