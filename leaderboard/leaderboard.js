@@ -413,6 +413,12 @@ const CONFIG = {
   scoreHeader: "track_1 score",
   scoreMax: 100,
   tickStep: 20,
+// Baseline performance: mean ± std on the 0–100 score scale.
+  baselines: {
+    "10%": { mean: 43.5, std: 4.123105626 },
+    "20%": { mean: 43.5, std: 4.123105626 },
+    "40%": { mean: 43.5, std: 4.123105626 },
+  },
 };
 
 function normalizeHeader(value) {
@@ -552,21 +558,71 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
-function renderTable(entries) {
-  if (!entries.length) {
+// function renderTable(entries) {
+//   if (!entries.length) {
+//     return `<p class="empty">No submissions for this compression target yet.</p>`;
+//   }
+
+//   const body = entries
+//     .map(
+//       (entry) => `
+//         <tr>
+//           <td><span class="${medalClass(entry.rank, entry.score)}">${entry.rank}</span></td>
+//           <td>${escapeHtml(entry.alias)}</td>
+//           <td>${formatScore(entry.score)}</td>
+//         </tr>`,
+//     )
+//     .join("");
+
+//   return `
+//     <div class="table-wrap">
+//       <table>
+//         <thead>
+//           <tr>
+//             <th scope="col">Rank</th>
+//             <th scope="col">Alias</th>
+//             <th scope="col">Score</th>
+//           </tr>
+//         </thead>
+//         <tbody>${body}</tbody>
+//       </table>
+//     </div>`;
+// }
+
+function baselineRow(baseline) {
+  return `
+    <tr class="baseline-row">
+      <td>—</td>
+      <td>Baseline</td>
+      <td>${formatScore(baseline.mean)} ± ${formatScore(baseline.std)}</td>
+    </tr>`;
+}
+
+function entryRow(entry) {
+  return `
+    <tr>
+      <td><span class="${medalClass(entry.rank, entry.score)}">${entry.rank}</span></td>
+      <td>${escapeHtml(entry.alias)}</td>
+      <td>${formatScore(entry.score)}</td>
+    </tr>`;
+}
+
+function renderTable(entries, baseline) {
+  if (!entries.length && !baseline) {
     return `<p class="empty">No submissions for this compression target yet.</p>`;
   }
 
-  const body = entries
-    .map(
-      (entry) => `
-        <tr>
-          <td><span class="${medalClass(entry.rank, entry.score)}">${entry.rank}</span></td>
-          <td>${escapeHtml(entry.alias)}</td>
-          <td>${formatScore(entry.score)}</td>
-        </tr>`,
-    )
-    .join("");
+  // Insert the baseline row where it would rank by score.
+  const rows = [];
+  let baselineDone = !baseline;
+  for (const entry of entries) {
+    if (!baselineDone && entry.score < baseline.mean) {
+      rows.push(baselineRow(baseline));
+      baselineDone = true;
+    }
+    rows.push(entryRow(entry));
+  }
+  if (!baselineDone) rows.push(baselineRow(baseline));
 
   return `
     <div class="table-wrap">
@@ -578,7 +634,7 @@ function renderTable(entries) {
             <th scope="col">Score</th>
           </tr>
         </thead>
-        <tbody>${body}</tbody>
+        <tbody>${rows.join("")}</tbody>
       </table>
     </div>`;
 }
@@ -656,6 +712,29 @@ function renderScatter(rankedByTarget) {
     })
     .join("");
 
+  const clampScore = (s) => Math.min(Math.max(s, 0), yMax);
+  const colWidth = plotWidth / CONFIG.targets.length;
+  const bandHalf = colWidth * 0.35;
+
+  const baselineSvg = CONFIG.targets
+    .map((target, i) => {
+      const b = CONFIG.baselines?.[target];
+      if (!b) return "";
+      const x0 = columnX(i, plotLeft, plotWidth);
+      const yTop = yAt(clampScore(b.mean + b.std));
+      const yBot = yAt(clampScore(b.mean - b.std));
+      const yMid = yAt(clampScore(b.mean));
+      return `
+        <rect class="baseline-band" x="${x0 - bandHalf}" y="${yTop}" width="${bandHalf * 2}" height="${Math.max(yBot - yTop, 1)}">
+          <title>Baseline · ${formatScore(b.mean)} ± ${formatScore(b.std)}</title>
+        </rect>
+        <line class="baseline-line" x1="${x0 - bandHalf}" y1="${yMid}" x2="${x0 + bandHalf}" y2="${yMid}" />
+        <text class="baseline-label" x="${x0 + bandHalf}" y="${yBot + 13}" text-anchor="end">
+          Baseline ${formatScore(b.mean)} ± ${formatScore(b.std)}
+        </text>`;
+    })
+    .join("");
+
   const xLabels = CONFIG.targets
     .map((target, i) => {
       const x = columnX(i, plotLeft, plotWidth);
@@ -692,6 +771,7 @@ function renderScatter(rankedByTarget) {
       <line class="axis" x1="${plotLeft}" y1="${plotTop + plotHeight}" x2="${plotLeft + plotWidth}" y2="${plotTop + plotHeight}" />
       <text class="axis-title" x="${plotLeft - 40}" y="${plotTop - 14}">Score</text>
       ${xLabels}
+      ${baselineSvg}
       ${dotsSvg}
       ${labelsSvg}
     </svg>`;
@@ -713,7 +793,7 @@ function renderLeaderboard(records) {
     section.className = "board";
     section.innerHTML = `
       <h3>${target} compression</h3>
-      ${renderTable(entries)}
+      ${renderTable(entries, CONFIG.baselines?.[target])}
     `;
     boards.appendChild(section);
   }

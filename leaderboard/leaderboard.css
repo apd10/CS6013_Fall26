@@ -230,6 +230,32 @@
   font-size: 0.92em;
 }
 
+.scatter-wrap .baseline-band {
+  fill: #64748b;
+  fill-opacity: 0.12;
+}
+
+.scatter-wrap .baseline-line {
+  stroke: #475569;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.scatter-wrap .baseline-label {
+  fill: #475569;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-style: italic;
+}
+
+.board tbody tr.baseline-row td {
+  background: rgba(100, 116, 139, 0.08);
+  color: #475569;
+  font-style: italic;
+  border-top: 1px dashed var(--line);
+  border-bottom: 1px dashed var(--line);
+}
+
 @media (max-width: 900px) {
   .boards {
     grid-template-columns: 1fr;
