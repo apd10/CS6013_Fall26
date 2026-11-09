@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nets, Subspace Embeddings, and Limited Independence — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+        --neg: #b4472f;
+        --neg-soft: #fbece8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a,
+      .next a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      header .byline {
+        margin-top: 0.6rem;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      h4 {
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.35rem;
+        color: var(--accent);
+      }
+
+      .part {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 3rem 0 0.5rem;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .part::after {
+        content: "";
+        flex: 1;
+        border-top: 1px solid var(--line);
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .toc {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+      }
+
+      .toc .label,
+      .thm .label,
+      .card .tag {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .toc .label {
+        margin-bottom: 0.4rem;
+      }
+
+      .toc ol {
+        margin: 0;
+      }
+
+      .toc a {
+        color: var(--ink);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .thm {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--accent);
+        border-radius: 0 10px 10px 0;
+        padding: 0.9rem 1.1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .thm .label {
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .thm .label em {
+        font-style: normal;
+        color: var(--muted);
+        text-transform: none;
+        letter-spacing: 0;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        overflow-y: hidden;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .split3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+        overflow-x: auto;
+      }
+
+      .card .tag {
+        color: var(--muted);
+      }
+
+      .card h3 {
+        margin-top: 0.25rem;
+        font-size: 1rem;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+
+      .compare {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+        background: var(--card);
+      }
+
+      .compare th,
+      .compare td {
+        border: 1px solid var(--line);
+        padding: 0.55rem 0.7rem;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .compare th {
+        background: var(--accent-soft);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
+      /* CountSketch matrix illustration */
+      .sketch-figure {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1.15rem 0;
+        overflow-x: auto;
+      }
+
+      .sketch-grid {
+        display: grid;
+        grid-template-columns: auto repeat(5, 2.6rem);
+        gap: 0.3rem;
+        justify-content: center;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+      }
+
+      .sketch-grid .hdr {
+        color: var(--muted);
+        font-size: 0.72rem;
+        text-align: center;
+        align-self: end;
+        line-height: 1.3;
+      }
+
+      .sketch-grid .rlabel {
+        color: var(--muted);
+        font-size: 0.72rem;
+        padding-right: 0.5rem;
+        align-self: center;
+        text-align: right;
+      }
+
+      .sketch-grid .cell {
+        height: 2.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        color: #b8c2cf;
+      }
+
+      .sketch-grid .cell.pos {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .sketch-grid .cell.neg {
+        background: var(--neg-soft);
+        border-color: var(--neg);
+        color: var(--neg);
+        font-weight: 600;
+      }
+
+      .sketch-caption {
+        margin: 0.85rem 0 0;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      @media (max-width: 600px) {
+        .split3 {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        This html page is created by scribe. If you find any mistakes, please feel free to drop a <a href="mailto:amit.t@iitb.ac.in"> mail here. </a>
+      </p>
+
+      <header>
+        <p class="meta">Efficient AI · Lecture notes · 28 October 2026</p>
+        <h1>Nets, Subspace Embeddings, and Limited Independence</h1>
+        <p>
+          Why a JL transform for $5^d$ points is enough to embed a whole
+          $d$-dimensional subspace: how big a $\gamma$-net has to be, and how a
+          guarantee on the net extends to every vector. Then CountSketch
+          again, this time asking how much randomness it really needs, which
+          leads to $k$-wise independence and cheap pairwise-independent hash
+          functions.
+        </p>
+        <p class="byline">
+          Continues
+          <a href="subspace_embeddings.html">Lecture 23: JL Lemma, Subspace Embeddings, and CountSketch</a>.
+        </p>
+      </header>
+
+      <div class="toc">
+        <div class="label">Roadmap</div>
+        <ol>
+          <li><a href="#recap">Recap and the question</a></li>
+          <li><a href="#net-size">$\gamma$-nets and their size</a></li>
+          <li><a href="#net-subspace">A net for the column space</a></li>
+          <li><a href="#net-to-subspace">From the net to the whole subspace</a></li>
+          <li><a href="#countsketch">CountSketch: how much randomness?</a></li>
+          <li><a href="#kwise">$k$-wise independence</a></li>
+          <li><a href="#bits">Pairwise-independent bits from a few random bits</a></li>
+          <li><a href="#hash">Pairwise-independent hash functions</a></li>
+        </ol>
+      </div>
+
+      <!-- ========== 1 ========== -->
+      <h2 id="recap">1. Recap and the question</h2>
+
+      <div class="thm">
+        <span class="label">Definition <em>— $\mathrm{JLT}(\varepsilon,\delta,f)$</em></span>
+        A random $S\in\mathbb R^{r\times n}$ such that for any fixed set $V$ of
+        $f$ vectors, with probability at least $1-\delta$,
+        <div class="eq">
+          \[
+          \forall\,v,v'\in V:\qquad
+          \langle Sv,Sv'\rangle=\langle v,v'\rangle\pm\varepsilon\,\|v\|_2\,\|v'\|_2 .
+          \]
+        </div>
+      </div>
+
+      <div class="thm">
+        <span class="label">Definition <em>— $\ell_2$-subspace embedding</em></span>
+        For $A\in\mathbb R^{n\times d}$, $S$ is a $(1\pm\varepsilon)$
+        $\ell_2$-subspace embedding for the column space $\mathcal C(A)$ if
+        <div class="eq">
+          \[
+          \forall\,y\in\mathcal C(A):\qquad
+          \|Sy\|_2^2=(1\pm\varepsilon)\,\|y\|_2^2 .
+          \]
+        </div>
+      </div>
+
+      <div class="q">
+        <strong>Question.</strong>
+        A JLT only promises something for a <em>finite</em> set of $f$ points,
+        while $\mathcal C(A)$ contains infinitely many. How do we get from a
+        JLT to a subspace embedding? Answer: apply the JLT to a finite
+        $\gamma$-net of the unit vectors in $\mathcal C(A)$, then show the
+        guarantee spreads to every vector.
+      </div>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="net-size">2. $\gamma$-nets and their size</h2>
+
+      <div class="thm">
+        <span class="label">Definition <em>— $\gamma$-net</em></span>
+        A set $\mathcal N\subseteq\mathcal S$ is a <strong>$\gamma$-net</strong>
+        of $\mathcal S$ if every point of $\mathcal S$ is within $\gamma$ of
+        some net point:
+        <div class="eq">
+          \[
+          \forall\,x\in\mathcal S\ \ \exists\,x'\in\mathcal N:\qquad
+          \|x-x'\|_2\le\gamma .
+          \]
+        </div>
+      </div>
+
+      <div class="q">
+        <strong>Question.</strong>
+        How large must a $\gamma$-net of the unit sphere
+        $S^{d-1}\subset\mathbb R^d$ be? We want a bound $|\mathcal N|\le f(d)$.
+      </div>
+
+      <h4>Construction: a maximal packing</h4>
+      <p>
+        Greedily put as many points on $S^{d-1}$ as possible such that every
+        two of them are more than $\gamma$ apart:
+        $\|x-x'\|_2&gt;\gamma$ for all $x\ne x'$. When no more points can be
+        added, every point of the sphere is within $\gamma$ of a chosen
+        point (otherwise we could add it), so the chosen set is a
+        $\gamma$-net.
+      </p>
+
+      <h4>Volume argument</h4>
+      <p>
+        Put a ball of radius $\gamma/2$ around each net point. Since the points
+        are more than $\gamma$ apart, these balls are disjoint. They all lie
+        inside the ball of radius $1+\gamma/2$ around the origin. Let $V_d$ be
+        the volume of the unit ball in $\mathbb R^d$, so a ball of radius
+        $\rho$ has volume $V_d\,\rho^d$. Comparing volumes,
+      </p>
+      <div class="eq-box">
+        \[
+        |\mathcal N|\,V_d\left(\frac\gamma2\right)^{d}
+        \;\le\;
+        \left(1+\frac\gamma2\right)^{d}V_d
+        \qquad\Longrightarrow\qquad
+        |\mathcal N|\;\le\;\left(1+\frac2\gamma\right)^{d}.
+        \]
+      </div>
+      <p>
+        With $\gamma=\tfrac12$ this gives $|\mathcal N|\le 5^d$.
+      </p>
+
+      <!-- ========== 3 ========== -->
+      <h2 id="net-subspace">3. A net for the column space</h2>
+
+      <p>For $A\in\mathbb R^{n\times d}$, the set we need to cover is</p>
+      <div class="eq">
+        \[
+        \mathcal S=\bigl\{\,y\in\mathbb R^n:\ \|y\|_2=1,\ y=Ax \text{ for some } x\in\mathbb R^d\,\bigr\},
+        \]
+      </div>
+      <p>
+        the unit vectors of $\mathcal C(A)$. It lives in $\mathbb R^n$, but it is
+        really a sphere of dimension at most $d-1$.
+      </p>
+      <p>
+        Let $U\in\mathbb R^{n\times d'}$ ($d'=\mathrm{rank}(A)\le d$) have
+        orthonormal columns spanning $\mathcal C(A)$, so $U^\top U=I$. Every
+        $y\in\mathcal S$ is $y=Uz$ for a unique unit vector $z\in S^{d'-1}$, and
+        $U$ preserves distances:
+      </p>
+      <div class="eq">
+        \[
+        \|Uz_1-Uz_2\|_2=\|z_1-z_2\|_2 .
+        \]
+      </div>
+      <p>
+        So the path $y\to z\to z'\in$ ($\gamma$-net of $S^{d'-1}$) $\to Uz'$
+        maps a $\gamma$-net of $S^{d'-1}$ to a $\gamma$-net of $\mathcal S$ of
+        the same size. Hence $\mathcal S$ has a $\tfrac12$-net with at most
+        $5^d$ points.
+      </p>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="net-to-subspace">4. From the net to the whole subspace</h2>
+
+      <div class="thm">
+        <span class="label">Theorem</span>
+        Let $\mathcal N$ be a $\tfrac12$-net of $\mathcal S$. If
+        <div class="eq">
+          \[
+          \forall\,w,w'\in\mathcal N:\qquad
+          \langle Sw,Sw'\rangle=\langle w,w'\rangle\pm\varepsilon ,
+          \]
+        </div>
+        then $\|Sy\|_2^2=1\pm4\varepsilon$ for every $y\in\mathcal S$, and by
+        scaling, $\|Sy\|_2^2=(1\pm4\varepsilon)\|y\|_2^2$ for every
+        $y\in\mathcal C(A)$.
+      </div>
+
+      <p>
+        The hypothesis is exactly what a $\mathrm{JLT}(\varepsilon,\delta,5^d)$
+        applied to $\mathcal N$ delivers (net points are unit vectors, so
+        $\varepsilon\|w\|\|w'\|=\varepsilon$).
+      </p>
+
+      <h3>Proof</h3>
+
+      <h4>Write $y$ as a series of net points</h4>
+      <p>
+        Pick $w_0\in\mathcal N$ closest to $y$ and write $y=w_0+\Delta_0$ with
+        $\|\Delta_0\|\le\tfrac12$. The leftover direction
+        $\Delta_0/\|\Delta_0\|$ is again a unit vector in $\mathcal C(A)$, so
+        repeat:
+      </p>
+      <div class="eq">
+        \[
+        y=w_0+\Delta_0,
+        \qquad
+        \frac{\Delta_0}{\|\Delta_0\|}=w_1+\Delta_1,
+        \qquad
+        \frac{\Delta_1}{\|\Delta_1\|}=w_2+\Delta_2,
+        \qquad\dots
+        \]
+      </div>
+      <p>with every $\|\Delta_i\|\le\tfrac12$. Unrolling,</p>
+      <div class="eq-box">
+        \[
+        y=\sum_{i\ge0}\lambda_i\,w_i,
+        \qquad
+        \lambda_0=1,\quad
+        \lambda_i=\prod_{j&lt;i}\|\Delta_j\|\;\le\;\frac{1}{2^i}.
+        \]
+      </div>
+      <p>
+        (If some $\Delta_i=0$ the series simply stops.) In particular
+        $\sum_i\lambda_i\le\sum_i 2^{-i}=2$.
+      </p>
+
+      <h4>Expand $\|Sy\|^2$</h4>
+      <div class="eq">
+        \[
+        \begin{aligned}
+        \|Sy\|_2^2
+        &amp;=\Bigl\langle S\textstyle\sum_i\lambda_iw_i,\ S\sum_j\lambda_jw_j\Bigr\rangle
+        =\sum_{i,j}\lambda_i\lambda_j\,\langle Sw_i,Sw_j\rangle \\
+        &amp;=\sum_{i,j}\lambda_i\lambda_j\bigl(\langle w_i,w_j\rangle\pm\varepsilon\bigr)
+        =\underbrace{\Bigl\langle\textstyle\sum_i\lambda_iw_i,\ \sum_j\lambda_jw_j\Bigr\rangle}_{\|y\|_2^2\,=\,1}
+        \;\pm\;\varepsilon\Bigl(\textstyle\sum_i\lambda_i\Bigr)^{2} \\
+        &amp;=1\pm4\varepsilon .
+        \end{aligned}
+        \]
+      </div>
+      <p>
+        The diagonal terms $i=j$ and the cross terms $i\ne j$ are handled
+        together; both use the net guarantee.
+      </p>
+
+      <div class="q">
+        <strong>Conclusion.</strong>
+        Run the argument with $\varepsilon/4$: a
+        $\mathrm{JLT}(\varepsilon/4,\delta,5^d)$ is a $(1\pm\varepsilon)$
+        $\ell_2$-subspace embedding for $\mathcal C(A)$ with probability
+        $1-\delta$. Since $\log f=d\log5$, this needs only
+        $r=O\!\left(\frac{d+\log(1/\delta)}{\varepsilon^2}\right)$ rows.
+      </div>
+
+      <div class="remark">
+        <span class="label">Constants</span>
+        Woodruff states the net size as $(1+4/\gamma)^d$, i.e. $9^d$ for
+        $\gamma=\tfrac12$. The volume argument above gives the slightly
+        sharper $(1+2/\gamma)^d$. Only $\log f=\Theta(d)$ matters for the
+        number of rows, so the base is irrelevant.
+      </div>
+
+      <!-- ========== 5 ========== -->
+      <h2 id="countsketch">5. CountSketch: how much randomness?</h2>
+
+      <p>
+        Recall CountSketch $S\in\mathbb R^{r\times n}$ for $A\in\mathbb R^{n\times d}$:
+        pick random $h:[n]\to[r]$ and $g:[n]\to\{-1,+1\}$; column $i$ of $S$
+        has the single non-zero entry $g(i)$ in row $h(i)$. Applying $S$ to a
+        vector $x$ sends $x_i$ to bucket $h(i)$ with sign $g(i)$, so $SA$ costs
+        $O(\mathrm{nnz}(A))$.
+      </p>
+
+      <div class="q">
+        <strong>Memory is randomness.</strong>
+        $S$ is never stored as a matrix; we store $h$ and $g$. If
+        $h(1),\dots,h(n)$ are fully independent and uniform, writing them down
+        takes $n\log_2 r$ random bits, plus $n$ bits for $g$. That is as much
+        memory as a long vector. Do we need complete randomness?
+      </div>
+
+      <p>
+        No. The CountSketch analysis only ever looks at a few coordinates at
+        a time (pairs of collisions for $h$, products of up to four signs for
+        $g$), so limited independence is enough.
+      </p>
+
+      <!-- ========== 6 ========== -->
+      <h2 id="kwise">6. $k$-wise independence</h2>
+
+      <div class="thm">
+        <span class="label">Definition <em>— $k$-wise independence</em></span>
+        Random variables $X_1,\dots,X_n$ are <strong>$k$-wise
+        independent</strong> if every subset of at most $k$ of them is
+        independent: for all $I\subseteq[n]$ with $|I|\le k$ and all values
+        $x_i$,
+        <div class="eq">
+          \[
+          \Pr\Bigl(\,\bigcap_{i\in I}\{X_i=x_i\}\Bigr)=\prod_{i\in I}\Pr(X_i=x_i).
+          \]
+        </div>
+        $2$-wise independence is called <strong>pairwise</strong>
+        independence.
+      </div>
+
+      <div class="thm">
+        <span class="label">Theorem <em>— CountSketch with limited independence (Woodruff)</em></span>
+        If $h$ is $2$-wise independent and $g$ is $4$-wise independent, then
+        CountSketch with
+        $r=O\!\left(\frac{d^2}{\delta\,\varepsilon^2}\right)$ rows is a
+        $(1\pm\varepsilon)$ $\ell_2$-subspace embedding for any fixed
+        $A\in\mathbb R^{n\times d}$ with probability $1-\delta$.
+      </div>
+
+      <p>
+        So the remaining question is how to generate $k$-wise independent
+        values from very few truly random bits.
+      </p>
+
+      <!-- ========== 7 ========== -->
+      <h2 id="bits">7. Pairwise-independent bits from a few random bits</h2>
+
+      <p>
+        Start with $m$ truly random bits $X_1,\dots,X_m$, each $0$ or $1$ with
+        probability $\tfrac12$. Fully independent bits $Y_1,\dots,Y_n$ would
+        need $n$ random bits (a sample space of size $2^n$). How many
+        <em>pairwise</em> independent bits can $m$ bits produce?
+      </p>
+
+      <h4>Construction: XOR over subsets</h4>
+      <p>
+        For each non-empty subset $S\subseteq[m]$ define
+      </p>
+      <div class="eq-box">
+        \[
+        Y_S=\bigoplus_{i\in S}X_i .
+        \]
+      </div>
+      <p>
+        There are $2^m-1$ non-empty subsets, so we get $2^m-1$ bits
+        $Y_{S_1},\dots,Y_{S_{2^m-1}}$. Each one is uniform, since flipping any
+        single $X_i$ with $i\in S$ flips $Y_S$.
+      </p>
+
+      <h4>Why they are pairwise independent</h4>
+      <p>
+        Take $S\ne S'$. Some element $a$ lies in one set but not the other;
+        say $a\in S\setminus S'$. Fix all bits except $X_a$. Then $Y_{S'}$ is
+        already determined, while $Y_S$ is still $0$ or $1$ with probability
+        $\tfrac12$ each, depending on $X_a$. Hence
+      </p>
+      <div class="eq">
+        \[
+        \Pr\bigl(Y_S=\alpha\mid Y_{S'}=\beta\bigr)=\tfrac12
+        \quad\Longrightarrow\quad
+        \Pr\bigl(Y_S=0\ \wedge\ Y_{S'}=0\bigr)=\tfrac14=\Pr(Y_S=0)\Pr(Y_{S'}=0).
+        \]
+      </div>
+
+      <div class="q">
+        <strong>Payoff.</strong>
+        $n$ pairwise-independent bits need only $m=\lceil\log_2(n+1)\rceil$
+        truly random bits, instead of $n$.
+      </div>
+
+      <div class="remark">
+        <span class="label">Not 3-wise independent</span>
+        $Y_{\{1\}}=X_1$, $Y_{\{2\}}=X_2$ and $Y_{\{1,2\}}=X_1\oplus X_2$ are
+        pairwise independent, but the third is determined by the first two.
+        Limited independence really is weaker than full independence.
+      </div>
+
+      <!-- ========== 8 ========== -->
+      <h2 id="hash">8. Pairwise-independent hash functions</h2>
+
+      <p>
+        For $h:[n]\to[r]$ we need pairwise-independent values in $[r]$, not
+        just bits. The standard construction (Carter–Wegman) takes a prime
+        $p\ge n$ and two random numbers $x_1,x_2\in\{0,\dots,p-1\}$:
+      </p>
+      <div class="eq-box">
+        \[
+        h(i)=\bigl((x_1+i\,x_2)\bmod p\bigr)\bmod r .
+        \]
+      </div>
+
+      <h4>Why it works</h4>
+      <p>
+        Before the final $\bmod\ r$, consider $h'(i)=(x_1+i\,x_2)\bmod p$. For
+        $i\ne j$, the map
+        $(x_1,x_2)\mapsto\bigl(h'(i),h'(j)\bigr)$ is a bijection of
+        $\mathbb Z_p^2$, because the system
+        $x_1+i\,x_2=u,\ x_1+j\,x_2=v$ has determinant $j-i\ne0\pmod p$ and so
+        exactly one solution. Hence $(h'(i),h'(j))$ is uniform on
+        $\mathbb Z_p^2$: the values $h'(1),\dots,h'(n)$ are pairwise
+        independent and uniform. Reducing $\bmod\ r$ keeps this up to a small
+        bias of order $r/p$, which is negligible for $p\gg r$; in particular
+        $\Pr[h(i)=h(j)]\lesssim 1/r$, which is what CountSketch uses.
+      </p>
+
+      <div class="remark">
+        <span class="label">Higher independence</span>
+        A random polynomial of degree $k-1$ over $\mathbb Z_p$,
+        $\bigl(\sum_{t=0}^{k-1}x_t\,i^t\bigr)\bmod p$, gives $k$-wise
+        independent values, for the same reason: $k$ distinct evaluation
+        points give an invertible Vandermonde system. A $4$-wise independent
+        $g$ uses a cubic, mapped to $\pm1$.
+      </div>
+
+      <h3>Summary</h3>
+
+      <div class="table-wrap">
+        <table class="compare">
+          <thead>
+            <tr>
+              <th>Object</th>
+              <th>Truly random bits</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Fully random $h:[n]\to[r]$</strong></td>
+              <td>$n\log_2 r$</td>
+            </tr>
+            <tr>
+              <td><strong>$n$ pairwise-independent bits (XOR of subsets)</strong></td>
+              <td>$\lceil\log_2(n+1)\rceil$</td>
+            </tr>
+            <tr>
+              <td><strong>Pairwise-independent $h$ ($x_1+i\,x_2$)</strong></td>
+              <td>$2\log_2 p=O(\log n)$</td>
+            </tr>
+            <tr>
+              <td><strong>$k$-wise independent (degree $k-1$ polynomial)</strong></td>
+              <td>$k\log_2 p=O(k\log n)$</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="q">
+        <strong>Takeaway.</strong>
+        A JLT on a $5^d$-point net gives a subspace embedding with
+        $O(d/\varepsilon^2)$ rows. CountSketch trades more rows for one
+        non-zero per column, and with a 2-wise independent $h$ and a 4-wise
+        independent $g$ it can be stored in $O(\log n)$ bits instead of
+        $O(n\log r)$.
+      </div>
+
+      <p class="next">
+        References:
+        <a href="https://arxiv.org/abs/1411.4357" target="_blank" rel="noopener noreferrer"
+          >Woodruff, Sketching as a Tool for Numerical Linear Algebra</a
+        >, Section&nbsp;2.1;
+        <a href="https://doi.org/10.1016/0022-0000(79)90044-8" target="_blank" rel="noopener noreferrer"
+          >Carter and Wegman, Universal Classes of Hash Functions</a
+        >, JCSS 1979;
+        <a href="https://webapps.math.uci.edu/~rvershyn/papers/HDP-book/HDP-2.pdf" target="_blank" rel="noopener noreferrer"
+          >Vershynin, High-Dimensional Probability</a
+        >, Chapter&nbsp;4 (nets and covering numbers).
+      </p>
+    </div>
+  </body>
+</html>
