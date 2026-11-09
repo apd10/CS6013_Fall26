@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Approximate Nearest Neighbour Search: PQ, ScaNN, and SOAR — Notes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      async
+    ></script>
+    <style>
+      :root {
+        --ink: #1a2332;
+        --muted: #5a6a7d;
+        --accent: #0b6e4f;
+        --accent-soft: #e6f4ef;
+        --line: #d5dde8;
+        --paper: #fbfaf7;
+        --card: #ffffff;
+        --warn: #8a4b08;
+        --neg: #b4472f;
+        --neg-soft: #fbece8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse 80% 50% at 10% 0%, #eef6f2 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 10%, #f3efe6 0%, transparent 50%),
+          var(--paper);
+        font-family: "Source Serif 4", Georgia, serif;
+        font-size: 1.05rem;
+        line-height: 1.65;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+      }
+
+      .source-banner {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+
+      .source-banner a,
+      .next a {
+        color: var(--accent);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      header .meta {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem;
+        line-height: 1.2;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      header .byline {
+        margin-top: 0.6rem;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 2.25rem 0 0.75rem;
+        letter-spacing: -0.015em;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.5rem;
+      }
+
+      h4 {
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.35rem;
+        color: var(--accent);
+      }
+
+      .part {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 3rem 0 0.5rem;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .part::after {
+        content: "";
+        flex: 1;
+        border-top: 1px solid var(--line);
+      }
+
+      p {
+        margin: 0.65rem 0;
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin: 0.35rem 0;
+      }
+
+      .toc {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin: 1rem 0 1.5rem;
+      }
+
+      .toc .label,
+      .thm .label,
+      .card .tag {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .toc .label {
+        margin-bottom: 0.4rem;
+      }
+
+      .toc ol {
+        margin: 0;
+      }
+
+      .toc a {
+        color: var(--ink);
+        text-decoration-color: rgba(11, 110, 79, 0.35);
+      }
+
+      .q {
+        background: var(--accent-soft);
+        border-left: 3px solid var(--accent);
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .q strong {
+        color: var(--accent);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .thm {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--accent);
+        border-radius: 0 10px 10px 0;
+        padding: 0.9rem 1.1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .thm .label {
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .thm .label em {
+        font-style: normal;
+        color: var(--muted);
+        text-transform: none;
+        letter-spacing: 0;
+      }
+
+      .remark {
+        border: 1px solid var(--line);
+        background: var(--card);
+        padding: 0.9rem 1rem;
+        margin: 1rem 0;
+        border-radius: 8px;
+      }
+
+      .remark .label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--warn);
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .eq {
+        overflow-x: auto;
+        overflow-y: hidden;
+        margin: 1rem 0;
+        padding: 0.35rem 0;
+      }
+
+      .eq-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        margin: 1rem 0;
+        overflow-x: auto;
+      }
+
+      .split3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+        overflow-x: auto;
+      }
+
+      .card .tag {
+        color: var(--muted);
+      }
+
+      .card h3 {
+        margin-top: 0.25rem;
+        font-size: 1rem;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+
+      .compare {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+        background: var(--card);
+      }
+
+      .compare th,
+      .compare td {
+        border: 1px solid var(--line);
+        padding: 0.55rem 0.7rem;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .compare th {
+        background: var(--accent-soft);
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
+      /* CountSketch matrix illustration */
+      .sketch-figure {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1.15rem 0;
+        overflow-x: auto;
+      }
+
+      .sketch-grid {
+        display: grid;
+        grid-template-columns: auto repeat(5, 2.6rem);
+        gap: 0.3rem;
+        justify-content: center;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.85rem;
+      }
+
+      .sketch-grid .hdr {
+        color: var(--muted);
+        font-size: 0.72rem;
+        text-align: center;
+        align-self: end;
+        line-height: 1.3;
+      }
+
+      .sketch-grid .rlabel {
+        color: var(--muted);
+        font-size: 0.72rem;
+        padding-right: 0.5rem;
+        align-self: center;
+        text-align: right;
+      }
+
+      .sketch-grid .cell {
+        height: 2.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        color: #b8c2cf;
+      }
+
+      .sketch-grid .cell.pos {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .sketch-grid .cell.neg {
+        background: var(--neg-soft);
+        border-color: var(--neg);
+        color: var(--neg);
+        font-weight: 600;
+      }
+
+      .sketch-caption {
+        margin: 0.85rem 0 0;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .next {
+        margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      @media (max-width: 600px) {
+        .split3 {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="source-banner">
+        This html page is created by scribe. If you find any mistakes, please feel free to drop a <a href="mailto:amit.t@iitb.ac.in"> mail here.</a>
+        <br>
+        Disclaimer: These notes are based on scribe's understanding of the whiteboard lecture conducted on 30 October 2026 and the references listed at the bottom
+          and hence are in no way, exhaustive. For a more detailed, mathematically rigourous treatment of the content, it is highly recommended
+          to check the papers given in the references. A big shoutout to  <a href="https://www.minds.iitb.ac.in/people/students/rishi-raj-vishwakarma"> Rishi Raj Vishwakarma </a>  who unconditionally provided his seminar whiteboard lecture notes, which were
+          very useful for sections 7, 8  and 9 of the roadmap.
+
+      </p>
+
+      <header>
+        <p class="meta">Efficient AI · Seminar notes · 30 October 2026</p>
+        <h1>Approximate Nearest Neighbour Search: PQ, ScaNN, and SOAR</h1>
+        <p>
+          How to search billions of vectors without scanning them in full
+          precision. Product quantization compresses vectors into short codes
+          and estimates distances from lookup tables. ScaNN changes the
+          quantization loss so that it protects the inner products that matter
+          for maximum inner product search. SOAR gives each point a second,
+          deliberately different partition so that a failure in the first one
+          is less likely to repeat in the second.
+        </p>
+      </header>
+
+      <div class="toc">
+        <div class="label">Roadmap</div>
+        <ol>
+          <li><a href="#vq">Vector quantization</a></li>
+          <li><a href="#pq">Product quantizers</a></li>
+          <li><a href="#pqcache">How is PQ relevant to attention?</a></li>
+          <li><a href="#mips">MIPS and why reconstruction loss is the wrong target</a></li>
+          <li><a href="#score-aware">Score-aware quantization loss</a></li>
+          <li><a href="#avq">Anisotropic vector quantization</a></li>
+          <li><a href="#vq-failure">Why VQ-based search fails</a></li>
+          <li><a href="#spilling">Spilled assignment and correlated failures</a></li>
+          <li><a href="#soar">SOAR: orthogonality-amplified residuals</a></li>
+        </ol>
+      </div>
+
+      <!-- ===================================================== -->
+      <!-- PART I: PRODUCT QUANTIZATION                           -->
+      <!-- ===================================================== -->
+      <div class="part">Part I · Product Quantization (Jégou, Douze, Schmid)</div>
+
+      <p>
+        Given a database $\mathcal Y\subset\mathbb R^D$ of $n$ vectors and a
+        query $x\in\mathbb R^D$, the nearest-neighbour problem is
+      </p>
+      <div class="eq">
+        \[
+        \mathrm{NN}(x)=\arg\min_{y\in\mathcal Y} d(x,y),
+        \qquad d(x,y)=\|x-y\|_2 .
+        \]
+      </div>
+      <p>
+        Exhaustive search costs $O(nD)$. Tree methods such as KD-trees are no
+        faster than brute force in high dimension. LSH and FLANN-style methods
+        speed up the search, but they keep the original vectors in memory for
+        a final re-ranking step, which limits how many vectors fit on one
+        machine. The goal here is to make the search fast <em>and</em> the
+        memory small: each vector is stored as a short code, and distances are
+        estimated from the codes.
+      </p>
+
+      <!-- ========== 1 ========== -->
+      <h2 id="vq">1. Vector quantization</h2>
+
+      <div class="thm">
+        <span class="label">Definition <em>— quantizer</em></span>
+        A quantizer is a map $q:\mathbb R^D\to\mathcal C=\{c_i : i\in\mathcal I\}$,
+        with $\mathcal I=\{0,\dots,k-1\}$. The $c_i$ are
+        <strong>centroids</strong> and $\mathcal C$ is the
+        <strong>codebook</strong> of size $k$. The <strong>Voronoi cell</strong>
+        of index $i$ is
+        <div class="eq">
+          \[
+          \mathcal V_i=\{x\in\mathbb R^D : q(x)=c_i\}.
+          \]
+        </div>
+        The $k$ cells partition $\mathbb R^D$.
+      </div>
+
+      <p>Quantizer quality is measured by the mean squared error</p>
+      <div class="eq-box">
+        \[
+        \mathrm{MSE}(q)=\mathbb E_X\!\left[d(q(x),x)^2\right]
+        =\int p(x)\,d(q(x),x)^2\,dx .
+        \]
+      </div>
+
+      <h3>Lloyd optimality conditions</h3>
+      <ol>
+        <li>
+          <strong>Nearest centroid.</strong> Each vector goes to its closest
+          centroid: $q(x)=\arg\min_{c_i\in\mathcal C} d(x,c_i)$. As a result,
+          cells are bounded by hyperplanes.
+        </li>
+        <li>
+          <strong>Centroid is the cell mean.</strong>
+          $c_i=\mathbb E_X[x\mid i]=\int_{\mathcal V_i}p(x)\,x\,dx$ (normalised by the cell's probability).
+        </li>
+      </ol>
+      <p>
+        Alternating between these two steps is Lloyd's algorithm, i.e.
+        $k$-means. It finds a local optimum of the MSE. Two quantities are used
+        below: the probability $p_i=\Pr(q(x)=c_i)$ of a cell, and the mean
+        distortion inside it,
+      </p>
+      <div class="eq">
+        \[
+        \xi(q,c_i)=\frac{1}{p_i}\int_{\mathcal V_i} d(x,q(x))^2\,p(x)\,dx,
+        \qquad
+        \mathrm{MSE}(q)=\sum_{i\in\mathcal I}p_i\,\xi(q,c_i).
+        \]
+      </div>
+      <p>Storing an index costs $\lceil\log_2 k\rceil$ bits.</p>
+
+      <!-- ========== 2 ========== -->
+      <h2 id="pq">2. Product quantizers</h2>
+
+      <div class="q">
+        <strong>The problem with plain $k$-means.</strong>
+        A 64-bit code for a 128-dimensional SIFT vector (Scale-Invariant
+        Feature Transform, a local image descriptor; only 0.5 bit per
+        component) needs $k=2^{64}$ centroids. We cannot train that many with
+        Lloyd's algorithm, and we cannot even store the $D\times k$ floats.
+      </div>
+
+      <p>
+        Split $x$ into $m$ subvectors $u_1(x),\dots,u_m(x)$, each of dimension
+        $D^*=D/m$, and quantize each one with its own small quantizer $q_j$:
+      </p>
+      <div class="eq">
+        \[
+        \underbrace{x_1,\dots,x_{D^*}}_{u_1(x)},\;\dots,\;
+        \underbrace{x_{D-D^*+1},\dots,x_D}_{u_m(x)}
+        \;\longmapsto\;
+        q_1\bigl(u_1(x)\bigr),\dots,q_m\bigl(u_m(x)\bigr).
+        \]
+      </div>
+      <p>
+        The codebook is the Cartesian product
+        $\mathcal C=\mathcal C_1\times\cdots\times\mathcal C_m$, and a centroid
+        is a concatenation of sub-centroids. If every sub-quantizer has $k^*$
+        centroids, the total number of centroids is
+      </p>
+      <div class="eq-box">
+        \[
+        k=(k^*)^m,
+        \qquad\text{code length } \ell=m\log_2 k^* \text{ bits}.
+        \]
+      </div>
+      <p>
+        We only store the $m\times k^*$ sub-centroids, i.e.
+        $m\,D^*\,k^*=k^*D$ floats. Training is $m$ independent $k$-means runs
+        with $k^*$ centroids of dimension $D^*$. Since the subspaces are
+        orthogonal, the distortion adds up:
+        $\mathrm{MSE}(q)=\sum_j\mathrm{MSE}(q_j)$.
+      </p>
+
+      <div class="table-wrap">
+        <table class="compare">
+          <thead>
+            <tr>
+              <th>Quantizer</th>
+              <th>Codebook memory</th>
+              <th>Assignment cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>$k$-means</strong></td>
+              <td>$kD$</td>
+              <td>$kD$</td>
+            </tr>
+            <tr>
+              <td><strong>Hierarchical $k$-means</strong> (branching $b_f$, height $l$)</td>
+              <td>$\frac{b_f}{b_f-1}(k-1)\,D$</td>
+              <td>$l\,D$</td>
+            </tr>
+            <tr>
+              <td><strong>Product $k$-means</strong></td>
+              <td>$m k^* D^*=k^{1/m}D$</td>
+              <td>$m k^* D^*=k^{1/m}D$</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="remark">
+        <span class="label">Choosing $m$ and $k^*$</span>
+        For a fixed bit budget, a few sub-quantizers with many centroids beat
+        many sub-quantizers with few centroids. At the extreme $m=1$, PQ is
+        plain $k$-means; at $m=D$ it is a scalar quantizer. Large $k^*$ raises
+        the assignment cost and the lookup-table size, so $k^*=256$, $m=8$
+        (64-bit codes, one byte per sub-code) is a common choice.
+      </div>
+
+      <div class="remark">
+        <span class="label">Balancing subspaces</span>
+        Each subvector should carry comparable energy. A random rotation
+        before quantizing would ensure this, but for SIFT and GIST (a 960-dimensional
+        global descriptor of a whole image's scene layout) it hurts,
+        because neighbouring components are correlated and are better
+        quantized together.
+      </div>
+
+      <div class="remark">
+        <span class="label">Distances from codes</span>
+        For a query $x$, precompute the table $d\bigl(u_j(x),c_{j,i}\bigr)^2$
+        for every sub-quantizer $j$ and sub-centroid $i$ ($m\times k^*$
+        entries). The squared distance to any encoded $y$ is then
+        $\sum_j d\bigl(u_j(x),q_j(u_j(y))\bigr)^2$: $m$ table lookups and
+        additions, with no decoding.
+      </div>
+
+
+      <!-- ========== 3 ========== -->
+      <h2 id="pqcache">3. How is PQ relevant to attention?</h2>
+
+      <p>
+        During decoding, the new token's attention query $\mathbf q\in\mathbb R^{d_h}$
+        (bold, to distinguish it from a quantizer $q$) attends to the cached
+        keys $k_1,\dots,k_s$ of all $s$ previous tokens:
+      </p>
+      <div class="eq">
+        \[
+        a_i=\mathrm{softmax}_i\!\left(\frac{\mathbf q^\top k_i}{\sqrt{d_h}}\right).
+        \]
+      </div>
+      <p>
+        Attention scores are heavy-tailed, so <em>selective attention</em>
+        keeps only the top-$k$ tokens by $\mathbf q^\top k_i$. Finding them is
+        a maximum inner product search over the keys. <strong>PQCache</strong>
+        does this search with PQ.
+      </p>
+
+      <h4>Prefill: build the codebook on the keys</h4>
+      <p>
+        For each layer and KV head, split each key into $m$ sub-vectors of
+        dimension $d_m=d_h/m$ and run $k$-means separately in each subspace
+        with $2^b$ centroids:
+      </p>
+      <div class="eq">
+        \[
+        \text{centroids } C\in\mathbb R^{m\times 2^b\times d_m},
+        \qquad
+        \text{codes } \mathrm{code}\in\{1,\dots,2^b\}^{s\times m}\ (b \text{ bits each}).
+        \]
+      </div>
+
+      <h4>Decode: approximate scores from a lookup table</h4>
+      <p>
+        Split $\mathbf q$ the same way into $\mathbf q^{(1)},\dots,\mathbf q^{(m)}$
+        and multiply it with the centroids once, an $(m,1,d_m)\times(m,d_m,2^b)\to(m,2^b)$
+        product:
+      </p>
+      <div class="eq-box">
+        \[
+        T[j,c]=\bigl\langle \mathbf q^{(j)},\,C_{j,c}\bigr\rangle,
+        \qquad
+        \mathbf q^\top k_i\;\approx\;\sum_{j=1}^{m}T\bigl[j,\ \mathrm{code}_{i,j}\bigr].
+        \]
+      </div>
+      <p>
+        Gather and sum over the codes, take the top-$k$ approximate scores,
+        fetch only those tokens' exact keys and values from CPU memory, and
+        run attention on them together with the initial and most recent
+        (local) tokens.
+      </p>
+
+      <div class="remark">
+        <span class="label">Cost</span>
+        Per head, scoring costs $O(2^b d_h + ms)$ instead of $O(s\,d_h)$ for
+        exact $\mathbf q^\top K$, and the codes are only
+        $\frac{mb}{16\,d_h}$ of the FP16 keys' size. With the default
+        $m=2$, $b=6$, $d_h=128$ this is under $1/128$.
+      </div>
+
+
+      <!-- ===================================================== -->
+      <!-- PART II: SCANN                                         -->
+      <!-- ===================================================== -->
+      <div class="part">Part II · ScaNN: Anisotropic Vector Quantization (Guo et al.)</div>
+
+      <p>
+        <strong>Notation change.</strong> From here on $q$ denotes the
+        <em>query</em> and $x$ a <em>database point</em>, with quantization
+        $\tilde x$; the dimension is $d$.
+      </p>
+
+      <!-- ========== 4 ========== -->
+      <h2 id="mips">4. MIPS and why reconstruction loss is the wrong target</h2>
+
+      <p>
+        In recommendation, retrieval, and extreme classification, queries and
+        items are embedded in the same space and we want the item with the
+        largest inner product. This is <strong>maximum inner product
+        search</strong> (MIPS):
+      </p>
+      <div class="eq">
+        \[
+        x^*=\arg\max_{x_i\in X}\ \langle q,x_i\rangle .
+        \]
+      </div>
+      <p>
+        A fast MIPS system has two parts: <em>partitioning</em> (score fewer
+        items, e.g. trees, LSH, graphs, or an inverted file) and
+        <em>quantization</em> (score each item faster). ScaNN improves the
+        quantization part. With quantized points, all $n$ inner products cost
+        $O(kd+mn)$ via lookup tables (with $m$ codebooks of $k$ codewords each),
+        instead of $O(nd)$.
+      </p>
+
+      <h3>Reconstruction loss is what isotropic queries imply</h3>
+      <p>
+        If we minimize the expected inner-product error over queries and
+        assume $\mathbb E[qq^\top]=\sigma^2 I$, then
+      </p>
+      <div class="eq-box">
+        \[
+        \sum_{i=1}^n\mathbb E_q\langle q,x_i-\tilde x_i\rangle^2
+        =\sum_{i=1}^n\mathbb E_q(x_i-\tilde x_i)^\top qq^\top(x_i-\tilde x_i)
+        =\sigma^2\sum_{i=1}^n\|x_i-\tilde x_i\|^2 .
+        \]
+      </div>
+      <p>
+        So the usual $k$-means / PQ reconstruction loss is the natural
+        objective under this assumption. But it averages over <em>all</em>
+        $(q,x)$ pairs equally.
+      </p>
+
+      <div class="q">
+        <strong>Key observation.</strong>
+        Not all pairs matter equally. For MIPS, errors on pairs with a
+        <em>high</em> inner product decide the top results; errors on low
+        inner-product pairs hardly matter. So $x$ should be quantized to be
+        accurate for the queries that score it highly.
+      </div>
+
+      <!-- ========== 5 ========== -->
+      <h2 id="score-aware">5. Score-aware quantization loss</h2>
+
+      <div class="thm">
+        <span class="label">Definition <em>— score-aware loss</em></span>
+        For a datapoint $x_i$, its quantization $\tilde x_i$, and a weight
+        function $w:\mathbb R\to\mathbb R^{+}$,
+        <div class="eq">
+          \[
+          \ell(x_i,\tilde x_i,w)=\mathbb E_{q\sim\mathcal Q}\!\left[
+          w\bigl(\langle q,x_i\rangle\bigr)\,\langle q,x_i-\tilde x_i\rangle^2\right].
+          \]
+        </div>
+        Without loss of generality $\|q\|=1$, and with no prior on queries we
+        take $q$ uniform on the unit sphere.
+      </div>
+
+      <h3>Parallel and orthogonal residuals</h3>
+      <p>Split the residual $x_i-\tilde x_i$ along and across $x_i$:</p>
+      <div class="eq">
+        \[
+        r_\parallel(x_i,\tilde x_i)=\frac{\langle x_i-\tilde x_i,\,x_i\rangle}{\|x_i\|^2}\,x_i,
+        \qquad
+        r_\perp(x_i,\tilde x_i)=(x_i-\tilde x_i)-r_\parallel(x_i,\tilde x_i).
+        \]
+      </div>
+
+      <div class="thm">
+        <span class="label">Theorem <em>— the loss decomposes</em></span>
+        If $q$ is uniform on the unit sphere in $\mathbb R^d$, then for any $w$,
+        <div class="eq">
+          \[
+          \ell(x_i,\tilde x_i,w)=h_\parallel\,\|r_\parallel\|^2+h_\perp\,\|r_\perp\|^2,
+          \]
+        </div>
+        <div class="eq">
+          \[
+          h_\parallel=\int_0^\pi w(\|x_i\|\cos\theta)\bigl(\sin^{d-2}\theta-\sin^d\theta\bigr)\,d\theta,
+          \qquad
+          h_\perp=\frac1{d-1}\int_0^\pi w(\|x_i\|\cos\theta)\,\sin^d\theta\,d\theta .
+          \]
+        </div>
+      </div>
+
+      <div class="remark">
+        <span class="label">On the scaling</span>
+        The main text of the paper writes $h_\parallel$ with a factor $(d-1)$
+        and $h_\perp$ without $\frac1{d-1}$; the appendix uses the form above.
+        Both differ by the same overall factor $(d-1)$, so the ratio
+        $h_\parallel/h_\perp$, which is all that matters, is the same.
+      </div>
+
+      <p>
+        If $w(t)=0$ for $t&lt;0$ and $w$ is non-decreasing for $t\ge0$ (it
+        cares more about high scores), then $h_\parallel\ge h_\perp$, with
+        equality only for constant $w$. Error along $x$ then costs more than
+        error across it, so the loss is <strong>anisotropic</strong>. Writing
+        $\eta:=h_\parallel/h_\perp\ge1$, the loss is proportional to
+        $\eta\|r_\parallel\|^2+\|r_\perp\|^2$.
+      </p>
+
+      <!-- ========== 6 ========== -->
+      <h2 id="avq">6. Anisotropic vector quantization</h2>
+
+      <div class="thm">
+        <span class="label">Definition <em>— anisotropic VQ</em></span>
+        Given $x_1,\dots,x_n$, weights $h_{i,\parallel},h_{i,\perp}$, and $k$
+        codewords, find
+        <div class="eq">
+          \[
+          \min_{c_1,\dots,c_k}\sum_i\ \min_{\tilde x_i\in\{c_1,\dots,c_k\}}
+          h_{i,\parallel}\|r_\parallel(x_i,\tilde x_i)\|^2
+          +h_{i,\perp}\|r_\perp(x_i,\tilde x_i)\|^2 .
+          \]
+        </div>
+        With $h_\parallel=h_\perp$ this is exactly $k$-means.
+      </div>
+
+      <h3>A Lloyd-style algorithm</h3>
+      <ol>
+        <li><strong>Initialize</strong> codewords as random datapoints.</li>
+        <li><strong>Assign</strong> each $x_i$ to the codeword with the smallest anisotropic loss (enumerate all $k$).</li>
+        <li><strong>Update</strong> each codeword to minimize the loss over its partition $X_j$.</li>
+        <li><strong>Repeat</strong> until a fixed point. The loss never increases and there are finitely many partitions, so it converges.</li>
+      </ol>
+
+      <div class="thm">
+        <span class="label">Theorem <em>— closed-form codeword update</em></span>
+        <div class="eq">
+          \[
+          c_j^*=\left(I\sum_{x_i\in X_j}h_{i,\perp}
+          +\sum_{x_i\in X_j}\frac{h_{i,\parallel}-h_{i,\perp}}{\|x_i\|^2}\,x_ix_i^\top\right)^{-1}
+          \sum_{x_i\in X_j}h_{i,\parallel}\,x_i .
+          \]
+        </div>
+      </div>
+      <p>
+        <strong>Why.</strong> For one point, expanding
+        $\|r_\parallel\|^2$ and $\|r_\perp\|^2$ in terms of $\tilde x$ gives
+      </p>
+      <div class="eq">
+        \[
+        h_\parallel\|r_\parallel\|^2+h_\perp\|r_\perp\|^2
+        =\tilde x^\top\!\left((h_\parallel-h_\perp)\frac{xx^\top}{\|x\|^2}+h_\perp I\right)\tilde x
+        -2h_\parallel\,x^\top\tilde x+h_\parallel\|x\|^2 .
+        \]
+      </div>
+      <p>
+        Summed over the partition, this is a quadratic in $\tilde x$. Since
+        $h_\parallel\ge h_\perp$, the matrix is positive definite, so the loss is
+        convex and setting the gradient to zero gives $c_j^*$. With
+        $h_\parallel=h_\perp$ it reduces to a weighted mean, and with $w\equiv1$
+        to the ordinary $k$-means mean.
+      </p>
+
+      
+      <!-- ===================================================== -->
+      <!-- PART III: SOAR                                         -->
+      <!-- ===================================================== -->
+      <div class="part">Part III · SOAR </div>
+
+      <p>
+        <strong>SOAR</strong> stands for <em>Spilling with
+        Orthogonality-Amplified Residuals</em>. Its contributions:
+      </p>
+      <ol>
+        <li>demonstrate a weakness of VQ-based ANN indices;</li>
+        <li>identify that failure probabilities under spilling are correlated;</li>
+        <li>introduce SOAR to break that correlation.</li>
+      </ol>
+
+      <!-- ========== 7 ========== -->
+      <h2 id="vq-failure">7. Why VQ-based search fails</h2>
+
+      <p>
+        Assume $c$ centroids $\{c_1,\dots,c_c\}$, stacked as $C\in\mathbb R^{c\times d}$,
+        and the assignment
+      </p>
+      <div class="eq">
+        \[
+        \pi(u):\mathbb R^d\to\{1,\dots,c\},
+        \qquad
+        \pi(u)=\arg\min_{i\in\{1,\dots,c\}}\|u-c_i\| .
+        \]
+      </div>
+      <p>
+        Each centroid owns a <em>partition</em>: the list of points assigned
+        to it. At query time we score partitions by $\langle q,c_i\rangle$
+        and search only the top $k'$ of them. Let $r=x-c_{\pi(x)}$ be the
+        residual. Then
+      </p>
+      <div class="eq-box">
+        \[
+        \langle q,x\rangle-\langle q,c_{\pi(x)}\rangle=\langle q,x-c_{\pi(x)}\rangle=\langle q,r\rangle,
+        \qquad\text{so}\qquad
+        q^\top c_{\pi(x)}=q^\top x-q^\top r .
+        \]
+      </div>
+
+      <div class="q">
+        <strong>The failure mode.</strong>
+        If $x$ is a true nearest neighbour of $q$, we want its partition to
+        rank high, not low. If $q$ and $r$ are aligned, $q^\top r$ is large, so
+        $q^\top c_{\pi(x)}$ is low, the partition misses the top $k'$, and $x$
+        is never scored. A bad partition rank means a harder search.
+      </div>
+
+      <p>Since</p>
+      <div class="eq">
+        \[
+        q^\top r=\|q\|\,\|r\|\cos\theta,
+        \]
+      </div>
+      <p>
+        both $\|r\|$ and $\theta$ (the angle between $q$ and $r$) contribute to
+        high alignment. To reduce $q^\top r$ we can make $\|r\|$ small or
+        $\cos\theta$ small. Standard VQ training (the $k$-means loss) already
+        minimizes $\|r\|$, so <strong>SOAR targets the $\cos\theta$ term</strong>.
+      </p>
+
+      <!-- ========== 8 ========== -->
+      <h2 id="spilling">8. Spilled assignment and correlated failures</h2>
+
+      <p>
+        A high $\cos\theta$ can be mitigated by assigning each datapoint $x$ to
+        a <strong>second</strong> VQ partition $\pi'(x)$, with residual
+        $r'=x-c_{\pi'(x)}$ and angle $\theta'$ between $q$ and $r'$. This is a
+        <em>spilled assignment</em>: $x$ is stored in two partitions.
+      </p>
+      <ul>
+        <li>
+          It gives the search a second chance, <em>if</em> $\theta$ and
+          $\theta'$ are independently distributed.
+        </li>
+        <li>
+          Spilling fails when $\theta$ and $\theta'$ are correlated: when
+          the primary partition fails, the secondary fails too.
+        </li>
+      </ul>
+
+      <p>
+        To measure this, take queries $q_1,\dots,q_k$, compute
+        $\cos\theta$ and $\cos\theta'$ for each, and find the correlation
+        between them.
+      </p>
+
+      <div class="remark">
+        <span class="label">Takeaway</span>
+        Naively spilling to the next-closest centroid buys less than it
+        seems: the second residual tends to point in a similar direction to
+        the first, so the same queries hurt both assignments.
+      </div>
+
+      <!-- ========== 9 ========== -->
+      <h2 id="soar">9. SOAR: orthogonality-amplified residuals</h2>
+
+      <p>
+        Assume the VQ centroids $C$ and the primary assignments $\pi$ are
+        fixed. The goal of the second assignment $\pi'$ is a low quantized
+        score error $q^\top r'$, but not uniformly over queries:
+      </p>
+      <ul>
+        <li>if the primary assignment already does well for $q$ (small $\cos\theta$), the secondary need not do much;</li>
+        <li>if the primary assignment is bad for $q$ ($q$ aligned with $r$), the secondary must do well.</li>
+      </ul>
+
+      <p>
+        So the loss weights each query's error on $r'$ by how badly it is
+        aligned with $r$, using a weighting function
+        $w(\cdot):\mathbb R\to\mathbb R^{\ge0}$:
+      </p>
+      <div class="eq-box">
+        \[
+        \mathcal L(r';r,\mathcal Q)
+        =\mathbb E_{q\in\mathcal Q}\!\left[w\!\left(\frac{q^\top r}{\|q\|\,\|r\|}\right)(q^\top r')^2\right]
+        =\mathbb E_{q\in\mathcal Q}\!\left[w(\cos\theta)\,(q^\top r')^2\right].
+        \]
+      </div>
+      <p>
+        This mirrors ScaNN's score-aware loss (Section&nbsp;5), with the
+        primary residual $r$ playing the role that $x$ played there.
+      </p>
+
+      <div class="thm">
+        <span class="label">Theorem <em>— SOAR loss</em></span>
+        For the weight function $w(t)=|t|^\lambda$ and queries uniform on
+        $S^{d-1}$,
+        <div class="eq">
+          \[
+          \mathcal L(r';r,\mathcal Q)\;\propto\;\|r'\|^2+\lambda\,\bigl\|\mathrm{proj}_r\,r'\bigr\|^2,
+          \qquad
+          \mathrm{proj}_r\,r'=\frac{\langle r',r\rangle}{\|r\|^2}\,r .
+          \]
+        </div>
+      </div>
+
+      <h3>Why (sketch)</h3>
+      <p>
+        Decompose $r'$ and $q$ relative to the direction of $r$:
+        $r'=r'_\parallel+r'_\perp$ and $q=q_\parallel+q_\perp$. For a unit
+        query, $\|q_\parallel\|=|\cos\theta|$ and $\|q_\perp\|=|\sin\theta|$.
+        Then
+      </p>
+      <div class="eq">
+        \[
+        q^\top r'=\langle q_\parallel+q_\perp,\;r'_\parallel+r'_\perp\rangle
+        =\langle q_\parallel,r'_\parallel\rangle+\langle q_\perp,r'_\perp\rangle .
+        \]
+      </div>
+      <p>
+        Squaring and averaging, the cross term vanishes by symmetry:
+      </p>
+      <div class="eq">
+        \[
+        \mathcal L
+        =\underbrace{\mathbb E\bigl[|\cos\theta|^{\lambda}\cos^2\theta\bigr]}_{a}\,\|r'_\parallel\|^2
+        +\underbrace{\tfrac{1}{d-1}\mathbb E\bigl[|\cos\theta|^{\lambda}\sin^2\theta\bigr]}_{b}\,\|r'_\perp\|^2
+        =b\,\|r'\|^2+(a-b)\,\|r'_\parallel\|^2 .
+        \]
+      </div>
+      <p>
+        Since $r'_\parallel=\mathrm{proj}_r\,r'$, the loss is proportional to
+        $\|r'\|^2+\tfrac{a-b}{b}\|\mathrm{proj}_r r'\|^2$. For uniform $q$,
+        $\cos^2\theta\sim\mathrm{Beta}\bigl(\tfrac12,\tfrac{d-1}2\bigr)$, and
+        with $M=\mathbb E|\cos\theta|^\lambda$ the Beta moments give
+        $a=M\frac{1+\lambda}{d+\lambda}$ and $b=M\frac{1}{d+\lambda}$, so
+        $\frac{a-b}{b}=\lambda$ exactly. Larger $\lambda$ means the weight concentrates more on
+        queries aligned with $r$.
+      </p>
+
+      <h3>The modified assignment</h3>
+      <p>
+        The modification is only to the <em>assignment</em> loss; centroids
+        are unchanged. The spilled assignment
+        $\pi'(u):\mathbb R^d\to\{1,\dots,c\}$ is chosen to minimize
+      </p>
+      <div class="eq-box">
+        \[
+        \pi'(x)=\arg\min_{i\ne\pi(x)}\
+        \|x-c_i\|^2+\lambda\,\bigl\|\mathrm{proj}_r(x-c_i)\bigr\|^2,
+        \qquad r=x-c_{\pi(x)} .
+        \]
+      </div>
+
+      <div class="q">
+        <strong>Intuition.</strong>
+        The $\|r'\|^2$ term keeps the secondary centroid close, as usual. The
+        $\lambda\|\mathrm{proj}_r r'\|^2$ term penalizes any part of $r'$ that
+        points along $r$, which pushes $r'$ to be <em>orthogonal</em> to $r$.
+        A query aligned with $r$ (the case where the primary fails) is then
+        nearly orthogonal to $r'$, so $q^\top r'$ is small and the secondary
+        partition ranks high. This is what breaks the correlation between
+        $\theta$ and $\theta'$.
+      </div>
+
+      <h3>Summary</h3>
+
+      <div class="table-wrap">
+        <table class="compare">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>What it changes</th>
+              <th>Loss on the residual</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>PQ </strong></td>
+              <td>Compact codes</td>
+              <td>$\|r\|^2$ (reconstruction)</td>
+            </tr>
+            <tr>
+              <td><strong>ScaNN</strong></td>
+              <td>Quantization loss for MIPS</td>
+              <td>$\eta\|r_\parallel\|^2+\|r_\perp\|^2$, parallel to $x$</td>
+            </tr>
+            <tr>
+              <td><strong>SOAR</strong></td>
+              <td>Secondary (spilled) partition assignment</td>
+              <td>$\|r'\|^2+\lambda\|\mathrm{proj}_r r'\|^2$, parallel to $r$</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="next">
+        References:
+        <a href="https://doi.org/10.1109/TPAMI.2010.57" target="_blank" rel="noopener noreferrer"
+          >Jégou, Douze, Schmid, Product Quantization for Nearest Neighbor Search</a
+        >, IEEE TPAMI 2011;
+        <a href="https://arxiv.org/abs/1908.10396" target="_blank" rel="noopener noreferrer"
+          >Guo et al., Accelerating Large-Scale Inference with Anisotropic Vector Quantization</a
+        >, ICML 2020;
+        <a href="https://arxiv.org/abs/2404.00774" target="_blank" rel="noopener noreferrer"
+          >Sun et al., SOAR: Improved Indexing for Approximate Nearest Neighbor Search</a
+        >, NeurIPS 2023;
+        <a href="https://arxiv.org/abs/2407.12820" target="_blank" rel="noopener noreferrer"
+          >Zhang et al., PQCache: Product Quantization-based KVCache for Long Context LLM Inference</a
+        >, SIGMOD 2025.
+      </p>
+    </div>
+  </body>
+</html>
