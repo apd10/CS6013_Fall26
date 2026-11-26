@@ -14,8 +14,8 @@ const CONFIG = {
   tickStep: 20,
   // Baseline performance: mean ± std on the 0–100 score scale.
   baselines: {
-    "10%": { mean: 43.5, std: 4.123105626 },
-    "20%": { mean: 43.5, std: 4.123105626 },
+    "10%": { mean: 52, std: 2.45 },
+    "20%": { mean: 52, std: 2.45 },
   },
 };
 
